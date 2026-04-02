@@ -1,26 +1,252 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 150 24% 98%;
+    --foreground: 176.1 65.6% 18.2%;
+    --card: 0 0% 100%;
+    --card-foreground: 176.1 65.6% 18.2%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 176.1 65.6% 18.2%;
+    --primary: 176.1 65.6% 18.2%;
+    --primary-foreground: 150 24% 98%;
+    --secondary: 163.8 21.3% 23.9%;
+    --secondary-foreground: 150 24% 98%;
+    --muted: 150 20% 95%;
+    --muted-foreground: 163.8 14% 36%;
+    --accent: 90.4 30.3% 92%;
+    --accent-foreground: 176.1 65.6% 18.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 168 13% 86%;
+    --input: 168 13% 86%;
+    --ring: 90.4 30.3% 52.7%;
+    --chart-1: 176.1 65.6% 18.2%;
+    --chart-2: 163.8 21.3% 23.9%;
+    --chart-3: 90.4 30.3% 52.7%;
+    --chart-4: 105.7 20.8% 39.6%;
+    --chart-5: 210 3.1% 62.4%;
+    --brand-primary: #104d49;
+    --brand-secondary: #304a43;
+    --brand-accent: #86ab62;
+    --brand-olive: #5a7a50;
+    --brand-stone: #9c9fa2;
+    --font-sans: var(--font-inter);
+    --font-arabic: var(--font-cairo);
+    --font-display: var(--font-cormorant);
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 168 24% 9%;
+    --foreground: 150 24% 97%;
+    --card: 166 18% 13%;
+    --card-foreground: 150 24% 97%;
+    --popover: 166 18% 13%;
+    --popover-foreground: 150 24% 97%;
+    --primary: 176.1 65.6% 18.2%;
+    --primary-foreground: 150 24% 98%;
+    --secondary: 163.8 21.3% 23.9%;
+    --secondary-foreground: 150 24% 97%;
+    --muted: 166 14% 18%;
+    --muted-foreground: 210 3.1% 74%;
+    --accent: 166 14% 18%;
+    --accent-foreground: 150 24% 97%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 166 12% 24%;
+    --input: 166 12% 24%;
+    --ring: 90.4 30.3% 52.7%;
+    --chart-1: 176.1 65.6% 18.2%;
+    --chart-2: 163.8 21.3% 23.9%;
+    --chart-3: 90.4 30.3% 52.7%;
+    --chart-4: 105.7 20.8% 39.6%;
+    --chart-5: 210 3.1% 62.4%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  ::selection {
+    background: rgba(134, 171, 98, 0.28);
+    color: var(--brand-primary);
+  }
+
+  [dir="rtl"] body,
+  [lang="ar"] body,
+  body[dir="rtl"],
+  body[lang="ar"],
+  [data-locale-root][dir="rtl"],
+  [data-locale-root][lang="ar"] {
+    font-family: var(--font-cairo), sans-serif;
+  }
+
+  .font-editorial-display {
+    font-family: var(--font-display), serif;
+  }
+
+  [dir="rtl"] .font-editorial-display,
+  [lang="ar"] .font-editorial-display {
+    font-family: var(--font-cairo), sans-serif;
+    letter-spacing: normal;
+    font-style: normal;
+  }
+
+  input[type="date"],
+  input[type="datetime-local"] {
+    text-align: start;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  @keyframes drift-slow {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    50% {
+      transform: translate3d(0, -0.875rem, 0) rotate(4deg);
+    }
+  }
+
+  @keyframes drift-reverse {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    50% {
+      transform: translate3d(0.75rem, 0.75rem, 0) rotate(-5deg);
+    }
+  }
+
+  @keyframes float-panel {
+    0%, 100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -0.625rem, 0);
+    }
+  }
+
+  @keyframes marquee-shift {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  @keyframes marquee-shift-rtl {
+    0% {
+      transform: translate3d(-50%, 0, 0);
+    }
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes sheen-pass {
+    0% {
+      transform: translate3d(-130%, 0, 0) skewX(-18deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.08;
+    }
+    24% {
+      opacity: 0.3;
+    }
+    42% {
+      opacity: 0;
+    }
+    100% {
+      transform: translate3d(250%, 0, 0) skewX(-18deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% {
+      transform: scale(0.92);
+      opacity: 0.16;
+    }
+    50% {
+      transform: scale(1.08);
+      opacity: 0.34;
+    }
+  }
+
+  .perf-drift-slow {
+    animation: drift-slow 24s ease-in-out infinite;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .perf-drift-reverse {
+    animation: drift-reverse 29s ease-in-out infinite;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .perf-float-panel {
+    animation: float-panel 16s ease-in-out infinite;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .perf-marquee {
+    animation: marquee-shift 28s linear infinite;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .perf-marquee-rtl {
+    animation: marquee-shift-rtl 28s linear infinite;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .perf-sheen {
+    animation: sheen-pass 10.5s linear infinite;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
+
+  .perf-pulse-ring {
+    animation: pulse-ring 6.8s ease-in-out infinite;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+  }
+
+  .hero-gradient {
+    background-image: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 58%, var(--brand-olive) 100%);
+  }
+
+  .soft-mesh {
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(16, 77, 73, 0.16) 0, rgba(16, 77, 73, 0) 45%),
+      radial-gradient(circle at 80% 0%, rgba(134, 171, 98, 0.18) 0, rgba(134, 171, 98, 0) 40%),
+      radial-gradient(circle at 80% 80%, rgba(90, 122, 80, 0.16) 0, rgba(90, 122, 80, 0) 50%);
+  }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .perf-drift-slow,
+  .perf-drift-reverse,
+  .perf-float-panel,
+  .perf-marquee,
+  .perf-marquee-rtl,
+  .perf-sheen,
+  .perf-pulse-ring {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
