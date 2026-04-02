@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { memo, type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, MapPin, MessageSquareText, Navigation, Paperclip, Send, ShieldCheck } from "lucide-react";
@@ -143,12 +142,11 @@ function ChatMediaAttachment({
   if (isImage) {
     return (
       <a href={url} target="_blank" rel="noreferrer" className="mt-2 block">
-        <Image
+        <img
           src={url}
           alt={fileName || "image"}
-          width={192}
-          height={192}
           className="max-h-48 max-w-full rounded-lg object-cover"
+          loading="lazy"
         />
       </a>
     );
