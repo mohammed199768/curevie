@@ -29,6 +29,7 @@ import {
   getPublicServiceCategory,
   getPublicServiceCategoryAnalyticsKind,
   PUBLIC_SERVICE_CATEGORIES,
+  type PublicServiceCategoryTranslationKey,
   type PublicServiceCategorySlug,
 } from "@/lib/public-service-categories";
 import { AppPreloader } from "@/components/shared/AppPreloader";
@@ -40,6 +41,13 @@ const categoryIcons = {
   labDiagnostics: FlaskConical,
   carePrograms: Package2,
 } as const;
+
+const categoryTitleFallbacks: Record<PublicServiceCategoryTranslationKey, string> = {
+  medicalVisits: "Medical Visits",
+  imaging: "Radiology",
+  labDiagnostics: "Lab Diagnostics",
+  carePrograms: "Care Programs",
+};
 
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
   const locale = useLocale();
@@ -147,7 +155,18 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
     ? `/${locale}/dashboard`
     : buildAuthRedirectHref(locale, category.defaultRequestPreset, "register");
 
-  const categoryTitle = t(`categories.${category.translationKey}.title`);
+  const resolveCategoryTitle = (translationKey: PublicServiceCategoryTranslationKey) => {
+    const key = `categories.${translationKey}.title` as const;
+
+    try {
+      const label = t(key);
+      return label && label !== key ? label : categoryTitleFallbacks[translationKey];
+    } catch {
+      return categoryTitleFallbacks[translationKey];
+    }
+  };
+
+  const categoryTitle = resolveCategoryTitle(category.translationKey);
   const categorySubtitle = t(`categories.${category.translationKey}.subtitle`);
   const categoryStory = t(`categories.${category.translationKey}.story`);
   const canOpenGuestRequest = entries.length > 0 && !dataQuery.isLoading && !dataQuery.isError;
@@ -259,7 +278,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                       >
                         <Link href={`/${locale}/services/${navCat.slug}`}>
                           <NavIcon className="me-2 h-4 w-4" />
-                          {t(`categories.${navCat.translationKey}.title`)}
+                          {resolveCategoryTitle(navCat.translationKey)}
                         </Link>
                       </Button>
                     );
@@ -267,7 +286,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                 </div>
               </div>
 
-              <div data-explorer-hero-panel className="relative z-10 grid gap-4">
+              <div data-explorer-hero-panel className="relative z-10 mt-4 grid w-full gap-4 lg:mt-0 lg:w-auto">
                 <div className="rounded-[2rem] border border-white/12 bg-white/10 p-5 backdrop-blur">
                   <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                     {t("stats.liveCatalog")}

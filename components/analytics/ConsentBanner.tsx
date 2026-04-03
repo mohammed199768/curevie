@@ -48,7 +48,7 @@ export function ConsentBanner({ onConsentAccepted }: ConsentBannerProps) {
       {showBanner ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[env(safe-area-inset-bottom,16px)]">
           <div className="pointer-events-auto mx-auto max-w-6xl rounded-[1.75rem] border border-white/80 bg-[linear-gradient(135deg,rgba(16,77,73,0.98)_0%,rgba(14,61,58,0.98)_100%)] p-5 text-white shadow-[0_28px_90px_-50px_rgba(7,31,29,0.7)] sm:p-6">
-            <div className="max-h-[85dvh] overflow-y-auto">
+            <div>
               <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-3xl">
                   <h2 className="text-xl font-semibold sm:text-2xl">{t("banner_title")}</h2>
