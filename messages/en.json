@@ -1051,7 +1051,8 @@
       "chipThree": "Verified results"
     },
     "validationError": "Please complete the required fields to ensure accurate routing.",
-    "success": "Inquiry received and queued for coordination."
+    "success": "Inquiry received and queued for coordination.",
+    "error": "We couldn't send your inquiry right now. Please try again."
   },
   "consent": {
     "banner_title": "We use cookies",

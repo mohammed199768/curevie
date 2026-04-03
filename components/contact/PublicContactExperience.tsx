@@ -167,17 +167,19 @@ export function PublicContactExperience() {
 
     setIsSubmitting(true);
     try {
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        message: form.message.trim(),
+      };
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/contact`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            email: form.email.trim(),
-            phone: form.phone.trim() || undefined,
-            message: form.message.trim(),
-          }),
+          body: JSON.stringify(payload),
         },
       );
 
