@@ -202,13 +202,13 @@
   }
 
   .perf-marquee {
-    animation: marquee-shift 28s linear infinite;
+    animation: marquee-shift 14s linear infinite;
     will-change: transform;
     transform: translateZ(0);
   }
 
   .perf-marquee-rtl {
-    animation: marquee-shift-rtl 28s linear infinite;
+    animation: marquee-shift-rtl 14s linear infinite;
     will-change: transform;
     transform: translateZ(0);
   }
