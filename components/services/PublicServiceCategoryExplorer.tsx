@@ -47,7 +47,20 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const tNewRequest = useTranslations("newRequestPage");
   const tEnums = useTranslations("enums");
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isArabic = locale === "ar";
   const displayFontClass = "font-editorial-display font-[family-name:var(--font-cormorant)]";
+  const eyebrowClass = isArabic
+    ? "text-xs font-medium normal-case tracking-normal"
+    : "text-[0.72rem] font-semibold uppercase tracking-[0.24em]";
+  const detailLabelClass = isArabic
+    ? "text-xs font-medium normal-case tracking-normal"
+    : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]";
+  const heroBadgeClass = isArabic
+    ? "text-xs font-medium normal-case tracking-normal"
+    : "text-xs font-semibold uppercase tracking-[0.3em]";
+  const navButtonLabelClass = isArabic
+    ? "text-sm font-medium normal-case tracking-normal"
+    : "text-sm font-semibold normal-case tracking-normal sm:text-xs sm:font-bold sm:tracking-wide";
 
   const category = getPublicServiceCategory(slug);
   const analyticsServiceKind = getPublicServiceCategoryAnalyticsKind(slug);
@@ -178,7 +191,10 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
               <div className="relative z-10">
                 <div
                   data-explorer-hero-badge
-                  className="inline-flex min-h-11 items-center gap-3 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white backdrop-blur"
+                  className={cn(
+                    "inline-flex min-h-11 items-center gap-3 rounded-full border border-white/16 bg-white/10 px-4 py-2 text-white backdrop-blur",
+                    heroBadgeClass,
+                  )}
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-900">
                     <CategoryIcon className="h-4 w-4" />
@@ -187,7 +203,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                 </div>
 
                 <div data-explorer-hero-title className="mt-6">
-                  <div className="text-sm font-semibold uppercase tracking-[0.24em] text-white">
+                  <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-sm font-semibold uppercase tracking-[0.24em]")}>
                     Curevie
                   </div>
                   <h1 className={cn("font-editorial-display mt-4 text-[clamp(2.6rem,6vw,4.8rem)] leading-[0.92] text-white", displayFontClass)}>
@@ -219,21 +235,23 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   </Button>
                 </div>
 
-                <div 
-                  data-explorer-hero-nav 
-                  className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm sm:rounded-full"
+                <div
+                  data-explorer-hero-nav
+                  dir="auto"
+                  className="mt-8 flex gap-2 overflow-x-auto whitespace-nowrap rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:rounded-full"
                 >
                   {PUBLIC_SERVICE_CATEGORIES.map((navCat) => {
                     const NavIcon = categoryIcons[navCat.translationKey];
                     const isActive = navCat.slug === slug;
-                    
+
                     return (
                       <Button
                         key={navCat.slug}
                         asChild
                         variant="ghost"
                         className={cn(
-                          "min-h-10 flex-1 sm:flex-none rounded-xl sm:rounded-full px-4 text-[0.8rem] sm:text-xs font-semibold sm:font-bold tracking-wide transition-all",
+                          "min-h-10 shrink-0 rounded-xl px-3 py-2 transition-all sm:rounded-full",
+                          navButtonLabelClass,
                           isActive
                             ? "bg-white text-slate-950 shadow-sm hover:bg-white/90"
                             : "text-white/80 hover:bg-white/15 hover:text-white"
@@ -251,7 +269,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
 
               <div data-explorer-hero-panel className="relative z-10 grid gap-4">
                 <div className="rounded-[2rem] border border-white/12 bg-white/10 p-5 backdrop-blur">
-                  <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-white">
+                  <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                     {t("stats.liveCatalog")}
                   </div>
                   <div className="mt-3 text-4xl font-semibold text-white">
@@ -262,14 +280,14 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
-                    <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-white">
+                    <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                       {t("stats.searchReady")}
                     </div>
                     <div className="mt-3 text-lg font-semibold text-white">{t("stats.searchReadyValue")}</div>
                     <p className="mt-2 text-sm leading-7 text-white">{t("stats.searchReadyCopy")}</p>
                   </div>
                   <div className="rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
-                    <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-white">
+                    <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                       {t("stats.requestPath")}
                     </div>
                     <div className="mt-3 text-lg font-semibold text-white">{t("stats.requestPathValue")}</div>
@@ -284,7 +302,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         <section className="mt-8 overflow-hidden rounded-[2rem] border border-[#dae5df] bg-white/85 p-4 shadow-[0_28px_80px_-58px_rgba(15,79,72,0.26)] backdrop-blur sm:p-5">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
             <div>
-              <div className="text-[0.72rem] font-semibold uppercase tracking-[0.24em]" style={{ color: category.theme.muted }}>
+              <div className={cn(eyebrowClass)} style={{ color: category.theme.muted }}>
                 {t("catalog.eyebrow")}
               </div>
               <h2 className="mt-3 text-2xl font-semibold text-[#12312d]">{t("catalog.title")}</h2>
@@ -315,7 +333,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
           </section>
         ) : dataQuery.isError ? (
           <section className="mt-8 rounded-[2rem] border border-[#eed2d2] bg-white p-8 text-center shadow-[0_22px_70px_-56px_rgba(15,79,72,0.26)]">
-            <div className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[#9f6b6b]">
+            <div className={cn(isArabic ? "text-xs font-medium normal-case tracking-normal text-[#9f6b6b]" : "text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[#9f6b6b]")}>
               {t("error.eyebrow")}
             </div>
             <h2 className="mt-4 text-2xl font-semibold text-slate-950">{t("error.title")}</h2>
@@ -330,7 +348,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
           </section>
         ) : filteredEntries.length === 0 ? (
           <section className="mt-8 rounded-[2rem] border border-[#dae5df] bg-white p-8 text-center shadow-[0_22px_70px_-56px_rgba(15,79,72,0.26)]">
-            <div className="text-[0.72rem] font-semibold uppercase tracking-[0.24em]" style={{ color: category.theme.muted }}>
+            <div className={cn(eyebrowClass)} style={{ color: category.theme.muted }}>
               {t("empty.eyebrow")}
             </div>
             <h2 className="mt-4 text-2xl font-semibold text-slate-950">{t("empty.title")}</h2>
@@ -356,13 +374,16 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   >
                     <div className="flex items-start justify-between gap-4 px-5 pb-4 pt-5">
                       <div>
-                        <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em]" style={{ color: category.theme.muted }}>
+                        <div className={cn(detailLabelClass)} style={{ color: category.theme.muted }}>
                           {entry.categoryName || t("labels.curatedForHome")}
                         </div>
                         <h3 className="mt-3 text-2xl font-semibold leading-tight text-[#12312d]">{entry.name}</h3>
                       </div>
                       <div
-                        className="rounded-full px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em]"
+                        className={cn(
+                          "rounded-full px-3 py-1",
+                          isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.18em]",
+                        )}
                         style={{
                           color: category.theme.base,
                           backgroundColor: `${category.theme.accent}22`,
@@ -382,7 +403,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
 
                     <div className="px-5">
                       <div className="rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_56px_-48px_rgba(15,79,72,0.26)]">
-                        <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em]" style={{ color: category.theme.muted }}>
+                        <div className={cn(detailLabelClass)} style={{ color: category.theme.muted }}>
                           {t("labels.price")}
                         </div>
                         <div className="mt-2 text-2xl font-semibold text-[#12312d]">
@@ -434,7 +455,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                             </div>
                             {entry.testsPreview.length ? (
                               <div className="pt-1">
-                                <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#7b8d89]">
+                                <div className={cn(isArabic ? "text-xs font-medium normal-case tracking-normal text-[#7b8d89]" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#7b8d89]")}>
                                   {t("labels.preview")}
                                 </div>
                                 <div className="mt-3 flex flex-wrap gap-2">
@@ -470,7 +491,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                             </div>
                             {(entry.servicesPreview.length || entry.testsPreview.length) ? (
                               <div className="pt-1">
-                                <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#7b8d89]">
+                                <div className={cn(isArabic ? "text-xs font-medium normal-case tracking-normal text-[#7b8d89]" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#7b8d89]")}>
                                   {t("labels.preview")}
                                 </div>
                                 <div className="mt-3 flex flex-wrap gap-2">
@@ -529,7 +550,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
           >
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <div className="text-[0.72rem] font-semibold uppercase tracking-[0.24em]" style={{ color: category.theme.muted }}>
+                <div className={cn(eyebrowClass)} style={{ color: category.theme.muted }}>
                   {t("bottomBand.eyebrow")}
                 </div>
                 <h2 className="mt-3 text-2xl font-semibold text-[#12312d]">{t("bottomBand.title")}</h2>
