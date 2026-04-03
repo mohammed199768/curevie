@@ -429,7 +429,6 @@ export default function RequestDetailPage() {
   }
 
   const report = reportQuery.data;
-  const storedPdfUrl = resolveMediaUrl(report?.pdf_url);
 
   if (!request) {
     return <p className="text-sm">{t("notFound")}</p>;
@@ -443,6 +442,7 @@ export default function RequestDetailPage() {
     return bTime - aTime;
   });
   const isClosed = request.status === "CLOSED";
+  const storedPdfUrl = isClosed ? resolveMediaUrl(report?.pdf_url) : null;
   const progressIndex = getProgressIndex(request.status);
 
   const fallbackTimeline = [
@@ -1204,7 +1204,7 @@ export default function RequestDetailPage() {
                   <Download className="h-4 w-4" />
                   {t("downloadPdf")}
                 </Button>
-                {storedPdfUrl ? (
+                {isClosed && storedPdfUrl ? (
                   <a className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium" href={storedPdfUrl} target="_blank" rel="noreferrer">
                     {t("openStoredPdf")}
                   </a>
