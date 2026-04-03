@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronDown, UserCircle2 } from "lucide-react";
+import { ChevronDown, UserCircle2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useUiStore } from "@/lib/stores/ui.store";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { NotificationDropdown } from "@/components/shared/NotificationDropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,17 +48,7 @@ export function DashboardHeader() {
         <div className="flex items-center gap-2">
           <LocaleSwitcher />
           <ThemeToggle />
-
-          <Button asChild variant="outline" size="icon" className="relative">
-            <Link href={`/${locale}/notifications`}>
-              <Bell className="h-4 w-4" />
-              {unreadNotifications > 0 ? (
-                <Badge className="absolute -right-2 -top-2 h-5 min-w-5 rounded-full p-0" variant="destructive">
-                  {unreadNotifications}
-                </Badge>
-              ) : null}
-            </Link>
-          </Button>
+          <NotificationDropdown unreadCount={unreadNotifications} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

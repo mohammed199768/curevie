@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,10 +20,6 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { useUiStore } from "@/lib/stores/ui.store";
 import { cn, normalizeListResponse } from "@/lib/utils";
 
-type AudioContextWithWebkit = typeof window & {
-  webkitAudioContext?: typeof AudioContext;
-};
-
 type NotificationUnreadResponse = {
   unread_count?: number;
 };
@@ -42,35 +38,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const setUnreadNotifications = useUiStore((state) => state.setUnreadNotifications);
   const setUnreadChat = useUiStore((state) => state.setUnreadChat);
-  const prevUnreadChatRef = useRef<number>(0);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
-  const playNotificationSound = useCallback(() => {
-    try {
-      const windowWithWebkit = window as AudioContextWithWebkit;
-      const AudioContextCtor = window.AudioContext ?? windowWithWebkit.webkitAudioContext;
-      if (!AudioContextCtor) return;
-
-      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
-        audioCtxRef.current = new AudioContextCtor();
-      }
-
-      const ctx = audioCtxRef.current;
-      const oscillator: OscillatorNode = ctx.createOscillator();
-      const gain: GainNode = ctx.createGain();
-      oscillator.connect(gain);
-      gain.connect(ctx.destination);
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.3);
-    } catch {
-      // Audio not available; silently skip.
-    }
-  }, []);
 
   const notificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
@@ -80,6 +47,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       const count = typeof data?.unread_count === "number" ? data.unread_count : 0;
       return Number(count);
     },
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     enabled: hydrated && isAuthenticated && Boolean(accessToken),
   });
 
@@ -146,24 +115,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const count = Number(unreadChatQuery.data || 0);
     setUnreadChat(count);
-    if (count > prevUnreadChatRef.current) {
-      playNotificationSound();
-    }
-    prevUnreadChatRef.current = count;
-  }, [playNotificationSound, setUnreadChat, unreadChatQuery.data]);
+  }, [setUnreadChat, unreadChatQuery.data]);
 
   useEffect(() => {
     if (notificationsQuery.error || unreadChatQuery.error) {
       toast.error(tCommon("error"));
     }
   }, [notificationsQuery.error, tCommon, unreadChatQuery.error]);
-
-  useEffect(() => {
-    return () => {
-      void audioCtxRef.current?.close();
-      audioCtxRef.current = null;
-    };
-  }, []);
 
   useEffect(() => {
     if (!hydrated) return;
