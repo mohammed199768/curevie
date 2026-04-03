@@ -1,0 +1,15 @@
+{
+  "name": "كيورفي - رعاية طبية منزلية",
+  "short_name": "كيورفي",
+  "description": "منصة الرعاية الصحية المنزلية الأولى في الأردن",
+  "start_url": "/ar",
+  "display": "standalone",
+  "background_color": "#f7faf7",
+  "theme_color": "#0d4440",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/1.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/1.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/1.png", "sizes": "any", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Cookie } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { SUPPORT_EMAIL, SUPPORT_PHONE_LOCAL } from "@/lib/contact";
 
 type LegalSection = {
   content: ReactNode;
@@ -117,8 +118,8 @@ export function CookiePolicyExperience() {
         <>
           <p>
             {isAr
-              ? "لأسئلة الخصوصية أو طلبات البيانات: البريد الإلكتروني: privacy@curevie.com | الهاتف: +962-XX-XXXXXXX | العنوان: عمّان، الأردن. سنرد خلال 14 يوم عمل."
-              : "For privacy questions or data requests: Email: privacy@curevie.com | Phone: +962-XX-XXXXXXX | Address: Amman, Jordan. We will respond within 14 business days."}
+              ? `لأسئلة الخصوصية أو طلبات البيانات: البريد الإلكتروني: ${SUPPORT_EMAIL} | الهاتف: ${SUPPORT_PHONE_LOCAL} | العنوان: عمّان، الأردن. سنرد خلال 14 يوم عمل.`
+              : `For privacy questions or data requests: Email: ${SUPPORT_EMAIL} | Phone: ${SUPPORT_PHONE_LOCAL} | Address: Amman, Jordan. We will respond within 14 business days.`}
           </p>
         </>
       ),

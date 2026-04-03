@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Home, Instagram, Mail, MapPin, MessageSquareText, PhoneCall } from "lucide-react";
+import { Instagram, Mail, MapPin, MessageSquareText, PhoneCall } from "lucide-react";
 import {
   SUPPORT_EMAIL,
   SUPPORT_EMAIL_HREF,
@@ -44,7 +45,7 @@ export function Footer({ locale }: FooterProps) {
 
   const socialLinks = [
     { href: SUPPORT_WHATSAPP_URL, label: tContact("channels.whatsapp.label"), icon: MessageSquareText },
-    { href: SUPPORT_INSTAGRAM_URL, label: "إنستغرام", icon: Instagram },
+    { href: SUPPORT_INSTAGRAM_URL, label: tContact("channels.instagram.label"), icon: Instagram },
   ] as const;
 
   const contactInfo = [
@@ -59,11 +60,8 @@ export function Footer({ locale }: FooterProps) {
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-5">
           {/* Brand & Social */}
           <div className="lg:col-span-2">
-            <Link href={`/${locale}`} className="flex items-center gap-2 transition-opacity hover:opacity-80">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-[#bdd49f]">
-                <Home className="h-5 w-5" />
-              </span>
-              <span className="text-2xl font-bold tracking-tight text-white">Curevie</span>
+            <Link href={`/${locale}`} className="inline-flex items-center transition-opacity hover:opacity-80">
+              <Image src="/3.png" alt="Curevie" width={100} height={32} className="object-contain" />
             </Link>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/70">
               {tFooter("description")}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
@@ -7,10 +7,26 @@ import type { ReactNode } from "react";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { locales } from "@/i18n";
 import { cairo, cormorantGaramond, inter } from "@/lib/fonts";
+import { BASE_SEO_KEYWORDS, DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_TITLE } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Curevie Patient Portal",
-  description: "Curevie medical home-services platform for patients",
+  title: DEFAULT_SITE_TITLE,
+  description: DEFAULT_SITE_DESCRIPTION,
+  keywords: [...BASE_SEO_KEYWORDS],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "كيورفي",
+  },
+  icons: {
+    icon: "/1.png",
+    apple: "/1.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d4440",
 };
 
 export function generateStaticParams() {
