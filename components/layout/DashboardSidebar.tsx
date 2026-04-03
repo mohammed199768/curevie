@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -49,9 +50,15 @@ export function DashboardSidebar({ locale }: DashboardSidebarProps) {
   return (
     <aside className="flex h-screen w-[240px] flex-col border-r bg-card">
       <div className="border-b px-4 py-5">
-        <Link href={`/${locale}`} className="flex items-center gap-2 text-primary transition-opacity hover:opacity-80">
-          <Home className="h-5 w-5" />
-          <span className="text-xl font-semibold">Curevie</span>
+        <Link href={`/${locale}`} className="flex items-center transition-opacity hover:opacity-80">
+          <Image
+            src="/1.png"
+            alt="Curevie"
+            width={120}
+            height={40}
+            className="object-contain"
+            priority
+          />
         </Link>
       </div>
 

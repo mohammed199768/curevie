@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthStore } from "@/lib/stores/auth.store";
@@ -37,9 +37,15 @@ export function Navbar() {
     <>
       <header className="sticky top-0 z-50 hidden border-b border-primary/10 bg-background/80 backdrop-blur-xl md:block">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <Link href={`/${locale}`} className="flex items-center gap-2 font-semibold text-primary">
-            <Home className="h-5 w-5" />
-            <span className="text-xl">Curevie</span>
+          <Link href={`/${locale}`} className="flex items-center">
+            <Image
+              src="/1.png"
+              alt="Curevie"
+              width={120}
+              height={40}
+              className="object-contain"
+              priority
+            />
           </Link>
 
           {/* Desktop Navigation */}
