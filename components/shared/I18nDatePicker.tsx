@@ -1,14 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CalendarIcon, X } from "lucide-react";
-import { DayPicker } from "react-day-picker";
-import { format, isValid } from "date-fns";
-import { ar, enUS } from "date-fns/locale";
-import { useLocale, useTranslations } from "next-intl";
-
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useLocale } from "next-intl";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 interface I18nDatePickerProps {
@@ -19,119 +12,163 @@ interface I18nDatePickerProps {
   disabled?: boolean;
 }
 
-function parseIsoDate(value?: string) {
-  if (!value) return undefined;
-  // Handle both Date only "2024-01-01" and DateTime "2024-01-01T12:00:00" formats gracefully
-  const dateStr = value.includes("T") ? value.split("T")[0] : value;
-  const [year, month, day] = dateStr.split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  const date = new Date(year, month - 1, day);
-  return Number.isNaN(date.getTime()) ? undefined : date;
+const ARABIC_MONTHS = [
+  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+];
+
+const ENGLISH_MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function getDaysInMonth(month: number, year: number): number {
+  if (!month || !year) return 31;
+  return new Date(year, month, 0).getDate();
 }
 
-function toIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function parseIsoDate(value?: string) {
+  if (!value) return { day: "", month: "", year: "" };
+  const parts = value.split("-");
+  return {
+    year: parts[0] || "",
+    month: parts[1] ? String(parseInt(parts[1])) : "",
+    day: parts[2] ? String(parseInt(parts[2])) : "",
+  };
+}
+
+function toIsoDate(day: string, month: string, year: string): string {
+  if (!day || !month || !year) return "";
+  const mm = month.padStart(2, "0");
+  const dd = day.padStart(2, "0");
+  return `${year}-${mm}-${dd}`;
 }
 
 export function I18nDatePicker({
   value,
   onChange,
-  placeholder,
   className,
   disabled,
 }: I18nDatePickerProps) {
   const locale = useLocale();
-  const selected = useMemo(() => parseIsoDate(value), [value]);
-  const [open, setOpen] = useState(false);
-  const t = useTranslations("common"); // Assume there's a clear/cancel translation
-
-  const dateFnsLocale = locale === "ar" ? ar : enUS;
   const isRtl = locale === "ar";
-  const displayFormat = locale === "ar" ? "d MMMM yyyy" : "MMM d, yyyy";
-  const defaultPlaceholder = placeholder || (locale === "ar" ? "اختر التاريخ" : "Pick a date");
+  const months = isRtl ? ARABIC_MONTHS : ENGLISH_MONTHS;
 
+  const { day, month, year } = parseIsoDate(value);
+
+  const currentYear = new Date().getFullYear();
+  const years = useMemo(() => {
+    const result = [];
+    for (let y = currentYear; y >= 1930; y--) {
+      result.push(y);
+    }
+    return result;
+  }, [currentYear]);
+
+  const daysInMonth = getDaysInMonth(parseInt(month), parseInt(year));
+  const days = useMemo(() => {
+    return Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  }, [daysInMonth]);
+
+  const handleChange = (field: "day" | "month" | "year", val: string) => {
+    const newDay = field === "day" ? val : day;
+    const newMonth = field === "month" ? val : month;
+    const newYear = field === "year" ? val : year;
+
+    // Clamp day if month/year changes and day exceeds max
+    let clampedDay = newDay;
+    if (newMonth && newYear && newDay) {
+      const maxDays = getDaysInMonth(parseInt(newMonth), parseInt(newYear));
+      if (parseInt(newDay) > maxDays) {
+        clampedDay = String(maxDays);
+      }
+    }
+
+    onChange(toIsoDate(clampedDay, newMonth, newYear));
+  };
+
+  const selectClass = cn(
+    "h-11 w-full rounded-md border border-input bg-background px-3 py-2",
+    "text-sm ring-offset-background",
+    "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+    "disabled:cursor-not-allowed disabled:opacity-50",
+    "appearance-none cursor-pointer",
+    !value && "text-muted-foreground"
+  );
+
+  const dayPlaceholder = isRtl ? "اليوم" : "Day";
+  const monthPlaceholder = isRtl ? "الشهر" : "Month";
+  const yearPlaceholder = isRtl ? "السنة" : "Year";
+
+  // Order: Day | Month | Year (same for both RTL and LTR — just flex-direction handles it)
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
+    <div
+      className={cn(
+        "flex gap-2",
+        isRtl ? "flex-row-reverse" : "flex-row",
+        className
+      )}
+      dir={isRtl ? "rtl" : "ltr"}
+    >
+      {/* Day */}
+      <div className="relative flex-1">
+        <select
           disabled={disabled}
-          className={cn(
-            "w-full justify-between font-normal text-start",
-            !value && "text-muted-foreground",
-            className
-          )}
-          dir={isRtl ? "rtl" : "ltr"}
+          value={day}
+          onChange={(e) => handleChange("day", e.target.value)}
+          className={selectClass}
+          aria-label={dayPlaceholder}
         >
-          <span className="truncate">
-            {selected && isValid(selected)
-              ? format(selected, displayFormat, { locale: dateFnsLocale })
-              : defaultPlaceholder}
-          </span>
-          <CalendarIcon className={cn("h-4 w-4 opacity-70", isRtl ? "ml-0 mr-2" : "ml-2 mr-0")} />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-3" dir={isRtl ? "rtl" : "ltr"}>
-        <DayPicker
-          mode="single"
-          selected={selected}
-          onSelect={(date) => {
-            onChange(date ? toIsoDate(date) : "");
-            setOpen(false);
-          }}
-          locale={dateFnsLocale}
-          dir={isRtl ? "rtl" : "ltr"}
-          showOutsideDays
-          className="text-sm"
-          classNames={{
-            months: "flex flex-col space-y-4",
-            month: "space-y-4",
-            caption: "flex justify-center pt-1 relative items-center",
-            caption_label: "text-sm font-medium",
-            nav: "space-x-1 flex items-center",
-            nav_button: cn(
-              "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-              "border border-input rounded-md flex items-center justify-center hover:bg-accent hover:text-accent-foreground"
-            ),
-            nav_button_previous: "absolute left-1",
-            nav_button_next: "absolute right-1",
-            table: "w-full border-collapse space-y-1",
-            head_row: "flex",
-            head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-            row: "flex w-full mt-2",
-            cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-            day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground",
-            day_range_end: "day-range-end",
-            day_selected:
-              "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-            day_today: "bg-accent text-accent-foreground",
-            day_outside:
-              "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-            day_disabled: "text-muted-foreground opacity-50",
-            day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-            day_hidden: "invisible",
-          }}
-        />
-        <div className="mt-2 flex justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              onChange("");
-              setOpen(false);
-            }}
-            disabled={!value}
-          >
-            <X className="mr-1 h-3.5 w-3.5" />
-            {t("clear") || "Clear"}
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+          <option value="" disabled>
+            {dayPlaceholder}
+          </option>
+          {days.map((d) => (
+            <option key={d} value={String(d)}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Month */}
+      <div className="relative flex-[2]">
+        <select
+          disabled={disabled}
+          value={month}
+          onChange={(e) => handleChange("month", e.target.value)}
+          className={selectClass}
+          aria-label={monthPlaceholder}
+        >
+          <option value="" disabled>
+            {monthPlaceholder}
+          </option>
+          {months.map((name, i) => (
+            <option key={i + 1} value={String(i + 1)}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Year */}
+      <div className="relative flex-[1.5]">
+        <select
+          disabled={disabled}
+          value={year}
+          onChange={(e) => handleChange("year", e.target.value)}
+          className={selectClass}
+          aria-label={yearPlaceholder}
+        >
+          <option value="" disabled>
+            {yearPlaceholder}
+          </option>
+          {years.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
   );
 }
