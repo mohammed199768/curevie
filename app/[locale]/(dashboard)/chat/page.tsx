@@ -2,7 +2,7 @@
 
 import { memo, type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, MapPin, MessageSquareText, Navigation, Paperclip, Send, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, MapPin, MessageSquareText, Navigation, Paperclip, Send, ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { AppPreloader } from "@/components/shared/AppPreloader";
@@ -167,6 +167,8 @@ function ChatMediaAttachment({
 }
 
 type ChatInboxPaneProps = {
+  className?: string;
+  compact?: boolean;
   hasInboxEntries: boolean;
   isRtl: boolean;
   locale: string;
@@ -179,6 +181,8 @@ type ChatInboxPaneProps = {
 };
 
 const ChatInboxPane = memo(function ChatInboxPane({
+  className,
+  compact = false,
   hasInboxEntries,
   isRtl,
   locale,
@@ -190,15 +194,15 @@ const ChatInboxPane = memo(function ChatInboxPane({
   onSelectRequestRoom,
 }: ChatInboxPaneProps) {
   return (
-    <Card className="flex min-h-[30rem] flex-col overflow-hidden rounded-2xl shadow-lg xl:h-[calc(100vh-260px)]">
-      <CardHeader className="space-y-4">
+    <Card className={cn("flex min-h-[30rem] flex-col overflow-hidden rounded-2xl shadow-lg xl:h-[calc(100vh-260px)]", className)}>
+      <CardHeader className={cn("space-y-4", compact && "sticky top-0 z-10 border-b border-border/70 bg-background/95 px-4 pb-3 pt-4 backdrop-blur")}>
         <div className={cn(isRtl && "text-right")}>
           <CardTitle>{tChatPage("inboxTitle")}</CardTitle>
           <CardDescription>{tChatPage("inboxDescription")}</CardDescription>
         </div>
       </CardHeader>
 
-      <CardContent className="min-h-0 flex-1 overflow-hidden px-3 pb-3">
+      <CardContent className={cn("min-h-0 flex-1 overflow-hidden px-3 pb-3", compact && "px-2 pb-2")}>
         <div className="h-full min-h-0 space-y-2 overflow-y-auto pr-1">
           {sortedAdminConversations.map((conversation) => {
             const isActive = selectedThread?.kind === "admin" && selectedThread.id === conversation.id;
@@ -210,7 +214,8 @@ const ChatInboxPane = memo(function ChatInboxPane({
                 type="button"
                 onClick={() => onSelectConversation(conversation.id)}
                 className={cn(
-                  "group w-full rounded-[1.35rem] border px-4 py-3 text-left transition-colors",
+                  "group w-full border px-4 py-3 text-left transition-colors",
+                  compact ? "rounded-[1.1rem]" : "rounded-[1.35rem]",
                   isActive
                     ? "border-primary bg-primary/5 shadow-sm"
                     : "border-border/70 bg-background hover:border-primary/20 hover:bg-muted/30",
@@ -257,7 +262,8 @@ const ChatInboxPane = memo(function ChatInboxPane({
                 type="button"
                 onClick={() => onSelectRequestRoom(entry.request.id, entry.lastActivityAt)}
                 className={cn(
-                  "group block w-full rounded-[1.35rem] border px-4 py-3 text-left transition-colors",
+                  "group block w-full border px-4 py-3 text-left transition-colors",
+                  compact ? "rounded-[1.1rem]" : "rounded-[1.35rem]",
                   isActive
                     ? "border-primary bg-primary/5 shadow-sm"
                     : entry.hasUnread
@@ -335,10 +341,12 @@ type ChatThreadPaneProps = {
   adminThreadActive: boolean;
   bottomAnchorRef: (node: HTMLDivElement | null) => void;
   canSendMessage: boolean;
+  className?: string;
   file: File | null;
   isRtl: boolean;
   isSharingLocation: boolean;
   locale: string;
+  mobileMode?: boolean;
   locationDirectionsLabel: string;
   locationSharedLabel: string;
   locationViewLabel: string;
@@ -356,6 +364,7 @@ type ChatThreadPaneProps = {
   onMessageTextChange: (nextValue: string) => void;
   onRetry: () => void;
   onSubmit: () => void;
+  onBack?: () => void;
 };
 
 const ChatThreadPane = memo(function ChatThreadPane({
@@ -369,10 +378,12 @@ const ChatThreadPane = memo(function ChatThreadPane({
   adminThreadActive,
   bottomAnchorRef,
   canSendMessage,
+  className,
   file,
   isRtl,
   isSharingLocation,
   locale,
+  mobileMode = false,
   locationDirectionsLabel,
   locationSharedLabel,
   locationViewLabel,
@@ -390,25 +401,43 @@ const ChatThreadPane = memo(function ChatThreadPane({
   onMessageTextChange,
   onRetry,
   onSubmit,
+  onBack,
 }: ChatThreadPaneProps) {
   const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit();
   }, [onSubmit]);
 
+  const backLabel = isRtl ? "العودة للمحادثات" : "Back to chats";
+
   return (
-    <Card className="flex min-h-[38rem] min-w-0 flex-col overflow-hidden rounded-2xl shadow-lg xl:h-[calc(100vh-260px)]">
-      <CardHeader className="space-y-3">
-        <div className={cn("flex flex-wrap items-start justify-between gap-3", isRtl && "text-right")}>
-          <div className="min-w-0 flex-1">
-            <CardTitle className="line-clamp-1">
-              {requestThreadActive
-                ? activeRequestRoomEntry?.request.provider_name || tChatPage("providerFallback")
-                : activeConversation?.participant_name || tChatPage("adminLabel")}
-            </CardTitle>
-            <CardDescription className="mt-1">
-              {requestThreadActive ? tChatPage("requestThreadDescription") : tChatPage("adminThreadDescription")}
-            </CardDescription>
+    <Card className={cn("flex min-h-[38rem] min-w-0 flex-col overflow-hidden rounded-2xl shadow-lg xl:h-[calc(100vh-260px)]", mobileMode && "min-h-[calc(100dvh-10rem)] rounded-[1.75rem] border-border/60 bg-background shadow-[0_24px_60px_-30px_rgba(13,68,64,0.42)]", className)}>
+      <CardHeader className={cn("space-y-3", mobileMode && "border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur")}>
+        <div className={cn("flex flex-wrap items-start justify-between gap-3", mobileMode && "flex-nowrap items-center gap-2", isRtl && "text-right")}>
+          <div className="flex min-w-0 flex-1 items-start gap-2">
+            {mobileMode && activeThread && onBack ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={backLabel}
+                className="mt-0.5 h-9 w-9 shrink-0 rounded-full text-foreground"
+                onClick={onBack}
+              >
+                <ChevronLeft className={cn("h-5 w-5", isRtl && "rotate-180")} />
+              </Button>
+            ) : null}
+
+            <div className="min-w-0 flex-1">
+              <CardTitle className="line-clamp-1">
+                {requestThreadActive
+                  ? activeRequestRoomEntry?.request.provider_name || tChatPage("providerFallback")
+                  : activeConversation?.participant_name || tChatPage("adminLabel")}
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {requestThreadActive ? tChatPage("requestThreadDescription") : tChatPage("adminThreadDescription")}
+              </CardDescription>
+            </div>
           </div>
 
           {requestThreadActive && activeRequestRoomEntry ? (
@@ -437,8 +466,8 @@ const ChatThreadPane = memo(function ChatThreadPane({
         ) : null}
       </CardHeader>
 
-      <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="min-h-0 flex-1 space-y-2 overflow-x-hidden overflow-y-auto rounded-xl border p-3">
+      <CardContent className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", mobileMode && "gap-0 px-0 pb-0")}>
+        <div className={cn("min-h-0 flex-1 space-y-2 overflow-x-hidden overflow-y-auto rounded-xl border p-3", mobileMode && "rounded-none border-0 bg-[#eef4ef] px-3 py-4")}>
           {!activeThread ? (
             <p className="text-sm text-muted-foreground">{tChatPage("selectThreadHint")}</p>
           ) : activeThreadLoading ? (
@@ -472,8 +501,14 @@ const ChatThreadPane = memo(function ChatThreadPane({
                     <div key={message.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
                       <div
                         className={cn(
-                          "max-w-[85%] break-words rounded-xl px-3 py-2 text-sm sm:max-w-[75%]",
-                          mine ? "bg-primary text-primary-foreground" : "bg-muted",
+                          "max-w-[85%] break-words px-3.5 py-2.5 text-sm sm:max-w-[75%]",
+                          mobileMode
+                            ? mine
+                              ? "rounded-[1.25rem] rounded-br-md bg-[#14514b] text-white shadow-sm"
+                              : "rounded-[1.25rem] rounded-bl-md bg-white text-slate-900 shadow-sm"
+                            : mine
+                            ? "rounded-xl bg-primary text-primary-foreground"
+                            : "rounded-xl bg-muted",
                         )}
                       >
                         {message.sender_role !== "PATIENT" && message.sender_name ? (
@@ -534,8 +569,14 @@ const ChatThreadPane = memo(function ChatThreadPane({
                   <div key={message.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
                     <div
                       className={cn(
-                        "max-w-[85%] break-words rounded-xl px-3 py-2 text-sm sm:max-w-[75%]",
-                        mine ? "bg-primary text-primary-foreground" : "bg-muted",
+                        "max-w-[85%] break-words px-3.5 py-2.5 text-sm sm:max-w-[75%]",
+                        mobileMode
+                          ? mine
+                            ? "rounded-[1.25rem] rounded-br-md bg-[#14514b] text-white shadow-sm"
+                            : "rounded-[1.25rem] rounded-bl-md bg-white text-slate-900 shadow-sm"
+                          : mine
+                          ? "rounded-xl bg-primary text-primary-foreground"
+                          : "rounded-xl bg-muted",
                       )}
                     >
                       {(() => {
@@ -581,40 +622,100 @@ const ChatThreadPane = memo(function ChatThreadPane({
           </div>
         ) : activeThread ? (
           <>
-            <form className="mt-3 flex shrink-0 flex-wrap items-center gap-2" onSubmit={handleSubmit}>
-              <Input
-                value={messageText}
-                onChange={(event) => onMessageTextChange(event.target.value)}
-                placeholder={tChatPage("typeMessage")}
-                className="min-w-[12rem] flex-1"
-              />
-              <label className="inline-flex cursor-pointer items-center rounded-md border px-3 py-2 text-sm">
-                <Paperclip className="h-4 w-4" />
-                {tChatPage("file")}
-                <input
-                  type="file"
-                  className="hidden"
-                  onChange={(event) => onFileChange(event.target.files?.[0] || null)}
-                />
-              </label>
-              {(requestThreadActive && activeRequestRoomEntry?.isOpen) || adminThreadActive ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isSharingLocation}
-                  onClick={onLocationShare}
-                >
-                  <MapPin className="h-4 w-4" />
-                  {isSharingLocation ? tChatPage("sharing") : tChatPage("shareLocation")}
-                </Button>
-              ) : null}
-              <Button type="submit" disabled={sendPending || !canSendMessage}>
-                <Send className="h-4 w-4" />
-                {tChatPage("send")}
-              </Button>
-            </form>
-            {file ? <p className="mt-1 text-xs text-muted-foreground">{file.name}</p> : null}
+            {mobileMode ? (
+              <form
+                className="mt-0 shrink-0 border-t border-border/70 bg-background/95 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.8rem)] backdrop-blur"
+                onSubmit={handleSubmit}
+              >
+                {file ? (
+                  <div className="mb-2 flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    <span className="line-clamp-1 flex-1">{file.name}</span>
+                    <button type="button" className="font-medium text-primary" onClick={() => onFileChange(null)}>
+                      {isRtl ? "إزالة" : "Remove"}
+                    </button>
+                  </div>
+                ) : null}
+
+                <div className="flex items-end gap-2">
+                  <Input
+                    value={messageText}
+                    onChange={(event) => onMessageTextChange(event.target.value)}
+                    placeholder={tChatPage("typeMessage")}
+                    className="min-h-11 flex-1 rounded-full border-border/70 bg-muted/60 px-4"
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    aria-label={tChatPage("send")}
+                    className="h-11 w-11 shrink-0 rounded-full"
+                    disabled={sendPending || !canSendMessage}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-border/70 bg-background px-3 text-sm">
+                    <Paperclip className="h-4 w-4" />
+                    <span>{tChatPage("file")}</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(event) => onFileChange(event.target.files?.[0] || null)}
+                    />
+                  </label>
+                  {(requestThreadActive && activeRequestRoomEntry?.isOpen) || adminThreadActive ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 rounded-full border-border/70 bg-background px-3"
+                      disabled={isSharingLocation}
+                      onClick={onLocationShare}
+                    >
+                      <MapPin className="h-4 w-4" />
+                      {isSharingLocation ? tChatPage("sharing") : tChatPage("shareLocation")}
+                    </Button>
+                  ) : null}
+                </div>
+              </form>
+            ) : (
+              <>
+                <form className="mt-3 flex shrink-0 flex-wrap items-center gap-2" onSubmit={handleSubmit}>
+                  <Input
+                    value={messageText}
+                    onChange={(event) => onMessageTextChange(event.target.value)}
+                    placeholder={tChatPage("typeMessage")}
+                    className="min-w-[12rem] flex-1"
+                  />
+                  <label className="inline-flex cursor-pointer items-center rounded-md border px-3 py-2 text-sm">
+                    <Paperclip className="h-4 w-4" />
+                    {tChatPage("file")}
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(event) => onFileChange(event.target.files?.[0] || null)}
+                    />
+                  </label>
+                  {(requestThreadActive && activeRequestRoomEntry?.isOpen) || adminThreadActive ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSharingLocation}
+                      onClick={onLocationShare}
+                    >
+                      <MapPin className="h-4 w-4" />
+                      {isSharingLocation ? tChatPage("sharing") : tChatPage("shareLocation")}
+                    </Button>
+                  ) : null}
+                  <Button type="submit" disabled={sendPending || !canSendMessage}>
+                    <Send className="h-4 w-4" />
+                    {tChatPage("send")}
+                  </Button>
+                </form>
+                {file ? <p className="mt-1 text-xs text-muted-foreground">{file.name}</p> : null}
+              </>
+            )}
           </>
         ) : null}
       </CardContent>
@@ -1129,6 +1230,12 @@ export default function ChatPage() {
     void handleSelectConversation(conversationId);
   }, [handleSelectConversation]);
 
+  const handleBackToInbox = useCallback(() => {
+    setActiveThread(null);
+    setMessageText("");
+    setFile(null);
+  }, []);
+
   const setBottomAnchorRef = useCallback((node: HTMLDivElement | null) => {
     bottomRef.current = node;
   }, []);
@@ -1139,7 +1246,7 @@ export default function ChatPage() {
 
   return (
     <div className="space-y-4" dir={isRtl ? "rtl" : "ltr"}>
-      <Card className="rounded-2xl border-border/70 shadow-sm">
+      <Card className="hidden rounded-2xl border-border/70 shadow-sm md:block">
         <CardHeader className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="border-primary/15 bg-primary/10 text-primary">
@@ -1154,7 +1261,62 @@ export default function ChatPage() {
         </CardHeader>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[22rem_minmax(0,1fr)]">
+      <div className="md:hidden">
+        {!activeThread ? (
+          <ChatInboxPane
+            className="min-h-[calc(100dvh-10.5rem)] rounded-[1.75rem] border-border/60 bg-white/90 shadow-[0_24px_60px_-30px_rgba(13,68,64,0.35)]"
+            compact
+            hasInboxEntries={hasInboxEntries}
+            isRtl={isRtl}
+            locale={locale}
+            requestRoomEntries={requestRoomEntries}
+            selectedThread={activeThread}
+            sortedAdminConversations={sortedAdminConversations}
+            tChatPage={tChatPage}
+            onSelectConversation={handleSelectConversationClick}
+            onSelectRequestRoom={handleSelectRequestRoom}
+          />
+        ) : (
+          <ChatThreadPane
+            activeConversation={activeConversation}
+            activeRequestRoomEntry={activeRequestRoomEntry}
+            activeThread={activeThread}
+            activeThreadError={activeThreadError}
+            activeThreadLoading={activeThreadLoading}
+            adminMessages={adminMessages}
+            adminPage={adminPage}
+            adminThreadActive={adminThreadActive}
+            bottomAnchorRef={setBottomAnchorRef}
+            canSendMessage={canSendMessage}
+            className="min-h-[calc(100dvh-10.5rem)]"
+            file={file}
+            isRtl={isRtl}
+            isSharingLocation={isSharingLocation}
+            locale={locale}
+            mobileMode
+            locationDirectionsLabel={locationLabels.directions}
+            locationSharedLabel={locationLabels.shared}
+            locationViewLabel={locationLabels.view}
+            messageText={messageText}
+            requestMessages={requestMessages}
+            requestPage={requestPage}
+            requestThreadActive={requestThreadActive}
+            sendPending={sendMutation.isPending}
+            tChatPage={tChatPage}
+            tCommon={tCommon}
+            onBack={handleBackToInbox}
+            onFileChange={setFile}
+            onLoadMoreAdmin={handleLoadMoreAdmin}
+            onLoadMoreRequest={handleLoadMoreRequest}
+            onLocationShare={shareCurrentLocation}
+            onMessageTextChange={setMessageText}
+            onRetry={handleRetry}
+            onSubmit={handleSubmitMessage}
+          />
+        )}
+      </div>
+
+      <div className="hidden gap-4 md:grid xl:grid-cols-[22rem_minmax(0,1fr)]">
         <ChatInboxPane
           hasInboxEntries={hasInboxEntries}
           isRtl={isRtl}

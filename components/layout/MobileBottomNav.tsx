@@ -73,6 +73,10 @@ function DashboardMobileBottomNav() {
   const t = useTranslations("nav");
   const pathWithoutLocale = getPathWithoutLocale(pathname, locale);
 
+  if (pathWithoutLocale === "/chat" || pathWithoutLocale.startsWith("/chat/")) {
+    return null;
+  }
+
   return (
     <nav
       dir={locale === "ar" ? "rtl" : "ltr"}

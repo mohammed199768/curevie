@@ -20,8 +20,9 @@ export function ChatFloatingButton() {
       href={`/${locale}/chat`}
       aria-label="Open chat"
       className={cn(
-        "fixed bottom-6 z-50 flex h-14 w-14 items-center justify-center",
-        isRtl ? "left-6" : "right-6",
+        "fixed z-[140] flex h-14 w-14 items-center justify-center",
+        "bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] md:bottom-6",
+        isRtl ? "left-4 md:left-6" : "right-4 md:right-6",
         "rounded-full bg-primary text-primary-foreground shadow-lg",
         "transition-transform hover:scale-105 active:scale-95",
       )}
