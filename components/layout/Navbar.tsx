@@ -115,7 +115,7 @@ export function Navbar() {
       </header>
 
       {/* Render the specialized Mobile Bottom Navbar */}
-      <MobileBottomNav />
+      <MobileBottomNav variant="public" />
     </>
   );
 }

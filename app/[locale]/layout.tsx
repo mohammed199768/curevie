@@ -20,8 +20,9 @@ export const metadata: Metadata = {
     title: "كيورفي",
   },
   icons: {
-    icon: "/1.png",
-    apple: "/1.png",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 

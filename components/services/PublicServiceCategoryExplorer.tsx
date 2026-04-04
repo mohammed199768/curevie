@@ -193,7 +193,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         backgroundImage: `radial-gradient(circle at top left, ${category.theme.accent}18, transparent 20%), radial-gradient(circle at 88% 12%, ${category.theme.base}14, transparent 18%), linear-gradient(180deg, #f8f6ef 0%, #fbfcfa 46%, #f7faf8 100%)`,
       }}
     >
-      <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8 lg:pt-12">
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-12">
         <div
           className="overflow-hidden rounded-[2.4rem] border border-white/70"
           style={{
@@ -201,12 +201,12 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
             boxShadow: `0 36px 120px -60px ${category.theme.shadow}`,
           }}
         >
-          <div className="relative overflow-hidden px-5 pb-8 pt-6 sm:px-8 sm:pb-10 sm:pt-8 lg:px-10 lg:pb-12 lg:pt-10">
+          <div className="relative overflow-hidden px-4 py-6 md:px-8 md:py-12">
             <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: category.theme.accent }} />
             <div className="absolute -right-10 top-12 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
             <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
 
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-end">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-end lg:gap-8">
               <div className="relative z-10">
                 <div
                   data-explorer-hero-badge
@@ -225,19 +225,19 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-sm font-semibold uppercase tracking-[0.24em]")}>
                     Curevie
                   </div>
-                  <h1 className={cn("font-editorial-display mt-4 text-[clamp(2.6rem,6vw,4.8rem)] leading-[0.92] text-white", displayFontClass)}>
+                  <h1 className={cn("font-editorial-display mt-4 text-2xl leading-tight text-white md:text-4xl md:leading-[0.92]", displayFontClass)}>
                     {categoryTitle}
                   </h1>
                 </div>
 
                 <p
                   data-explorer-hero-copy
-                  className="mt-5 max-w-2xl text-base leading-8 text-white sm:text-lg"
+                  className="mt-5 max-w-2xl text-sm leading-7 text-white md:text-base md:leading-8"
                 >
                   {categorySubtitle}
                 </p>
 
-                <div data-explorer-hero-actions className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <div data-explorer-hero-actions className="mt-8 flex flex-col gap-3 md:flex-row md:flex-wrap">
                   <Button
                     type="button"
                     className="min-h-12 rounded-full border border-white/14 px-6 text-sm font-semibold text-white hover:opacity-90"
@@ -254,39 +254,41 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   </Button>
                 </div>
 
-                <div
-                  data-explorer-hero-nav
-                  dir="auto"
-                  className="mt-8 flex gap-2 overflow-x-auto whitespace-nowrap rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:rounded-full"
-                >
-                  {PUBLIC_SERVICE_CATEGORIES.map((navCat) => {
-                    const NavIcon = categoryIcons[navCat.translationKey];
-                    const isActive = navCat.slug === slug;
+                <div className="mt-8 -mx-4 overflow-x-auto px-4 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div
+                    data-explorer-hero-nav
+                    dir={isArabic ? "rtl" : "ltr"}
+                    className="flex min-w-max gap-2 whitespace-nowrap rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm sm:rounded-full"
+                  >
+                    {PUBLIC_SERVICE_CATEGORIES.map((navCat) => {
+                      const NavIcon = categoryIcons[navCat.translationKey];
+                      const isActive = navCat.slug === slug;
 
-                    return (
-                      <Button
-                        key={navCat.slug}
-                        asChild
-                        variant="ghost"
-                        className={cn(
-                          "min-h-10 shrink-0 rounded-xl px-3 py-2 transition-all sm:rounded-full",
-                          navButtonLabelClass,
-                          isActive
-                            ? "bg-white text-slate-950 shadow-sm hover:bg-white/90"
-                            : "text-white/80 hover:bg-white/15 hover:text-white"
-                        )}
-                      >
-                        <Link href={`/${locale}/services/${navCat.slug}`}>
-                          <NavIcon className="me-2 h-4 w-4" />
-                          {resolveCategoryTitle(navCat.translationKey)}
-                        </Link>
-                      </Button>
-                    );
-                  })}
+                      return (
+                        <Button
+                          key={navCat.slug}
+                          asChild
+                          variant="ghost"
+                          className={cn(
+                            "min-h-10 shrink-0 rounded-xl px-3 py-2 transition-all sm:rounded-full",
+                            navButtonLabelClass,
+                            isActive
+                              ? "bg-white text-slate-950 shadow-sm hover:bg-white/90"
+                              : "text-white/80 hover:bg-white/15 hover:text-white",
+                          )}
+                        >
+                          <Link href={`/${locale}/services/${navCat.slug}`}>
+                            <NavIcon className="me-2 h-4 w-4" />
+                            {resolveCategoryTitle(navCat.translationKey)}
+                          </Link>
+                        </Button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div data-explorer-hero-panel className="relative z-10 mt-4 grid w-full gap-4 lg:mt-0 lg:w-auto">
+              <div data-explorer-hero-panel className="relative z-10 mt-4 grid w-full gap-4 md:grid-cols-2 lg:mt-0 lg:w-auto lg:grid-cols-3">
                 <div className="rounded-[2rem] border border-white/12 bg-white/10 p-5 backdrop-blur">
                   <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                     {t("stats.liveCatalog")}
@@ -297,7 +299,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   <p className="mt-3 text-sm leading-7 text-white">{categoryStory}</p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 md:contents">
                   <div className="rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
                     <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                       {t("stats.searchReady")}

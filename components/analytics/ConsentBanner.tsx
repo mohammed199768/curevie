@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldCheck } from "lucide-react";
+import { Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { ConsentPreferencesModal } from "@/components/analytics/ConsentPreferencesModal";
@@ -15,26 +15,40 @@ export function ConsentBanner({ onConsentAccepted }: ConsentBannerProps) {
   const t = useTranslations("consent");
   const initialConsent = getConsent();
   const [isReady, setIsReady] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [consent, setConsentState] = useState<ConsentState>(initialConsent);
-  const [showBanner, setShowBanner] = useState(!initialConsent.decided);
-  const [showFloating, setShowFloating] = useState(initialConsent.decided);
+  const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    const persistedConsent = getConsent();
-    const hasConsented = persistedConsent.decided;
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
 
-    setConsentState(persistedConsent);
-    setShowBanner(!hasConsented);
-    setShowFloating(hasConsented);
-    setIsReady(true);
+    const syncConsentVisibility = () => {
+      const persistedConsent = getConsent();
+      const hasConsented = persistedConsent.decided;
+      const mobile = mediaQuery.matches;
+
+      setConsentState(persistedConsent);
+      setIsMobile(mobile);
+      setShowBanner(!hasConsented && !mobile);
+      setIsReady(true);
+    };
+
+    syncConsentVisibility();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncConsentVisibility);
+      return () => mediaQuery.removeEventListener("change", syncConsentVisibility);
+    }
+
+    mediaQuery.addListener(syncConsentVisibility);
+    return () => mediaQuery.removeListener(syncConsentVisibility);
   }, []);
 
   const applyConsent = (nextState: ConsentState) => {
     const persisted = setConsent(nextState);
     setConsentState(persisted);
     setShowBanner(false);
-    setShowFloating(true);
     setIsPreferencesOpen(false);
     onConsentAccepted(persisted);
   };
@@ -46,7 +60,7 @@ export function ConsentBanner({ onConsentAccepted }: ConsentBannerProps) {
   return (
     <>
       {showBanner ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-4 pb-[env(safe-area-inset-bottom,16px)]">
+        <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40 px-4 pb-[env(safe-area-inset-bottom,16px)] md:bottom-0">
           <div className="pointer-events-auto mx-auto max-w-6xl rounded-[1.75rem] border border-white/80 bg-[linear-gradient(135deg,rgba(16,77,73,0.98)_0%,rgba(14,61,58,0.98)_100%)] p-5 text-white shadow-[0_28px_90px_-50px_rgba(7,31,29,0.7)] sm:p-6">
             <div>
               <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -104,13 +118,13 @@ export function ConsentBanner({ onConsentAccepted }: ConsentBannerProps) {
         </div>
       ) : null}
 
-      {showFloating && !showBanner ? (
+      {isMobile && !consent.decided && !showBanner ? (
         <button
           onClick={() => setShowBanner(true)}
-          className="fixed bottom-4 start-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-all hover:bg-primary/90"
-          aria-label="Privacy settings"
+          className="fixed bottom-20 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-green-500 shadow-lg transition-all hover:bg-green-600 md:hidden"
+          aria-label={t("manage_preferences")}
         >
-          <ShieldCheck className="h-5 w-5" />
+          <Shield className="h-5 w-5 text-white" />
         </button>
       ) : null}
 

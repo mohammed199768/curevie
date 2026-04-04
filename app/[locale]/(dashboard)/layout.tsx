@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { ChatFloatingButton } from "@/components/shared/ChatFloatingButton";
@@ -151,10 +152,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <DashboardSidebar locale={locale} />
       </div>
 
-      <div className={cn("min-h-screen", locale === "ar" ? "md:pr-[240px]" : "md:pl-[240px]")}>
+      <div className={cn("min-h-screen pb-16 md:pb-0", locale === "ar" ? "md:pr-[240px]" : "md:pl-[240px]")}>
         <DashboardHeader />
         <main className="p-4 md:p-6">{children}</main>
       </div>
+      <MobileBottomNav variant="dashboard" />
       <ChatFloatingButton />
     </div>
   );

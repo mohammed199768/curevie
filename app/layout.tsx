@@ -8,8 +8,9 @@ export const metadata: Metadata = {
   title: DEFAULT_SITE_TITLE,
   description: DEFAULT_SITE_DESCRIPTION,
   icons: {
-    icon: "/1.png",
-    apple: "/1.png",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
