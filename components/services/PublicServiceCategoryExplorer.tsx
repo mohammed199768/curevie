@@ -219,8 +219,8 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
             <div className="absolute -right-10 top-12 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
             <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
 
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-end lg:gap-8">
-              <div className="relative z-10">
+            <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-end lg:gap-8">
+              <div className="relative z-10 min-w-0">
                 <div
                   data-explorer-hero-badge
                   className={cn(
@@ -234,18 +234,18 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   {t(`categories.${category.translationKey}.eyebrow`)}
                 </div>
 
-                <div data-explorer-hero-title className="mt-6">
+                <div data-explorer-hero-title className="mt-6 min-w-0 max-w-full">
                   <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-sm font-semibold uppercase tracking-[0.24em]")}>
                     Curevie
                   </div>
-                  <h1 className={cn("font-editorial-display mt-4 text-2xl leading-tight text-white md:text-4xl md:leading-[0.92]", displayFontClass)}>
+                  <h1 className={cn("font-editorial-display mt-4 max-w-full text-2xl leading-tight text-white md:text-4xl md:leading-[0.92]", displayFontClass)}>
                     {categoryTitle}
                   </h1>
                 </div>
 
                 <p
                   data-explorer-hero-copy
-                  className="mt-5 max-w-2xl text-sm leading-7 text-white md:text-base md:leading-8"
+                  className="mt-5 max-w-2xl whitespace-normal break-words text-sm leading-7 text-white md:text-base md:leading-8"
                 >
                   {categorySubtitle}
                 </p>
@@ -267,11 +267,11 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   </Button>
                 </div>
 
-                <div className="mt-8 -mx-4 overflow-x-auto px-4 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="mt-8 -mx-4 max-w-[calc(100%+2rem)] overflow-x-auto px-4 pb-1 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <div
                     data-explorer-hero-nav
                     dir={isArabic ? "rtl" : "ltr"}
-                    className="flex min-w-max gap-2 whitespace-nowrap rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm sm:rounded-full"
+                    className="inline-flex min-w-max gap-2 whitespace-nowrap rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm sm:rounded-full"
                   >
                     {PUBLIC_SERVICE_CATEGORIES.map((navCat) => {
                       const NavIcon = categoryIcons[navCat.translationKey];
@@ -283,7 +283,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                           asChild
                           variant="ghost"
                           className={cn(
-                            "min-h-10 shrink-0 rounded-xl px-3 py-2 transition-all sm:rounded-full",
+                            "min-h-10 shrink-0 rounded-xl px-2.5 py-2 transition-all sm:rounded-full sm:px-3",
                             navButtonLabelClass,
                             isActive
                               ? "bg-white text-slate-950 shadow-sm hover:bg-white/90"
@@ -301,31 +301,31 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                 </div>
               </div>
 
-              <div data-explorer-hero-panel className="relative z-10 mt-4 grid w-full gap-4 md:grid-cols-2 lg:mt-0 lg:w-auto lg:grid-cols-3">
-                <div className="rounded-[2rem] border border-white/12 bg-white/10 p-5 backdrop-blur">
+              <div data-explorer-hero-panel className="relative z-10 mt-4 grid min-w-0 w-full gap-4 md:grid-cols-2 lg:mt-0 lg:w-auto lg:grid-cols-3">
+                <div className="min-w-0 rounded-[2rem] border border-white/12 bg-white/10 p-5 backdrop-blur">
                   <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                     {t("stats.liveCatalog")}
                   </div>
                   <div className="mt-3 text-4xl font-semibold text-white">
                     {typeof dataQuery.data?.total === "number" ? dataQuery.data.total.toLocaleString(locale) : "--"}
                   </div>
-                  <p className="mt-3 text-sm leading-7 text-white">{categoryStory}</p>
+                  <p className="mt-3 max-w-full whitespace-normal break-words text-sm leading-7 text-white">{categoryStory}</p>
                 </div>
 
-                <div className="grid gap-4 md:contents">
-                  <div className="rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
+                <div className="grid min-w-0 gap-4 md:contents">
+                  <div className="min-w-0 rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
                     <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                       {t("stats.searchReady")}
                     </div>
                     <div className="mt-3 text-lg font-semibold text-white">{t("stats.searchReadyValue")}</div>
-                    <p className="mt-2 text-sm leading-7 text-white">{t("stats.searchReadyCopy")}</p>
+                    <p className="mt-2 max-w-full whitespace-normal break-words text-sm leading-7 text-white">{t("stats.searchReadyCopy")}</p>
                   </div>
-                  <div className="rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
+                  <div className="min-w-0 rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
                     <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
                       {t("stats.requestPath")}
                     </div>
                     <div className="mt-3 text-lg font-semibold text-white">{t("stats.requestPathValue")}</div>
-                    <p className="mt-2 text-sm leading-7 text-white">{t("stats.requestPathCopy")}</p>
+                    <p className="mt-2 max-w-full whitespace-normal break-words text-sm leading-7 text-white">{t("stats.requestPathCopy")}</p>
                   </div>
                 </div>
               </div>
