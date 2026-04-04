@@ -121,6 +121,7 @@ function PublicMobileBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations("nav");
+  const isArabic = locale === "ar";
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const patient = useAuthStore((state) => state.patient);
   const { logout } = useAuth();
@@ -144,171 +145,242 @@ function PublicMobileBottomNav() {
     router.replace(`/${segments.join("/")}`);
   };
 
-  const moreLabel = locale === "ar" ? "المزيد" : "More";
+  const moreLabel = isArabic ? "المزيد" : "More";
+  const localeLabel = isArabic ? "English" : "العربية";
+  const navActionClassName =
+    "flex min-h-11 min-w-[3.7rem] flex-col items-center justify-center gap-1.5 px-1 text-center transition-colors";
+  const aboutActive = getActiveState("about");
+  const contactActive = getActiveState("contact");
+
+  const menuSheet = (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          dir={isArabic ? "rtl" : "ltr"}
+          className={cn(
+            navActionClassName,
+            open ? "text-primary" : "text-muted-foreground hover:text-primary",
+          )}
+        >
+          <Menu className="h-5 w-5" />
+          <span className="text-[10px] font-medium leading-none">{moreLabel}</span>
+        </button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="z-[200] rounded-t-[2rem] p-6 pb-12">
+        <SheetHeader className="mb-6 border-b pb-4">
+          <SheetTitle className="flex items-center justify-between text-right">
+            <span>{moreLabel}</span>
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="flex flex-col gap-4">
+          {isAuthenticated ? (
+            <>
+              <div className="mb-2 flex items-center gap-3 rounded-2xl bg-muted/50 p-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+                  {patient?.full_name
+                    ?.split(" ")
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase() || "PT"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">{patient?.full_name || "User"}</div>
+                  <div className="truncate text-xs text-muted-foreground">{patient?.email || ""}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-14 justify-start gap-3 rounded-xl"
+                  onClick={() => setOpen(false)}
+                >
+                  <Link href={`/${locale}/dashboard`}>
+                    <LayoutDashboard className="h-5 w-5 text-primary" />
+                    {t("dashboard")}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-14 justify-start gap-3 rounded-xl"
+                  onClick={() => setOpen(false)}
+                >
+                  <Link href={`/${locale}/profile`}>
+                    <User className="h-5 w-5 text-primary" />
+                    {t("profile")}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="col-span-2 h-14 justify-start gap-3 rounded-xl"
+                  onClick={() => setOpen(false)}
+                >
+                  <Link href={`/${locale}/requests/new`}>
+                    <ClipboardList className="h-5 w-5 text-primary" />
+                    {t("newRequest")}
+                  </Link>
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                className="mt-4 h-14 justify-start gap-3 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground focus:ring-destructive"
+                onClick={() => {
+                  setOpen(false);
+                  logout();
+                }}
+              >
+                <LogOut className="h-5 w-5" />
+                {t("logout")}
+              </Button>
+            </>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <div className="mb-4 text-center text-sm text-muted-foreground">
+                قم بتسجيل الدخول للحصول على تجربة صحية متكاملة
+              </div>
+              <Button
+                asChild
+                size="lg"
+                className="h-14 w-full gap-3 rounded-xl bg-primary text-[1.1rem] hover:bg-primary/90"
+                onClick={() => setOpen(false)}
+              >
+                <Link href={`/${locale}/login`}>
+                  <LogIn className="h-5 w-5" />
+                  {t("login")}
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-14 w-full gap-3 rounded-xl text-[1.1rem]"
+                onClick={() => setOpen(false)}
+              >
+                <Link href={`/${locale}/register`}>
+                  <UserPlus className="h-5 w-5" />
+                  {t("getStarted")}
+                </Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] rounded-t-[1.75rem] border-t border-primary/10 bg-background/95 pb-safe pt-2 backdrop-blur-2xl shadow-[0_-8px_30px_rgb(0,0,0,0.06)] md:hidden">
-      <div className="relative flex h-16 items-center justify-between px-6 pb-2">
-        <div className="flex flex-1 justify-between pr-6">
-          <Link
-            href={`/${locale}/about`}
-            className={cn(
-              "flex flex-col items-center gap-1.5 transition-colors",
-              getActiveState("about") ? "text-primary" : "text-muted-foreground hover:text-primary",
-            )}
-          >
-            <Info className={cn("h-5 w-5", getActiveState("about") && "fill-primary/20")} />
-            <span className="text-[10px] font-medium">{t("about")}</span>
-          </Link>
-
-          <Link
-            href={`/${locale}/contact`}
-            className={cn(
-              "flex flex-col items-center gap-1.5 transition-colors",
-              getActiveState("contact") ? "text-primary" : "text-muted-foreground hover:text-primary",
-            )}
-          >
-            <Phone className={cn("h-5 w-5", getActiveState("contact") && "fill-primary/20")} />
-            <span className="text-[10px] font-medium">{t("contact")}</span>
-          </Link>
-        </div>
-
-        <div className="relative flex w-[70px] justify-center">
-          <Link
-            href={`/${locale}`}
-            className="absolute -top-12 flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full border-[5px] border-background bg-gradient-to-tr from-[#86ab62] via-[#bdd49f] to-[#e4eed7] text-[2.5rem] font-bold tracking-tighter text-[#0A2520] shadow-[0_12px_28px_rgba(134,171,98,0.45)] transition-transform hover:scale-105 active:scale-95"
-          >
-            <span className="drop-shadow-sm">C</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-1 items-center justify-between pl-6">
-          <button
-            onClick={onToggleLocale}
-            className="flex flex-col items-center gap-1.5 text-muted-foreground transition-colors hover:text-primary"
-          >
-            <Languages className="h-5 w-5" />
-            <span className="text-[10px] font-medium">{locale === "en" ? "العربية" : "English"}</span>
-          </button>
-
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
+    <div
+      dir="ltr"
+      className="fixed bottom-0 left-0 right-0 z-[100] rounded-t-[1.75rem] border-t border-primary/10 bg-background/95 pb-safe pt-2 backdrop-blur-2xl shadow-[0_-8px_30px_rgb(0,0,0,0.06)] md:hidden"
+    >
+      <div className="relative flex h-16 items-center justify-between px-4 pb-2">
+        <div className="flex flex-1 items-center justify-evenly gap-1 pe-6">
+          {isArabic ? (
+            <>
+              {menuSheet}
               <button
+                onClick={onToggleLocale}
+                dir="rtl"
+                className={cn(navActionClassName, "text-muted-foreground hover:text-primary")}
+              >
+                <Languages className="h-5 w-5" />
+                <span className="text-[10px] font-medium leading-none">{localeLabel}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href={`/${locale}/about`}
+                dir="ltr"
                 className={cn(
-                  "flex flex-col items-center gap-1.5 transition-colors",
-                  open ? "text-primary" : "text-muted-foreground",
+                  navActionClassName,
+                  aboutActive ? "text-primary" : "text-muted-foreground hover:text-primary",
                 )}
               >
-                <Menu className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{moreLabel}</span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="z-[200] rounded-t-[2rem] p-6 pb-12">
-              <SheetHeader className="mb-6 border-b pb-4">
-                <SheetTitle className="flex items-center justify-between text-right">
-                  <span>{moreLabel}</span>
-                </SheetTitle>
-              </SheetHeader>
+                <Info className={cn("h-5 w-5", aboutActive && "fill-primary/20")} />
+                <span className="text-[10px] font-medium leading-none">{t("about")}</span>
+              </Link>
 
-              <div className="flex flex-col gap-4">
-                {isAuthenticated ? (
-                  <>
-                    <div className="mb-2 flex items-center gap-3 rounded-2xl bg-muted/50 p-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
-                        {patient?.full_name
-                          ?.split(" ")
-                          .map((part) => part[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase() || "PT"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-semibold">{patient?.full_name || "User"}</div>
-                        <div className="truncate text-xs text-muted-foreground">{patient?.email || ""}</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="h-14 justify-start gap-3 rounded-xl"
-                        onClick={() => setOpen(false)}
-                      >
-                        <Link href={`/${locale}/dashboard`}>
-                          <LayoutDashboard className="h-5 w-5 text-primary" />
-                          {t("dashboard")}
-                        </Link>
-                      </Button>
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="h-14 justify-start gap-3 rounded-xl"
-                        onClick={() => setOpen(false)}
-                      >
-                        <Link href={`/${locale}/profile`}>
-                          <User className="h-5 w-5 text-primary" />
-                          {t("profile")}
-                        </Link>
-                      </Button>
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="col-span-2 h-14 justify-start gap-3 rounded-xl"
-                        onClick={() => setOpen(false)}
-                      >
-                        <Link href={`/${locale}/requests/new`}>
-                          <ClipboardList className="h-5 w-5 text-primary" />
-                          {t("newRequest")}
-                        </Link>
-                      </Button>
-                    </div>
-
-                    <Button
-                      variant="ghost"
-                      className="mt-4 h-14 justify-start gap-3 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground focus:ring-destructive"
-                      onClick={() => {
-                        setOpen(false);
-                        logout();
-                      }}
-                    >
-                      <LogOut className="h-5 w-5" />
-                      {t("logout")}
-                    </Button>
-                  </>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <div className="mb-4 text-center text-sm text-muted-foreground">
-                      قم بتسجيل الدخول للحصول على تجربة صحية متكاملة
-                    </div>
-                    <Button
-                      asChild
-                      size="lg"
-                      className="h-14 w-full gap-3 rounded-xl bg-primary text-[1.1rem] hover:bg-primary/90"
-                      onClick={() => setOpen(false)}
-                    >
-                      <Link href={`/${locale}/login`}>
-                        <LogIn className="h-5 w-5" />
-                        {t("login")}
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="lg"
-                      className="h-14 w-full gap-3 rounded-xl text-[1.1rem]"
-                      onClick={() => setOpen(false)}
-                    >
-                      <Link href={`/${locale}/register`}>
-                        <UserPlus className="h-5 w-5" />
-                        {t("getStarted")}
-                      </Link>
-                    </Button>
-                  </div>
+              <Link
+                href={`/${locale}/contact`}
+                dir="ltr"
+                className={cn(
+                  navActionClassName,
+                  contactActive ? "text-primary" : "text-muted-foreground hover:text-primary",
                 )}
-              </div>
-            </SheetContent>
-          </Sheet>
+              >
+                <Phone className={cn("h-5 w-5", contactActive && "fill-primary/20")} />
+                <span className="text-[10px] font-medium leading-none">{t("contact")}</span>
+              </Link>
+            </>
+          )}
+        </div>
+
+        <div className="relative flex w-[78px] justify-center">
+          <Link
+            href={`/${locale}`}
+            aria-label={t("home")}
+            className="absolute -top-12 flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full border-[5px] border-background bg-gradient-to-tr from-[#86ab62] via-[#bdd49f] to-[#e4eed7] shadow-[0_12px_28px_rgba(134,171,98,0.45)] transition-transform hover:scale-105 active:scale-95"
+          >
+            <Image
+              src="/icon.png"
+              alt=""
+              aria-hidden="true"
+              width={46}
+              height={46}
+              priority
+              className="h-[2.9rem] w-[2.9rem] rounded-full object-contain drop-shadow-sm"
+            />
+          </Link>
+        </div>
+
+        <div className="flex flex-1 items-center justify-evenly gap-1 ps-6">
+          {isArabic ? (
+            <>
+              <Link
+                href={`/${locale}/contact`}
+                dir="rtl"
+                className={cn(
+                  navActionClassName,
+                  contactActive ? "text-primary" : "text-muted-foreground hover:text-primary",
+                )}
+              >
+                <Phone className={cn("h-5 w-5", contactActive && "fill-primary/20")} />
+                <span className="text-[10px] font-medium leading-none">{t("contact")}</span>
+              </Link>
+
+              <Link
+                href={`/${locale}/about`}
+                dir="rtl"
+                className={cn(
+                  navActionClassName,
+                  aboutActive ? "text-primary" : "text-muted-foreground hover:text-primary",
+                )}
+              >
+                <Info className={cn("h-5 w-5", aboutActive && "fill-primary/20")} />
+                <span className="text-[10px] font-medium leading-none">{t("about")}</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={onToggleLocale}
+                dir="ltr"
+                className={cn(navActionClassName, "text-muted-foreground hover:text-primary")}
+              >
+                <Languages className="h-5 w-5" />
+                <span className="text-[10px] font-medium leading-none">{localeLabel}</span>
+              </button>
+
+              {menuSheet}
+            </>
+          )}
         </div>
       </div>
     </div>
