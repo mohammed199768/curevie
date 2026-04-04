@@ -124,7 +124,7 @@ export function QuickRequestForm() {
   const labPanelsQuery = useQuery({
     queryKey: ["lab-panels", "list", search],
     queryFn: async () => {
-      const response = await labPanelsApi.list({ limit: 100, search, is_active: true });
+      const response = await labPanelsApi.listPublic({ limit: 100, search, is_active: true });
       return normalizeListResponse(response.data).data;
     },
     enabled: serviceType === "LAB" && labMode === "PANEL",
@@ -133,7 +133,7 @@ export function QuickRequestForm() {
   const labPackagesQuery = useQuery({
     queryKey: ["lab-packages", "list", search],
     queryFn: async () => {
-      const response = await labPackagesApi.list({ limit: 100, search, is_active: true });
+      const response = await labPackagesApi.listPublic({ limit: 100, search, is_active: true });
       return normalizeListResponse(response.data).data;
     },
     enabled: serviceType === "LAB" && labMode === "PACKAGE",
@@ -187,13 +187,13 @@ export function QuickRequestForm() {
 
   const selectedLabPanelDetailsQuery = useQuery({
     queryKey: ["lab-panels", "details", selectedLabPanelId],
-    queryFn: async () => (await labPanelsApi.getById(selectedLabPanelId!)).data,
+    queryFn: async () => (await labPanelsApi.getByIdPublic(selectedLabPanelId!)).data,
     enabled: Boolean(selectedLabPanelId),
   });
 
   const selectedLabPackageDetailsQuery = useQuery({
     queryKey: ["lab-packages", "details", selectedLabPackageId],
-    queryFn: async () => (await labPackagesApi.getById(selectedLabPackageId!)).data,
+    queryFn: async () => (await labPackagesApi.getByIdPublic(selectedLabPackageId!)).data,
     enabled: Boolean(selectedLabPackageId),
   });
 

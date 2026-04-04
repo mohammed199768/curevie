@@ -237,8 +237,8 @@ export function GuestServiceRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-hidden border-white/80 bg-[#f7faf8] p-0 shadow-[0_40px_120px_-44px_rgba(15,79,72,0.36)] sm:max-w-[46rem]">
-        <div className="relative overflow-hidden">
+      <DialogContent className="bottom-2 top-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] translate-y-0 overflow-hidden rounded-[1.75rem] border-white/80 bg-[#f7faf8] p-0 shadow-[0_40px_120px_-44px_rgba(15,79,72,0.36)] sm:bottom-auto sm:w-full sm:max-w-[46rem] sm:translate-y-[-50%]">
+        <div className="relative max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain">
           <div
             className="absolute inset-x-0 top-0 h-1"
             style={{ backgroundColor: categoryTheme.accent }}
@@ -247,7 +247,7 @@ export function GuestServiceRequestDialog({
           <div className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-white/40 blur-3xl" />
 
           <div
-            className="relative px-5 pb-5 pt-5 text-white sm:px-6 sm:pb-6"
+            className="relative px-4 pb-4 pt-4 text-white sm:px-6 sm:pb-6 sm:pt-5"
             style={{
               background: `linear-gradient(140deg, ${categoryTheme.base} 0%, ${categoryTheme.secondary} 62%, #12312d 100%)`,
             }}
@@ -259,19 +259,19 @@ export function GuestServiceRequestDialog({
                 </span>
                 Curevie
               </div>
-              <DialogTitle className="text-2xl font-semibold text-white">
+              <DialogTitle className="text-xl font-semibold text-white sm:text-2xl">
                 {t("guestRequest.title")}
               </DialogTitle>
-              <DialogDescription className="max-w-2xl text-sm leading-7 text-white/86">
+              <DialogDescription className="max-w-2xl text-sm leading-6 text-white/86 sm:leading-7">
                 {t("guestRequest.description", { category: categoryTitle })}
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="grid gap-6 px-5 pb-5 pt-5 sm:px-6 sm:pb-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
+          <div className="grid gap-4 px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <div className="rounded-[1.7rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)]">
+                <div className="rounded-[1.5rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)] sm:rounded-[1.7rem]">
                   <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#9c9fa2]">
                     {t("guestRequest.guestInfo")}
                   </div>
@@ -286,7 +286,7 @@ export function GuestServiceRequestDialog({
                           <FormControl>
                             <div className="relative">
                               <User2 className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9c9fa2]" />
-                              <Input {...field} className="h-12 rounded-full ps-11" />
+                              <Input {...field} className="h-12 rounded-full ps-11 text-sm" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -303,7 +303,7 @@ export function GuestServiceRequestDialog({
                           <FormControl>
                             <div className="relative">
                               <Phone className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9c9fa2]" />
-                              <Input {...field} className="h-12 rounded-full ps-11" />
+                              <Input {...field} className="h-12 rounded-full ps-11 text-sm" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -319,7 +319,7 @@ export function GuestServiceRequestDialog({
                           <FormLabel>{tBooking("address")}</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
-                              <SelectTrigger className="h-12 rounded-full ps-4">
+                              <SelectTrigger className="h-12 rounded-full ps-4 text-sm">
                                 <div className="flex items-center gap-2">
                                   <MapPin className="h-4 w-4 shrink-0 text-[#9c9fa2]" />
                                   <SelectValue placeholder={tBooking("selectDistrict")} />
@@ -347,7 +347,7 @@ export function GuestServiceRequestDialog({
                           <FormLabel>{t("guestRequest.serviceFieldLabel")}</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
-                              <SelectTrigger className="h-12 rounded-full">
+                              <SelectTrigger className="h-12 rounded-full text-sm">
                                 <SelectValue placeholder={t("guestRequest.serviceFieldPlaceholder")} />
                               </SelectTrigger>
                             </FormControl>
@@ -366,7 +366,7 @@ export function GuestServiceRequestDialog({
                   </div>
                 </div>
 
-                <DialogFooter className="flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+                <DialogFooter className="sticky bottom-0 flex-col-reverse gap-3 border-t border-[#e2ece7] bg-[#f7faf8]/95 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3 backdrop-blur sm:flex-row sm:justify-between sm:pb-0">
                   <Button
                     type="button"
                     variant="outline"
@@ -395,7 +395,7 @@ export function GuestServiceRequestDialog({
             </Form>
 
             <div className="space-y-4">
-              <div className="rounded-[1.7rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)]">
+              <div className="rounded-[1.5rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)] sm:rounded-[1.7rem]">
                 <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#9c9fa2]">
                   {t("guestRequest.serviceCardTitle")}
                 </div>
@@ -413,7 +413,7 @@ export function GuestServiceRequestDialog({
                 </div>
               </div>
 
-              <div className="rounded-[1.7rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)]">
+              <div className="rounded-[1.5rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)] sm:rounded-[1.7rem]">
                 <div className="grid gap-4">
                   <div>
                     <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#9c9fa2]">

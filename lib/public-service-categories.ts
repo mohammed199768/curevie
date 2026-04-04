@@ -360,8 +360,8 @@ export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCateg
 
   if (category.source === "lab") {
     const [labPanelsResponse, labPackagesResponse] = await Promise.all([
-      labPanelsApi.list({ limit: 100, is_active: true }),
-      labPackagesApi.list({ limit: 100, is_active: true }),
+      labPanelsApi.listPublic({ limit: 100, is_active: true }),
+      labPackagesApi.listPublic({ limit: 100, is_active: true }),
     ]);
     const labPanels = normalizeListResponse(labPanelsResponse.data);
     const labPackages = normalizeListResponse(labPackagesResponse.data);
@@ -391,8 +391,8 @@ export async function fetchPublicServiceCounts(): Promise<PublicCategoryCountMap
     await Promise.all([
       servicesApi.listPublic({ limit: 1, service_kind: "MEDICAL" }),
       servicesApi.listPublic({ limit: 1, service_kind: "RADIOLOGY" }),
-      labPanelsApi.list({ limit: 1, is_active: true }),
-      labPackagesApi.list({ limit: 1, is_active: true }),
+      labPanelsApi.listPublic({ limit: 1, is_active: true }),
+      labPackagesApi.listPublic({ limit: 1, is_active: true }),
       servicesApi.listPackagesPublic({ limit: 1 }),
     ]);
 

@@ -109,26 +109,39 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
     gsap.registerPlugin(ScrollTrigger);
 
     const context = gsap.context(() => {
-      gsap
-        .timeline({ defaults: { ease: "power3.out", duration: 0.85 } })
-        .from("[data-explorer-hero-badge]", { y: 22, autoAlpha: 0 })
-        .from("[data-explorer-hero-title]", { y: 32, autoAlpha: 0 }, "-=0.45")
-        .from("[data-explorer-hero-copy]", { y: 28, autoAlpha: 0 }, "-=0.45")
-        .from("[data-explorer-hero-actions] > *", { y: 18, autoAlpha: 0, stagger: 0.08 }, "-=0.4")
-        .from("[data-explorer-hero-nav]", { y: 18, autoAlpha: 0 }, "-=0.4")
-        .from("[data-explorer-hero-panel]", { y: 36, autoAlpha: 0, scale: 0.96, stagger: 0.12 }, "-=0.55");
+      const heroBadge = rootRef.current?.querySelector("[data-explorer-hero-badge]");
+      const heroTitle = rootRef.current?.querySelector("[data-explorer-hero-title]");
+      const heroCopy = rootRef.current?.querySelector("[data-explorer-hero-copy]");
+      const heroActions = Array.from(rootRef.current?.querySelectorAll("[data-explorer-hero-actions] > *") || []);
+      const heroNav = rootRef.current?.querySelector("[data-explorer-hero-nav]");
+      const heroPanel = rootRef.current?.querySelector("[data-explorer-hero-panel]");
+      const catalogGrid = rootRef.current?.querySelector("[data-catalog-grid]");
+      const catalogCards = Array.from(rootRef.current?.querySelectorAll("[data-catalog-card]") || []);
 
-      gsap.from("[data-catalog-card]", {
-        y: 46,
-        autoAlpha: 0,
-        stagger: 0.08,
-        duration: 0.85,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: "[data-catalog-grid]",
-          start: "top 80%",
-        },
-      });
+      if (heroBadge || heroTitle || heroCopy || heroActions.length || heroNav || heroPanel) {
+        const timeline = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.85 } });
+
+        if (heroBadge) timeline.from(heroBadge, { y: 22, autoAlpha: 0 });
+        if (heroTitle) timeline.from(heroTitle, { y: 32, autoAlpha: 0 }, "-=0.45");
+        if (heroCopy) timeline.from(heroCopy, { y: 28, autoAlpha: 0 }, "-=0.45");
+        if (heroActions.length) timeline.from(heroActions, { y: 18, autoAlpha: 0, stagger: 0.08 }, "-=0.4");
+        if (heroNav) timeline.from(heroNav, { y: 18, autoAlpha: 0 }, "-=0.4");
+        if (heroPanel) timeline.from(heroPanel, { y: 36, autoAlpha: 0, scale: 0.96 }, "-=0.55");
+      }
+
+      if (catalogGrid && catalogCards.length) {
+        gsap.from(catalogCards, {
+          y: 46,
+          autoAlpha: 0,
+          stagger: 0.08,
+          duration: 0.85,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: catalogGrid,
+            start: "top 80%",
+          },
+        });
+      }
     }, rootRef);
 
     return () => context.revert();
