@@ -499,7 +499,7 @@ export function PublicHomeExperience() {
               <div
                 data-hero-marquee
                 className={cn(
-                  "mt-6 overflow-hidden border border-[#104d49]/10 bg-white/80 shadow-[0_20px_60px_-40px_rgba(16,77,73,0.28)] sm:mt-8",
+                  "mt-6 overflow-hidden border border-[#104d49]/10 bg-white/80 px-4 shadow-[0_20px_60px_-40px_rgba(16,77,73,0.28)] sm:mt-8",
                   isArabic ? "rounded-[1.75rem]" : "rounded-full",
                 )}
               >
@@ -507,10 +507,10 @@ export function PublicHomeExperience() {
                   dir="ltr"
                   style={heroMarqueeStyle}
                   className={cn(
-                    "flex w-max min-w-full items-center gap-2.5 py-2.5 sm:gap-3 sm:py-3",
+                    "perf-marquee-track flex w-max items-center gap-2.5 py-2.5 sm:gap-3 sm:py-3",
                     isArabic
-                      ? "perf-marquee-rtl px-4"
-                      : "perf-marquee px-4",
+                      ? "perf-marquee-rtl"
+                      : "perf-marquee",
                   )}
                 >
                   {boardTickerItems.map((item, index) => (
