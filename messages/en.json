@@ -260,6 +260,7 @@
     "downloadError": "Failed to download report.",
     "downloadPdf": "Download PDF",
     "openStoredPdf": "Open stored PDF",
+    "openPdf": "Open PDF",
     "reportDetailsTitle": "Report Details",
     "providerFallback": "Provider",
     "summary": "Symptoms summary",

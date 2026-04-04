@@ -260,6 +260,7 @@
     "downloadError": "فشل تحميل التقرير.",
     "downloadPdf": "تحميل PDF",
     "openStoredPdf": "فتح الملف المخزن",
+    "openPdf": "فتح التقرير",
     "reportDetailsTitle": "تفاصيل التقرير",
     "providerFallback": "مقدم الخدمة",
     "summary": "ملخص الأعراض",

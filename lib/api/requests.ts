@@ -29,6 +29,20 @@ export interface SendRequestChatMessagePayload {
   file?: File | null;
 }
 
+export async function getSecurePdfUrl(
+  requestId: string,
+  filePath: string,
+): Promise<string | null> {
+  try {
+    const res = await apiClient.get<{ url: string }>("/files/secure-url", {
+      params: { filePath, requestId },
+    });
+    return res.data.url;
+  } catch {
+    return null;
+  }
+}
+
 export const requestsApi = {
   list: (params?: RequestListParams) =>
     apiClient.get<ApiListResponse<RequestItem>>("/requests", { params }),
@@ -44,6 +58,8 @@ export const requestsApi = {
 
   downloadMedicalPdf: (id: string) =>
     apiClient.get<Blob>(`/reports/requests/${id}/medical/pdf`, { responseType: "blob" }),
+
+  getSecurePdfUrl,
 
   listProviderReports: (id: string) =>
     apiClient.get<{ data: RequestProviderReport[] }>(`/requests/${id}/provider-reports`),

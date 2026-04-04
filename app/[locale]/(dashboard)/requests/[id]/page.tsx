@@ -30,7 +30,6 @@ import type { CultureResult } from "@/lib/api/culture";
 import { requestsApi } from "@/lib/api/requests";
 import type { RequestLifecycleEvent, RequestProviderReport, RequestStatus } from "@/lib/api/types";
 import { translateEnumValue } from "@/lib/i18n";
-import { resolveMediaUrl } from "@/lib/utils/media-url";
 import { cn, formatDateTime, formatRelativeTime, normalizeListResponse, triggerBlobDownload } from "@/lib/utils";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -352,6 +351,8 @@ export default function RequestDetailPage() {
   const tEnums = useTranslations("enums");
   const prefersReducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [openPdfUrl, setOpenPdfUrl] = useState<string | null>(null);
+  const [loadingPdfUrl, setLoadingPdfUrl] = useState(false);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -442,8 +443,24 @@ export default function RequestDetailPage() {
     return bTime - aTime;
   });
   const isClosed = request.status === "CLOSED";
-  const storedPdfUrl = isClosed ? resolveMediaUrl(report?.pdf_url) : null;
+  const hasOpenPdf = isClosed && Boolean(report?.pdf_url || openPdfUrl);
   const progressIndex = getProgressIndex(request.status);
+
+  const handleOpenPdf = async () => {
+    const storedPath = report?.pdf_url;
+    if (!storedPath || !isClosed) return;
+
+    setLoadingPdfUrl(true);
+    try {
+      const url = await requestsApi.getSecurePdfUrl(requestId, storedPath);
+      if (url) {
+        setOpenPdfUrl(url);
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+    } finally {
+      setLoadingPdfUrl(false);
+    }
+  };
 
   const fallbackTimeline = [
     { id: "created", title: t("timelineCreated"), at: request.created_at, meta: request.service_type },
@@ -1204,10 +1221,15 @@ export default function RequestDetailPage() {
                   <Download className="h-4 w-4" />
                   {t("downloadPdf")}
                 </Button>
-                {isClosed && storedPdfUrl ? (
-                  <a className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium" href={storedPdfUrl} target="_blank" rel="noreferrer">
-                    {t("openStoredPdf")}
-                  </a>
+                {hasOpenPdf ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenPdf}
+                    disabled={loadingPdfUrl}
+                  >
+                    {loadingPdfUrl ? tCommon("loading") : t("openPdf")}
+                  </Button>
                 ) : null}
               </div>
             </CardContent>
