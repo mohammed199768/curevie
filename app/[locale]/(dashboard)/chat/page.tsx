@@ -4,6 +4,7 @@ import { memo, type FormEvent, useCallback, useEffect, useMemo, useRef, useState
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, ChevronLeft, MapPin, MessageSquareText, Navigation, Paperclip, Send, ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { Badge } from "@/components/ui/badge";
@@ -726,6 +727,9 @@ const ChatThreadPane = memo(function ChatThreadPane({
 export default function ChatPage() {
   const locale = useLocale();
   const isRtl = locale.startsWith("ar");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const tNav = useTranslations("nav");
   const tChatPage = useTranslations("chatPage");
   const tCommon = useTranslations("common");
@@ -740,11 +744,25 @@ export default function ChatPage() {
   const [messageText, setMessageText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isSharingLocation, setIsSharingLocation] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [requestRoomSeenMap, setRequestRoomSeenMap] = useState<Record<string, string>>({});
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const skipNextAutoScrollRef = useRef(false);
   const watchIdRef = useRef<number | null>(null);
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mobileThreadKind = searchParams.get("threadKind");
+  const mobileThreadId = searchParams.get("threadId");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const updateViewport = () => setIsMobileViewport(mediaQuery.matches);
+
+    updateViewport();
+    mediaQuery.addEventListener("change", updateViewport);
+    return () => mediaQuery.removeEventListener("change", updateViewport);
+  }, []);
 
   useEffect(() => {
     setRequestRoomSeenMap(readRequestChatLastSeenMap());
@@ -875,7 +893,7 @@ export default function ChatPage() {
     [activeThread, requestRoomEntries],
   );
 
-  const handleSelectConversation = useCallback(async (conversationId: string) => {
+  const openConversationThread = useCallback(async (conversationId: string) => {
     setActiveThread({ kind: "admin", id: conversationId });
     setAdminPage(1);
     setMessageText("");
@@ -889,7 +907,7 @@ export default function ChatPage() {
     }
   }, [queryClient]);
 
-  const handleSelectRequestRoom = useCallback((requestId: string, seenAt?: string | null) => {
+  const openRequestThread = useCallback((requestId: string, seenAt?: string | null) => {
     const resolvedSeenAt = seenAt || new Date().toISOString();
     markRequestChatSeen(requestId, resolvedSeenAt);
     setRequestRoomSeenMap((current) => ({
@@ -903,16 +921,61 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
+    if (!isMobileViewport) return;
+
+    if (mobileThreadKind === "admin" && mobileThreadId) {
+      if (activeThread?.kind === "admin" && activeThread.id === mobileThreadId) return;
+      void openConversationThread(mobileThreadId);
+      return;
+    }
+
+    if (mobileThreadKind === "request" && mobileThreadId) {
+      if (activeThread?.kind === "request" && activeThread.id === mobileThreadId) return;
+      const matchedEntry = requestRoomEntries.find((entry) => entry.request.id === mobileThreadId);
+      openRequestThread(mobileThreadId, matchedEntry?.lastActivityAt);
+      return;
+    }
+
+    if (activeThread) {
+      setActiveThread(null);
+      setMessageText("");
+      setFile(null);
+    }
+  }, [
+    activeThread,
+    isMobileViewport,
+    mobileThreadId,
+    mobileThreadKind,
+    openConversationThread,
+    openRequestThread,
+    requestRoomEntries,
+  ]);
+
+  useEffect(() => {
+    if (isMobileViewport) {
+      if (!mobileThreadId) {
+        return;
+      }
+
+      if (mobileThreadKind === "admin" && activeConversation) return;
+      if (mobileThreadKind === "request" && activeRequestRoomEntry) return;
+
+      if (sortedAdminConversations.length || requestRoomEntries.length) {
+        router.replace(pathname);
+      }
+      return;
+    }
+
     if (activeThread?.kind === "admin" && activeConversation) return;
     if (activeThread?.kind === "request" && activeRequestRoomEntry) return;
 
     if (sortedAdminConversations.length) {
-      void handleSelectConversation(sortedAdminConversations[0].id);
+      void openConversationThread(sortedAdminConversations[0].id);
       return;
     }
 
     if (requestRoomEntries.length) {
-      handleSelectRequestRoom(requestRoomEntries[0].request.id, requestRoomEntries[0].lastActivityAt);
+      openRequestThread(requestRoomEntries[0].request.id, requestRoomEntries[0].lastActivityAt);
       return;
     }
 
@@ -923,9 +986,14 @@ export default function ChatPage() {
     activeConversation,
     activeRequestRoomEntry,
     activeThread,
-    handleSelectConversation,
-    handleSelectRequestRoom,
+    isMobileViewport,
+    mobileThreadId,
+    mobileThreadKind,
+    openConversationThread,
+    openRequestThread,
+    pathname,
     requestRoomEntries,
+    router,
     sortedAdminConversations,
   ]);
 
@@ -1227,14 +1295,33 @@ export default function ChatPage() {
   }, [sendMutation]);
 
   const handleSelectConversationClick = useCallback((conversationId: string) => {
-    void handleSelectConversation(conversationId);
-  }, [handleSelectConversation]);
+    if (isMobileViewport) {
+      router.push(`${pathname}?threadKind=admin&threadId=${conversationId}`);
+      return;
+    }
+
+    void openConversationThread(conversationId);
+  }, [isMobileViewport, openConversationThread, pathname, router]);
+
+  const handleSelectRequestRoomClick = useCallback((requestId: string, seenAt?: string | null) => {
+    if (isMobileViewport) {
+      router.push(`${pathname}?threadKind=request&threadId=${requestId}`);
+      return;
+    }
+
+    openRequestThread(requestId, seenAt);
+  }, [isMobileViewport, openRequestThread, pathname, router]);
 
   const handleBackToInbox = useCallback(() => {
+    if (isMobileViewport) {
+      router.push(pathname);
+      return;
+    }
+
     setActiveThread(null);
     setMessageText("");
     setFile(null);
-  }, []);
+  }, [isMobileViewport, pathname, router]);
 
   const setBottomAnchorRef = useCallback((node: HTMLDivElement | null) => {
     bottomRef.current = node;
@@ -1274,7 +1361,7 @@ export default function ChatPage() {
             sortedAdminConversations={sortedAdminConversations}
             tChatPage={tChatPage}
             onSelectConversation={handleSelectConversationClick}
-            onSelectRequestRoom={handleSelectRequestRoom}
+            onSelectRequestRoom={handleSelectRequestRoomClick}
           />
         ) : (
           <ChatThreadPane
@@ -1326,7 +1413,7 @@ export default function ChatPage() {
           sortedAdminConversations={sortedAdminConversations}
           tChatPage={tChatPage}
           onSelectConversation={handleSelectConversationClick}
-          onSelectRequestRoom={handleSelectRequestRoom}
+          onSelectRequestRoom={handleSelectRequestRoomClick}
         />
 
         <ChatThreadPane
