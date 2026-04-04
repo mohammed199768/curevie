@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -15,21 +16,32 @@ import { chatApi } from "@/lib/api/chat";
 import { notificationsApi } from "@/lib/api/notifications";
 import { requestsApi } from "@/lib/api/requests";
 import type { RequestChatMessage, RequestItem } from "@/lib/api/types";
-import { usePolling } from "@/lib/hooks/usePolling";
 import { readRequestChatLastSeenMap } from "@/lib/request-chat-read-state";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useUiStore } from "@/lib/stores/ui.store";
 import { cn, normalizeListResponse } from "@/lib/utils";
 
+const NOTIFICATIONS_REFETCH_INTERVAL_MS = 60_000;
+const UNREAD_CHAT_REFETCH_INTERVAL_MS = 60_000;
+
 type NotificationUnreadResponse = {
   unread_count?: number;
 };
+
+function shouldRetryDashboardQuery(failureCount: number, error: unknown) {
+  if (isAxiosError(error) && error.response?.status === 429) {
+    return false;
+  }
+
+  return failureCount < 1;
+}
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const locale = useLocale();
   const tCommon = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
+  const isChatRoute = pathname.endsWith("/chat");
 
   const patient = useAuthStore((state) => state.patient);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -48,8 +60,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       const count = typeof data?.unread_count === "number" ? data.unread_count : 0;
       return Number(count);
     },
-    refetchInterval: 30_000,
+    refetchInterval: NOTIFICATIONS_REFETCH_INTERVAL_MS,
     refetchIntervalInBackground: false,
+    retry: shouldRetryDashboardQuery,
     enabled: hydrated && isAuthenticated && Boolean(accessToken),
   });
 
@@ -98,16 +111,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       return adminUnread + requestUnread;
     },
+    refetchInterval: isChatRoute ? false : UNREAD_CHAT_REFETCH_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+    retry: shouldRetryDashboardQuery,
     enabled: hydrated && isAuthenticated && Boolean(accessToken),
   });
-
-  usePolling(
-    () => {
-      void unreadChatQuery.refetch();
-    },
-    10_000,
-    hydrated && isAuthenticated && Boolean(accessToken),
-  );
 
   useEffect(() => {
     setUnreadNotifications(Number(notificationsQuery.data || 0));

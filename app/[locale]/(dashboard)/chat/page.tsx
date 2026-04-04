@@ -2,6 +2,7 @@
 
 import { memo, type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { ArrowUpRight, ChevronLeft, MapPin, MessageSquareText, Navigation, Paperclip, Send, ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +28,10 @@ const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "
 const LOCATION_SHARE_GOOD_ACCURACY_METERS = 100;
 const LOCATION_SHARE_MAX_ACCEPTABLE_ACCURACY_METERS = 500;
 const LOCATION_SHARE_TIMEOUT_MS = 12_000;
+const CHAT_LIST_REFETCH_INTERVAL_MS = 30_000;
+const REQUEST_ROOMS_REFETCH_INTERVAL_MS = 45_000;
+const REQUEST_ROOM_METADATA_REFETCH_INTERVAL_MS = 60_000;
+const ACTIVE_THREAD_MESSAGES_REFETCH_INTERVAL_MS = 5_000;
 
 type RequestRoomMetadata = {
   requestId: string;
@@ -50,6 +55,14 @@ type RequestRoomEntry = {
 
 type TranslationValues = Record<string, string | number>;
 type TranslateFn = (key: string, values?: TranslationValues) => string;
+
+function shouldRetryChatQuery(failureCount: number, error: unknown) {
+  if (isAxiosError(error) && error.response?.status === 429) {
+    return false;
+  }
+
+  return failureCount < 1;
+}
 
 function getRequestRoomTimestamp(request: RequestItem) {
   return request.closed_at || request.completed_at || request.in_progress_at || request.updated_at || request.created_at;
@@ -755,6 +768,7 @@ export default function ChatPage() {
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mobileThreadKind = searchParams.get("threadKind");
   const mobileThreadId = searchParams.get("threadId");
+  const shouldPollThreadLists = !isMobileViewport || !activeThread;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -774,14 +788,18 @@ export default function ChatPage() {
   const conversationsQuery = useQuery({
     queryKey: ["chat", "conversations"],
     queryFn: async () => (await chatApi.getConversations()).data.data,
-    refetchInterval: 10_000,
+    refetchInterval: shouldPollThreadLists ? CHAT_LIST_REFETCH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
+    retry: shouldRetryChatQuery,
   });
 
   const requestRoomsQuery = useQuery({
     queryKey: ["patient-chat", "request-rooms"],
     queryFn: async () =>
       normalizeListResponse<RequestItem>((await requestsApi.list({ page: 1, limit: 100 })).data).data,
-    refetchInterval: 15_000,
+    refetchInterval: shouldPollThreadLists ? REQUEST_ROOMS_REFETCH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
+    retry: shouldRetryChatQuery,
   });
 
   const conversations = useMemo(
@@ -806,8 +824,10 @@ export default function ChatPage() {
 
   const requestRoomMetadataQuery = useQuery({
     queryKey: ["patient-chat", "request-room-metadata", requestRooms.map((request) => request.id).join(",")],
-    enabled: requestRooms.length > 0,
-    refetchInterval: 15_000,
+    enabled: requestRooms.length > 0 && shouldPollThreadLists,
+    refetchInterval: shouldPollThreadLists ? REQUEST_ROOM_METADATA_REFETCH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
+    retry: shouldRetryChatQuery,
     queryFn: async () => {
       const entries = await Promise.all(
         requestRooms.map(async (request) => {
@@ -1042,7 +1062,9 @@ export default function ChatPage() {
     enabled: Boolean(activeConversation?.id),
     placeholderData: (previousData, previousQuery) =>
       previousQuery?.queryKey[1] === activeConversation?.id ? previousData : undefined,
-    refetchInterval: 3_000,
+    refetchInterval: activeConversation?.id ? ACTIVE_THREAD_MESSAGES_REFETCH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
+    retry: shouldRetryChatQuery,
   });
 
   const requestMessagesQuery = useQuery({
@@ -1070,7 +1092,9 @@ export default function ChatPage() {
     enabled: Boolean(activeRequestRoomEntry?.request.id),
     placeholderData: (previousData, previousQuery) =>
       previousQuery?.queryKey[1] === activeRequestRoomEntry?.request.id ? previousData : undefined,
-    refetchInterval: 3_000,
+    refetchInterval: activeRequestRoomEntry?.request.id ? ACTIVE_THREAD_MESSAGES_REFETCH_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
+    retry: shouldRetryChatQuery,
   });
 
   const clearLocationTracking = useCallback(() => {

@@ -14,6 +14,14 @@ interface RefreshResponse {
   access_token: string;
 }
 
+function logApiError(error: AxiosError) {
+  if (process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  console.error("API ERROR:", error.response?.data || error.message);
+}
+
 function getLoginPath() {
   if (typeof window === "undefined") {
     return "/en/login";
@@ -101,7 +109,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && original && !isAuthHandshakeRequest) {
       const retryConfig = original as RetryAxiosRequestConfig;
       if (retryConfig._retry) {
-        console.error("API ERROR:", error.response?.data || error.message);
+        logApiError(error);
         return Promise.reject(error);
       }
 
@@ -141,7 +149,7 @@ apiClient.interceptors.response.use(
       }
     }
 
-    console.error("API ERROR:", error.response?.data || error.message);
+    logApiError(error);
     return Promise.reject(error);
   },
 );
