@@ -66,6 +66,7 @@ export function PublicHomeExperience() {
     if (typeof window === "undefined" || prefersReducedMotion) return undefined;
 
     gsap.registerPlugin(ScrollTrigger);
+    const isMobileWorkflow = window.matchMedia("(max-width: 767px)").matches;
 
     const context = gsap.context(() => {
       const heroTimeline = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.9 } });
@@ -152,7 +153,7 @@ export function PublicHomeExperience() {
       gsap.from("[data-story-intro-panel]", {
         y: 54,
         autoAlpha: 0,
-        duration: 1.2,
+        duration: isMobileWorkflow ? 0.8 : 1.2,
         ease: "power3.out",
         scrollTrigger: {
           trigger: workflowRef.current,
@@ -160,20 +161,22 @@ export function PublicHomeExperience() {
         },
       });
 
-      gsap.fromTo(
-        "[data-story-line]",
-        { scaleY: 0, transformOrigin: "top center" },
-        {
-          scaleY: 1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: "[data-story-steps]",
-            start: "top 60%",
-            end: "bottom 70%",
-            scrub: true,
+      if (!isMobileWorkflow) {
+        gsap.fromTo(
+          "[data-story-line]",
+          { scaleY: 0, transformOrigin: "top center" },
+          {
+            scaleY: 1,
+            ease: "none",
+            scrollTrigger: {
+              trigger: "[data-story-steps]",
+              start: "top 60%",
+              end: "bottom 70%",
+              scrub: true,
+            },
           },
-        },
-      );
+        );
+      }
 
       const storySteps = gsap.utils.toArray<HTMLElement>("[data-story-step]");
       storySteps.forEach((step) => {
@@ -182,88 +185,133 @@ export function PublicHomeExperience() {
         const proof = step.querySelector<HTMLElement>("[data-story-proof]");
 
         if (marker) {
-          gsap.fromTo(
-            marker,
-            { y: 34, autoAlpha: 0, scale: 0.78 },
-            {
-              y: 0,
-              autoAlpha: 1,
-              scale: 1,
-              ease: "power3.out",
+          if (isMobileWorkflow) {
+            gsap.from(marker, {
+              y: 18,
+              autoAlpha: 0,
+              scale: 0.92,
+              duration: 0.5,
+              ease: "power2.out",
               scrollTrigger: {
                 trigger: step,
                 start: "top 88%",
-                end: "top 62%",
-                scrub: 0.9,
-                invalidateOnRefresh: true,
+                once: true,
               },
-            },
-          );
+            });
+          } else {
+            gsap.fromTo(
+              marker,
+              { y: 34, autoAlpha: 0, scale: 0.78 },
+              {
+                y: 0,
+                autoAlpha: 1,
+                scale: 1,
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: step,
+                  start: "top 88%",
+                  end: "top 62%",
+                  scrub: 0.9,
+                  invalidateOnRefresh: true,
+                },
+              },
+            );
+          }
         }
 
         if (card) {
-          gsap.fromTo(
-            card,
-            { y: 96, autoAlpha: 0, scale: 0.96 },
-            {
-              y: 0,
-              autoAlpha: 1,
-              scale: 1,
-              ease: "power3.out",
+          if (isMobileWorkflow) {
+            gsap.from(card, {
+              y: 28,
+              autoAlpha: 0,
+              duration: 0.65,
+              ease: "power2.out",
               scrollTrigger: {
                 trigger: step,
-                start: "top 90%",
-                end: "top 58%",
-                scrub: 1,
-                invalidateOnRefresh: true,
+                start: "top 88%",
+                once: true,
               },
-            },
-          );
+            });
+          } else {
+            gsap.fromTo(
+              card,
+              { y: 96, autoAlpha: 0, scale: 0.96 },
+              {
+                y: 0,
+                autoAlpha: 1,
+                scale: 1,
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: step,
+                  start: "top 90%",
+                  end: "top 58%",
+                  scrub: 1,
+                  invalidateOnRefresh: true,
+                },
+              },
+            );
+          }
         }
 
         if (proof) {
-          gsap.fromTo(
-            proof,
-            { y: 26, autoAlpha: 0 },
-            {
-              y: 0,
-              autoAlpha: 1,
+          if (isMobileWorkflow) {
+            gsap.from(proof, {
+              y: 16,
+              autoAlpha: 0,
+              duration: 0.5,
               ease: "power2.out",
               scrollTrigger: {
                 trigger: step,
                 start: "top 82%",
-                end: "top 60%",
-                scrub: 0.8,
-                invalidateOnRefresh: true,
+                once: true,
               },
-            },
-          );
+            });
+          } else {
+            gsap.fromTo(
+              proof,
+              { y: 26, autoAlpha: 0 },
+              {
+                y: 0,
+                autoAlpha: 1,
+                ease: "power2.out",
+                scrollTrigger: {
+                  trigger: step,
+                  start: "top 82%",
+                  end: "top 60%",
+                  scrub: 0.8,
+                  invalidateOnRefresh: true,
+                },
+              },
+            );
+          }
         }
       });
 
-      gsap.to("[data-story-current='left']", {
-        yPercent: -10,
-        xPercent: 4,
-        ease: "none",
-        scrollTrigger: {
-          trigger: "[data-story-steps]",
-          start: "top bottom",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
+      if (!isMobileWorkflow) {
+        gsap.to("[data-story-current='left']", {
+          yPercent: -10,
+          xPercent: 4,
+          ease: "none",
+          scrollTrigger: {
+            trigger: "[data-story-steps]",
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
 
-      gsap.to("[data-story-current='right']", {
-        yPercent: 8,
-        xPercent: -6,
-        ease: "none",
-        scrollTrigger: {
-          trigger: "[data-story-steps]",
-          start: "top bottom",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
+        gsap.to("[data-story-current='right']", {
+          yPercent: 8,
+          xPercent: -6,
+          ease: "none",
+          scrollTrigger: {
+            trigger: "[data-story-steps]",
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true,
+          },
+        });
+      }
     }, rootRef);
 
     return () => {
@@ -825,8 +873,11 @@ export function PublicHomeExperience() {
           </div>
 
           <div data-story-steps className="relative mt-10 lg:mt-0 lg:pt-10">
-            <div className="absolute start-[1.7rem] top-8 h-[calc(100%-4rem)] w-px bg-white/10" />
-            <div data-story-line className="absolute start-[1.7rem] top-8 h-[calc(100%-4rem)] w-px origin-top bg-gradient-to-b from-[#86ab62] via-[#d8e7df] to-transparent" />
+            <div className="absolute start-[1.7rem] top-8 hidden h-[calc(100%-4rem)] w-px bg-white/10 md:block" />
+            <div
+              data-story-line
+              className="absolute start-[1.7rem] top-8 hidden h-[calc(100%-4rem)] w-px origin-top bg-gradient-to-b from-[#86ab62] via-[#d8e7df] to-transparent md:block"
+            />
 
             <div className="space-y-10 lg:space-y-16 xl:space-y-20">
               {workflowSteps.map((step, index) => (
