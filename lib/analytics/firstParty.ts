@@ -3,6 +3,7 @@ import type { AnalyticsEventPayload, AnalyticsEventType } from "@/lib/api/analyt
 import { isAnalyticsAllowed } from "./consent";
 
 const ANALYTICS_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/analytics/events`;
+const SHOULD_LOG_FIRST_PARTY_EVENTS = process.env.NODE_ENV !== "production";
 
 // Phase 1: first-party events were logged to console only.
 // Phase 2: consented public events fire in both dev and production,
@@ -14,7 +15,7 @@ const ANALYTICS_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL || "http://localho
 // Meta Graph API is future optional work.
 
 function logFirstPartyEvent(eventName: AnalyticsEventType, params: Record<string, string>) {
-  if (!isAnalyticsAllowed()) {
+  if (!isAnalyticsAllowed() || !SHOULD_LOG_FIRST_PARTY_EVENTS) {
     return;
   }
 
