@@ -237,7 +237,7 @@ export function GuestServiceRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bottom-2 top-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] translate-y-0 overflow-hidden rounded-[1.75rem] border-white/80 bg-[#f7faf8] p-0 shadow-[0_40px_120px_-44px_rgba(15,79,72,0.36)] sm:bottom-auto sm:w-full sm:max-w-[46rem] sm:translate-y-[-50%]">
+      <DialogContent className="bottom-2 top-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] translate-y-0 overflow-hidden rounded-[1.75rem] border-white/80 bg-[#f7faf8] p-0 shadow-[0_40px_120px_-44px_rgba(15,79,72,0.36)] sm:bottom-auto sm:top-[50%] sm:w-[min(46rem,calc(100vw-2rem))] sm:max-w-[46rem] sm:translate-y-[-50%]">
         <div className="relative max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain">
           <div
             className="absolute inset-x-0 top-0 h-1"
@@ -370,14 +370,14 @@ export function GuestServiceRequestDialog({
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-12 rounded-full border-[#d9e6df] bg-white px-5 text-[#12312d] hover:bg-white"
+                    className="min-h-12 w-full rounded-full border-[#d9e6df] bg-white px-5 text-[#12312d] hover:bg-white sm:w-auto"
                     onClick={() => onOpenChange(false)}
                   >
                     {tBooking("close")}
                   </Button>
                   <Button
                     type="submit"
-                    className="min-h-12 rounded-full px-5 text-sm font-semibold text-white hover:opacity-90"
+                    className="min-h-12 w-full rounded-full px-5 text-sm font-semibold text-white hover:opacity-90 sm:w-auto"
                     style={{ backgroundColor: categoryTheme.base }}
                     disabled={createMutation.isPending || !entries.length}
                   >
@@ -401,10 +401,10 @@ export function GuestServiceRequestDialog({
                 </div>
 
                 <div className="mt-4 rounded-[1.5rem] border border-white/70 p-4 shadow-[0_20px_56px_-50px_rgba(15,79,72,0.2)]" style={{ background: `linear-gradient(180deg, ${categoryTheme.soft} 0%, #ffffff 100%)` }}>
-                  <div className="text-sm font-semibold uppercase tracking-[0.22em]" style={{ color: categoryTheme.muted }}>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] sm:text-sm sm:tracking-[0.22em]" style={{ color: categoryTheme.muted }}>
                     {selectedEntry ? getEntryTypeLabel(selectedEntry, t, tEnums, tNewRequest) : categoryTitle}
                   </div>
-                  <div className="mt-3 text-2xl font-semibold text-[#12312d]">
+                  <div className="mt-3 break-words text-xl font-semibold text-[#12312d] sm:text-2xl">
                     {selectedEntry?.name || t("guestRequest.serviceFieldPlaceholder")}
                   </div>
                   <p className="mt-3 text-sm leading-7 text-[#617672]">

@@ -742,22 +742,22 @@ export default function NewRequestPage() {
       </Card>
 
       <Dialog open={isReviewOpen} onOpenChange={handleReviewOpenChange}>
-        <DialogContent className="max-h-[92vh] max-w-[calc(100vw-1rem)] overflow-hidden border-0 bg-[#f5fbf8] p-0 shadow-[0_40px_120px_-28px_rgba(13,68,64,0.38)] sm:max-w-3xl">
-          <div className="relative overflow-hidden bg-[linear-gradient(135deg,#0d4440_0%,#15514c_52%,#234740_100%)] px-5 pb-6 pt-5 text-white sm:px-8 sm:pb-8 sm:pt-7">
+        <DialogContent className="max-h-[92dvh] max-w-[calc(100vw-1rem)] overflow-hidden border-0 bg-[#f5fbf8] p-0 shadow-[0_40px_120px_-28px_rgba(13,68,64,0.38)] sm:max-w-3xl">
+          <div className="relative overflow-hidden bg-[linear-gradient(135deg,#0d4440_0%,#15514c_52%,#234740_100%)] px-4 pb-5 pt-4 text-white sm:px-8 sm:pb-8 sm:pt-7">
             <div className="absolute inset-x-0 top-0 h-1 bg-[#c69d2e]" />
             <div className="absolute inset-y-0 right-0 w-44 bg-white/5 blur-3xl" />
             <div className="absolute -right-10 top-8 h-32 w-32 rounded-full bg-white/10" />
-            <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-[1.6rem] bg-white/10 ring-1 ring-white/20 backdrop-blur-sm">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl font-black text-[#0d4440] shadow-lg shadow-black/10">
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.4rem] bg-white/10 ring-1 ring-white/20 backdrop-blur-sm sm:h-16 sm:w-16 sm:rounded-[1.6rem]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-lg font-black text-[#0d4440] shadow-lg shadow-black/10 sm:h-12 sm:w-12 sm:text-xl">
                     C
                   </div>
                 </div>
                 <div className="min-w-0">
                   <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-emerald-100/70">Curevie</p>
                   <DialogHeader className="space-y-2 text-left">
-                    <DialogTitle className="text-2xl font-semibold leading-tight text-white sm:text-[2rem]">
+                    <DialogTitle className="text-xl font-semibold leading-tight text-white sm:text-[2rem]">
                       {tPage("reviewTitle")}
                     </DialogTitle>
                     <DialogDescription className="max-w-xl text-sm leading-6 text-emerald-50/75 sm:text-[0.95rem]">
@@ -767,14 +767,14 @@ export default function NewRequestPage() {
                 </div>
               </div>
 
-              <div className="self-start rounded-[1.4rem] border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-sm">
+              <div className="w-full self-start rounded-[1.4rem] border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-sm sm:w-auto">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-emerald-50/65">{tCommon("amount")}</p>
                 <p className="mt-1 text-2xl font-semibold text-white">{formattedPrice}</p>
               </div>
             </div>
           </div>
 
-          <div className="max-h-[calc(92vh-10rem)] overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
+          <div className="max-h-[calc(92dvh-9rem)] overflow-y-auto px-3 pb-3 pt-3 sm:px-6 sm:pb-6 sm:pt-4">
             <div className="grid gap-4 md:grid-cols-[1.05fr_0.95fr]">
               <section className="rounded-[1.6rem] border border-emerald-100 bg-white p-5 shadow-sm">
                 <div className="mb-5 flex items-center gap-3">
@@ -857,7 +857,7 @@ export default function NewRequestPage() {
                   <div className="mt-3 rounded-2xl border border-dashed border-[#14514b]/30 p-4">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7a8f89]">Have a coupon?</p>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <Input
                         type="text"
                         value={couponCode}
@@ -867,14 +867,14 @@ export default function NewRequestPage() {
                           setCouponError(null);
                         }}
                         placeholder="Enter discount code"
-                        className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm uppercase tracking-wider focus:border-[#14514b] focus:outline-none disabled:opacity-50"
+                        className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm uppercase tracking-wider focus:border-[#14514b] focus:outline-none disabled:opacity-50"
                         disabled={isValidatingCoupon || mutation.isPending}
                       />
                       <Button
                         type="button"
                         onClick={handleValidateCoupon}
                         disabled={!couponCode.trim() || isValidatingCoupon || mutation.isPending}
-                        className="rounded-xl bg-[#14514b] px-4 py-2 text-sm text-white transition-colors hover:bg-[#103e3a] disabled:opacity-40"
+                        className="min-h-11 rounded-xl bg-[#14514b] px-4 py-2 text-sm text-white transition-colors hover:bg-[#103e3a] disabled:opacity-40 sm:min-h-0"
                       >
                         {isValidatingCoupon ? "..." : "Verify"}
                       </Button>
@@ -926,18 +926,18 @@ export default function NewRequestPage() {
                   </div>
                 </div>
 
-                <DialogFooter className="gap-3 sm:flex-row sm:items-center sm:space-x-0">
+                <DialogFooter className="w-full gap-3 sm:w-auto sm:flex-row sm:items-center sm:space-x-0">
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11 rounded-full border-slate-200 bg-white px-5"
+                    className="min-h-11 w-full rounded-full border-slate-200 bg-white px-5 sm:w-auto"
                     onClick={() => handleReviewOpenChange(false)}
                   >
                     {tPage("editRequest")}
                   </Button>
                   <Button
                     type="button"
-                    className="min-h-11 rounded-full bg-[#14514b] px-6 hover:bg-[#103e3a]"
+                    className="min-h-11 w-full rounded-full bg-[#14514b] px-6 hover:bg-[#103e3a] sm:w-auto"
                     onClick={() => mutation.mutate()}
                     disabled={mutation.isPending}
                   >
