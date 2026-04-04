@@ -330,6 +330,8 @@ export function PublicHomeExperience() {
       countLabel: typeof count === "number" ? t("categories.countLabel", { count }) : t("categories.countPending"),
     };
   });
+  const heroTickerCards = isArabic ? [...categoryCards].reverse() : categoryCards;
+  const heroMarqueeStyle = isArabic ? ({ animationDuration: "18s" } as const) : undefined;
 
   const serviceBackdropOrbs = [
     {
@@ -392,7 +394,7 @@ export function PublicHomeExperience() {
       glow: "radial-gradient(circle at 20% 18%, rgba(215,231,223,0.18), transparent 56%)",
     },
   ];
-  const boardTickerItems = [...categoryCards, ...categoryCards];
+  const boardTickerItems = [...heroTickerCards, ...heroTickerCards];
   const heroTitleLines = [
     {
       key: "line-1",
@@ -502,12 +504,12 @@ export function PublicHomeExperience() {
                 )}
               >
                 <div
-                  dir={isArabic ? "rtl" : undefined}
-                  style={rtlBidiStyle}
+                  dir="ltr"
+                  style={heroMarqueeStyle}
                   className={cn(
                     "flex w-max min-w-full items-center gap-2.5 py-2.5 sm:gap-3 sm:py-3",
                     isArabic
-                      ? "perf-marquee-rtl px-3 sm:px-4"
+                      ? "perf-marquee-rtl px-4"
                       : "perf-marquee px-4",
                   )}
                 >
@@ -517,7 +519,7 @@ export function PublicHomeExperience() {
                       className={cn(
                         "flex min-w-max items-center gap-2.5 rounded-full border border-[#104d49]/8 bg-[#f3f7f5] px-3 py-2 font-semibold text-[#104d49] sm:gap-3",
                         isArabic
-                          ? "flex-row-reverse text-[0.76rem] tracking-[0.02em] sm:text-[0.82rem]"
+                          ? "flex-row-reverse whitespace-nowrap text-[0.76rem] tracking-normal sm:text-[0.82rem]"
                           : "text-[0.68rem] uppercase tracking-[0.18em] sm:text-[0.72rem] sm:tracking-[0.22em]",
                       )}
                     >
