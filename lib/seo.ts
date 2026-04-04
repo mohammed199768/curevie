@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 export const DEFAULT_SITE_TITLE = "كيورفي | Curevie Home Healthcare in Jordan";
 export const DEFAULT_SITE_DESCRIPTION =
   "كيورفي منصة رعاية طبية منزلية في الأردن لزيارة الطبيب المنزلي والتمريض والمختبر والأشعة المنزلية في عمان ومختلف المناطق.";
@@ -105,5 +107,115 @@ export function getServicePageSeo(slug: string) {
     title: SERVICE_PAGE_TITLES[slug] || DEFAULT_SITE_TITLE,
     description: SERVICE_PAGE_DESCRIPTIONS[slug] || DEFAULT_SITE_DESCRIPTION,
     keywords: [...BASE_SEO_KEYWORDS, ...(SERVICE_PAGE_KEYWORDS[slug] || [])],
+  };
+}
+
+type SeoLocale = "en" | "ar";
+
+type PublicPageMetadataInput = {
+  locale: SeoLocale;
+  pathname?: string;
+  title: string;
+  description: string;
+  keywords?: readonly string[];
+};
+
+const DEFAULT_SITE_URL = "https://www.curevie.net";
+const INDEXABLE_GOOGLEBOT = {
+  index: true,
+  follow: true,
+  "max-image-preview": "large" as const,
+  "max-snippet": -1,
+  "max-video-preview": -1,
+};
+
+function normalizeSiteUrl(url: string) {
+  return url.replace(/\/+$/, "");
+}
+
+function normalizeSubPath(pathname: string = "") {
+  if (!pathname || pathname === "/") {
+    return "";
+  }
+
+  return pathname.startsWith("/") ? pathname : `/${pathname}`;
+}
+
+export const SITE_URL = normalizeSiteUrl(
+  process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || DEFAULT_SITE_URL,
+);
+
+export const INDEXABLE_ROBOTS: Metadata["robots"] = {
+  index: true,
+  follow: true,
+  googleBot: INDEXABLE_GOOGLEBOT,
+};
+
+export const NOINDEX_ROBOTS: Metadata["robots"] = {
+  index: false,
+  follow: false,
+  noarchive: true,
+  googleBot: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    noimageindex: true,
+  },
+};
+
+export function buildAbsoluteUrl(pathname: string = "/") {
+  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return new URL(normalizedPath, `${SITE_URL}/`).toString();
+}
+
+export function buildLocalizedPath(locale: SeoLocale, pathname: string = "") {
+  return `/${locale}${normalizeSubPath(pathname)}`;
+}
+
+export function buildLocaleAlternates(pathname: string = "") {
+  const normalizedPath = normalizeSubPath(pathname);
+
+  return {
+    en: buildAbsoluteUrl(`/en${normalizedPath}`),
+    ar: buildAbsoluteUrl(`/ar${normalizedPath}`),
+    "x-default": buildAbsoluteUrl(`/en${normalizedPath}`),
+  };
+}
+
+export function buildPublicPageMetadata({
+  locale,
+  pathname = "",
+  title,
+  description,
+  keywords = [],
+}: PublicPageMetadataInput): Metadata {
+  const localizedPath = buildLocalizedPath(locale, pathname);
+  const localizedUrl = buildAbsoluteUrl(localizedPath);
+  const openGraphLocale = locale === "ar" ? "ar_JO" : "en_JO";
+  const alternateLocale = locale === "ar" ? "en_JO" : "ar_JO";
+
+  return {
+    title,
+    description,
+    keywords: [...keywords],
+    alternates: {
+      canonical: localizedUrl,
+      languages: buildLocaleAlternates(pathname),
+    },
+    openGraph: {
+      title,
+      description,
+      url: localizedUrl,
+      siteName: "Curevie",
+      locale: openGraphLocale,
+      alternateLocale: [alternateLocale],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: INDEXABLE_ROBOTS,
   };
 }

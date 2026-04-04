@@ -1,12 +1,23 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { cairo, cormorantGaramond, inter } from "@/lib/fonts";
-import { DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_TITLE } from "@/lib/seo";
+import {
+  BASE_SEO_KEYWORDS,
+  DEFAULT_SITE_DESCRIPTION,
+  DEFAULT_SITE_TITLE,
+  INDEXABLE_ROBOTS,
+  SITE_URL,
+} from "@/lib/seo";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  applicationName: "Curevie",
   title: DEFAULT_SITE_TITLE,
   description: DEFAULT_SITE_DESCRIPTION,
+  keywords: [...BASE_SEO_KEYWORDS],
+  manifest: "/manifest.json",
+  robots: INDEXABLE_ROBOTS,
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",

@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicServiceCategoryExplorer } from "@/components/services/PublicServiceCategoryExplorer";
+import type { AppLocale } from "@/i18n";
 import {
   getPublicServiceCategory,
   PUBLIC_SERVICE_CATEGORIES,
   type PublicServiceCategorySlug,
 } from "@/lib/public-service-categories";
-import { getServicePageSeo } from "@/lib/seo";
+import { buildPublicPageMetadata, getServicePageSeo } from "@/lib/seo";
 
 export const revalidate = 3600;
 export const dynamic = "force-static";
 
 interface PublicServiceCategoryPageProps {
   params: {
+    locale: AppLocale;
     slug: string;
   };
 }
@@ -30,11 +32,13 @@ export function generateMetadata({ params }: PublicServiceCategoryPageProps): Me
 
   const seo = getServicePageSeo(category.slug);
 
-  return {
+  return buildPublicPageMetadata({
+    locale: params.locale,
+    pathname: `/services/${category.slug}`,
     title: seo.title,
     description: seo.description,
     keywords: seo.keywords,
-  };
+  });
 }
 
 export default function PublicServiceCategoryPage({ params }: PublicServiceCategoryPageProps) {
