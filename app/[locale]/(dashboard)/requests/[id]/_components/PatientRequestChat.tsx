@@ -14,9 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { requestsApi } from "@/lib/api/requests";
 import type { RequestChatMessage, RequestStatus } from "@/lib/api/types";
 import { markRequestChatSeen } from "@/lib/request-chat-read-state";
-import { resolveMediaUrl } from "@/lib/utils/media-url";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import { AppPreloader } from "@/components/shared/AppPreloader";
+import { ChatMediaDisplay } from "./ChatMediaDisplay";
 
 interface PatientRequestChatProps {
   requestId: string;
@@ -68,13 +68,19 @@ function getSpeakerLabel(message: RequestChatMessage, t: ReturnType<typeof useTr
   return message.sender_name || t("chatCareProvider");
 }
 
+function isImageFile(url: string): boolean {
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url.split("?")[0] || "");
+}
+
 function ChatBubble({
   locale,
   message,
+  requestId,
   t,
 }: {
   locale: string;
   message: RequestChatMessage;
+  requestId: string;
   t: ReturnType<typeof useTranslations>;
 }) {
   const mine = message.sender_role === "PATIENT";
@@ -82,7 +88,6 @@ function ChatBubble({
   const initials = getInitials(speakerLabel, mine ? "Y" : "CP");
   const locationInfo = extractLocationInfo(message.content);
   const textContent = locationInfo ? locationInfo.displayText : message.content;
-  const attachmentUrl = resolveMediaUrl(message.file_url);
 
   return (
     <div className={cn("flex items-end gap-3", mine ? "justify-end" : "justify-start")}>
@@ -157,21 +162,13 @@ function ChatBubble({
           </div>
         ) : null}
 
-        {attachmentUrl ? (
-          <a
-            href={attachmentUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={cn(
-              "mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-              mine
-                ? "border-primary-foreground/15 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15"
-                : "border-border/70 bg-muted/60 hover:bg-muted",
-            )}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            {message.file_name || t("chatOpenAttachment")}
-          </a>
+        {message.file_url ? (
+          <ChatMediaDisplay
+            filePath={message.file_url}
+            fileName={message.file_name}
+            requestId={requestId}
+            isImage={isImageFile(message.file_url)}
+          />
         ) : null}
       </div>
 
@@ -364,7 +361,7 @@ export default function PatientRequestChat({ requestId, requestStatus }: Patient
             </div>
           ) : messages.length ? (
             messages.map((message) => (
-              <ChatBubble key={message.id} locale={locale} message={message} t={t} />
+              <ChatBubble key={message.id} locale={locale} message={message} requestId={requestId} t={t} />
             ))
           ) : (
             <div className="flex min-h-[18rem] items-center justify-center">

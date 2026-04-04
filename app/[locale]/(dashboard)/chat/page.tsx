@@ -17,7 +17,6 @@ import { requestsApi } from "@/lib/api/requests";
 import type { Conversation, Message, RequestChatMessage, RequestItem, RequestStatus } from "@/lib/api/types";
 import { markRequestChatSeen, readRequestChatLastSeenMap } from "@/lib/request-chat-read-state";
 import { translateEnumValue } from "@/lib/i18n";
-import { resolveMediaUrl } from "@/lib/utils/media-url";
 import { cn, formatRelativeTime, normalizeListResponse } from "@/lib/utils";
 
 const REQUEST_ROOM_STATUSES = new Set<RequestStatus>(["IN_PROGRESS", "COMPLETED", "CLOSED"]);
@@ -97,6 +96,103 @@ function extractLocationUrl(text: string | null | undefined): string | null {
   return match ? match[0] : null;
 }
 
+function isDirectMediaPath(filePath: string) {
+  return filePath.startsWith("http") || filePath.startsWith("/uploads/");
+}
+
+function ChatMediaLink({
+  filePath,
+  fileName,
+  openLabel,
+  requestId,
+}: {
+  filePath: string;
+  fileName?: string | null;
+  openLabel: string;
+  requestId?: string | null;
+}) {
+  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const imageCandidate = fileName || filePath;
+  const imageExt = imageCandidate.split("?")[0].split(".").pop()?.toLowerCase() || "";
+  const isImage = IMAGE_EXTS.has(imageExt);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!filePath) {
+      setDisplayUrl(null);
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (isDirectMediaPath(filePath)) {
+      setDisplayUrl(filePath);
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!requestId) {
+      setDisplayUrl(null);
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setDisplayUrl(null);
+    setLoading(true);
+
+    requestsApi.getSecureChatMediaUrl(filePath, requestId).then((signedUrl) => {
+      if (cancelled) return;
+      setDisplayUrl(signedUrl);
+      setLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filePath, requestId]);
+
+  if (loading) {
+    return <span className="mt-2 block text-xs text-muted-foreground">Loading media...</span>;
+  }
+
+  if (!displayUrl) {
+    return <span className="mt-2 block text-xs text-muted-foreground">Media unavailable</span>;
+  }
+
+  if (isImage) {
+    return (
+      <a href={displayUrl} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+        <img
+          src={displayUrl}
+          alt={fileName || "image"}
+          className="max-h-48 max-w-full rounded-lg object-cover"
+          loading="lazy"
+        />
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={displayUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-2 flex items-center gap-2 rounded-lg border bg-background/60 px-3 py-2 text-sm hover:bg-background"
+    >
+      <Paperclip className="h-4 w-4 shrink-0" />
+      <span className="line-clamp-1 flex-1">{fileName || openLabel}</span>
+      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+    </a>
+  );
+}
+
 function ChatLocationCard({
   mapsUrl,
   viewLabel,
@@ -140,46 +236,6 @@ function ChatLocationCard({
         </a>
       </div>
     </div>
-  );
-}
-
-function ChatMediaAttachment({
-  url,
-  fileName,
-  openLabel,
-}: {
-  url: string;
-  fileName?: string | null;
-  openLabel: string;
-}) {
-  const urlExt = url.split("?")[0].split(".").pop()?.toLowerCase() || "";
-  const nameExt = (fileName || "").split(".").pop()?.toLowerCase() || "";
-  const isImage = IMAGE_EXTS.has(urlExt) || (!urlExt && IMAGE_EXTS.has(nameExt)) || IMAGE_EXTS.has(nameExt);
-
-  if (isImage) {
-    return (
-      <a href={url} target="_blank" rel="noreferrer" className="mt-2 block">
-        <img
-          src={url}
-          alt={fileName || "image"}
-          className="max-h-48 max-w-full rounded-lg object-cover"
-          loading="lazy"
-        />
-      </a>
-    );
-  }
-
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-2 flex items-center gap-2 rounded-lg border bg-background/60 px-3 py-2 text-sm hover:bg-background"
-    >
-      <Paperclip className="h-4 w-4 shrink-0" />
-      <span className="line-clamp-1 flex-1">{fileName || openLabel}</span>
-      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-    </a>
   );
 }
 
@@ -512,7 +568,6 @@ const ChatThreadPane = memo(function ChatThreadPane({
                 ) : null}
                 {requestMessages.map((message) => {
                   const mine = message.sender_role === "PATIENT";
-                  const mediaUrl = resolveMediaUrl(message.file_url);
 
                   return (
                     <div key={message.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
@@ -547,11 +602,12 @@ const ChatThreadPane = memo(function ChatThreadPane({
                           }
                           return message.content ? <p>{message.content}</p> : null;
                         })()}
-                        {mediaUrl ? (
-                          <ChatMediaAttachment
-                            url={mediaUrl}
+                        {message.file_url ? (
+                          <ChatMediaLink
+                            filePath={message.file_url}
                             fileName={message.file_name}
                             openLabel={tChatPage("openAttachment")}
+                            requestId={activeRequestRoomEntry?.request.id}
                           />
                         ) : null}
                         <p className={cn("mt-1 text-[10px]", mine ? "text-primary-foreground/80" : "text-muted-foreground")}>
@@ -580,7 +636,6 @@ const ChatThreadPane = memo(function ChatThreadPane({
               ) : null}
               {adminMessages.map((message) => {
                 const mine = message.sender_role === "PATIENT";
-                const mediaUrl = resolveMediaUrl(message.media_url);
 
                 return (
                   <div key={message.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
@@ -610,11 +665,12 @@ const ChatThreadPane = memo(function ChatThreadPane({
                         }
                         return message.body ? <p>{message.body}</p> : null;
                       })()}
-                      {mediaUrl ? (
-                        <ChatMediaAttachment
-                          url={mediaUrl}
+                      {message.media_url ? (
+                        <ChatMediaLink
+                          filePath={message.media_url}
                           fileName={null}
                           openLabel={tChatPage("openAttachment")}
+                          requestId={null}
                         />
                       ) : null}
                       <p className={cn("mt-1 text-[10px]", mine ? "text-primary-foreground/80" : "text-muted-foreground")}>
