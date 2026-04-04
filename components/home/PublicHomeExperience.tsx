@@ -332,6 +332,22 @@ export function PublicHomeExperience() {
   });
   const heroTickerCards = isArabic ? [...categoryCards].reverse() : categoryCards;
   const heroMarqueeStyle = isArabic ? ({ animationDuration: "18s" } as const) : undefined;
+  const renderHeroTickerItem = (item: (typeof categoryCards)[number], key: string) => (
+    <div
+      key={key}
+      className={cn(
+        "flex min-w-max items-center gap-2.5 rounded-full border border-[#104d49]/8 bg-[#f3f7f5] px-3 py-2 font-semibold text-[#104d49] sm:gap-3",
+        isArabic
+          ? "flex-row-reverse whitespace-nowrap text-[0.76rem] tracking-normal sm:text-[0.82rem]"
+          : "text-[0.68rem] uppercase tracking-[0.18em] sm:text-[0.72rem] sm:tracking-[0.22em]",
+      )}
+    >
+      <item.Icon className="h-3.5 w-3.5 text-[#86ab62]" />
+      <span dir={isArabic ? "rtl" : undefined} style={rtlBidiStyle}>
+        {t(`categories.${item.translationKey}.title`)}
+      </span>
+    </div>
+  );
 
   const serviceBackdropOrbs = [
     {
@@ -503,33 +519,33 @@ export function PublicHomeExperience() {
                   isArabic ? "rounded-[1.75rem]" : "rounded-full",
                 )}
               >
-                <div
-                  dir="ltr"
-                  style={heroMarqueeStyle}
-                  className={cn(
-                    "perf-marquee-track flex w-max items-center gap-2.5 py-2.5 sm:gap-3 sm:py-3",
-                    isArabic
-                      ? "perf-marquee-rtl"
-                      : "perf-marquee",
-                  )}
-                >
-                  {boardTickerItems.map((item, index) => (
+                {isArabic ? (
+                  <div className="relative py-2.5 sm:py-3">
                     <div
-                      key={`${item.slug}-${index}`}
-                      className={cn(
-                        "flex min-w-max items-center gap-2.5 rounded-full border border-[#104d49]/8 bg-[#f3f7f5] px-3 py-2 font-semibold text-[#104d49] sm:gap-3",
-                        isArabic
-                          ? "flex-row-reverse whitespace-nowrap text-[0.76rem] tracking-normal sm:text-[0.82rem]"
-                          : "text-[0.68rem] uppercase tracking-[0.18em] sm:text-[0.72rem] sm:tracking-[0.22em]",
-                      )}
+                      dir="ltr"
+                      style={heroMarqueeStyle}
+                      className="perf-marquee-rtl-lane flex w-max items-center gap-2.5 sm:gap-3"
                     >
-                      <item.Icon className="h-3.5 w-3.5 text-[#86ab62]" />
-                      <span dir={isArabic ? "rtl" : undefined} style={rtlBidiStyle}>
-                        {t(`categories.${item.translationKey}.title`)}
-                      </span>
+                      {heroTickerCards.map((item, index) => renderHeroTickerItem(item, `hero-ar-primary-${item.slug}-${index}`))}
                     </div>
-                  ))}
-                </div>
+                    <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center">
+                      <div
+                        dir="ltr"
+                        style={heroMarqueeStyle}
+                        className="perf-marquee-rtl-lane-alt flex w-max items-center gap-2.5 sm:gap-3"
+                      >
+                        {heroTickerCards.map((item, index) => renderHeroTickerItem(item, `hero-ar-secondary-${item.slug}-${index}`))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    dir="ltr"
+                    className="perf-marquee-track perf-marquee flex w-max items-center gap-2.5 py-2.5 sm:gap-3 sm:py-3"
+                  >
+                    {boardTickerItems.map((item, index) => renderHeroTickerItem(item, `hero-en-${item.slug}-${index}`))}
+                  </div>
+                )}
               </div>
 
               <div data-hero-actions className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
