@@ -24,6 +24,9 @@ const REQUEST_ROOM_ACTIVE_STATUSES = new Set<RequestStatus>(["IN_PROGRESS", "COM
 const REQUEST_ROOM_TYPE = "PROVIDER_PATIENT";
 const MESSAGES_PER_PAGE = 30;
 const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "avif"]);
+const LOCATION_SHARE_GOOD_ACCURACY_METERS = 100;
+const LOCATION_SHARE_MAX_ACCEPTABLE_ACCURACY_METERS = 500;
+const LOCATION_SHARE_TIMEOUT_MS = 12_000;
 
 type RequestRoomMetadata = {
   requestId: string;
@@ -957,10 +960,28 @@ export default function ChatPage() {
         return;
       }
 
-      if (mobileThreadKind === "admin" && activeConversation) return;
-      if (mobileThreadKind === "request" && activeRequestRoomEntry) return;
+      if (mobileThreadKind === "admin") {
+        if (!conversationsQuery.isFetched) {
+          return;
+        }
 
-      if (sortedAdminConversations.length || requestRoomEntries.length) {
+        if (sortedAdminConversations.some((conversation) => conversation.id === mobileThreadId)) {
+          return;
+        }
+
+        router.replace(pathname);
+        return;
+      }
+
+      if (mobileThreadKind === "request") {
+        if (!requestRoomsQuery.isFetched) {
+          return;
+        }
+
+        if (requestRooms.some((request) => request.id === mobileThreadId)) {
+          return;
+        }
+
         router.replace(pathname);
       }
       return;
@@ -986,12 +1007,15 @@ export default function ChatPage() {
     activeConversation,
     activeRequestRoomEntry,
     activeThread,
+    conversationsQuery.isFetched,
     isMobileViewport,
     mobileThreadId,
     mobileThreadKind,
     openConversationThread,
     openRequestThread,
     pathname,
+    requestRooms,
+    requestRoomsQuery.isFetched,
     requestRoomEntries,
     router,
     sortedAdminConversations,
@@ -1074,8 +1098,10 @@ export default function ChatPage() {
 
     setIsSharingLocation(true);
     let bestPosition: GeolocationPosition | null = null;
+    let hasSentLocation = false;
 
     const sendBestPosition = async () => {
+      if (hasSentLocation) return;
       clearLocationTracking();
 
       if (!bestPosition) {
@@ -1087,6 +1113,17 @@ export default function ChatPage() {
       try {
         const { latitude, longitude, accuracy } = bestPosition.coords;
         const accuracyMeters = Math.round(accuracy);
+
+        if (accuracyMeters > LOCATION_SHARE_MAX_ACCEPTABLE_ACCURACY_METERS) {
+          toast.error(
+            tChatPage("chatLocationAccuracyTooLow", { meters: accuracyMeters }),
+            { duration: 6000 },
+          );
+          setIsSharingLocation(false);
+          return;
+        }
+
+        hasSentLocation = true;
 
         if (currentThread.kind === "admin") {
           await chatApi.sendMessage(currentThread.id, {
@@ -1123,7 +1160,7 @@ export default function ChatPage() {
             queryKey: ["patient-chat", "request-room-metadata"],
           });
         }
-        if (accuracyMeters > 100) {
+        if (accuracyMeters > LOCATION_SHARE_GOOD_ACCURACY_METERS) {
           toast.warning(
             tChatPage("chatLocationLowAccuracy", { meters: accuracyMeters }),
             { duration: 6000 },
@@ -1142,7 +1179,7 @@ export default function ChatPage() {
 
     timeoutIdRef.current = setTimeout(() => {
       void sendBestPosition();
-    }, 5000);
+    }, LOCATION_SHARE_TIMEOUT_MS);
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
@@ -1151,7 +1188,7 @@ export default function ChatPage() {
           position.coords.accuracy < bestPosition.coords.accuracy
         ) {
           bestPosition = position;
-          if (position.coords.accuracy <= 20) {
+          if (position.coords.accuracy <= LOCATION_SHARE_GOOD_ACCURACY_METERS) {
             if (timeoutIdRef.current) {
               clearTimeout(timeoutIdRef.current);
               timeoutIdRef.current = null;

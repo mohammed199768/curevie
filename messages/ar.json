@@ -386,6 +386,7 @@
     "chatLocationFailed": "فشل إرسال الموقع",
     "chatLocationNotSupported": "الموقع غير مدعوم على هذا الجهاز",
     "chatLocationPermissionDenied": "تم رفض صلاحية الموقع",
+    "chatLocationAccuracyTooLow": "دقة الموقع منخفضة جدًا ({meters} م). اقترب من نافذة أو فعّل GPS ثم حاول مرة أخرى.",
     "chatLocationSentWithAccuracy": "تمت مشاركة الموقع (دقة {meters} م)",
     "chatLocationLowAccuracy": "تمت المشاركة لكن الدقة منخفضة ({meters} م) — جرب من الهاتف",
     "loadMoreMessages": "تحميل رسائل أقدم",

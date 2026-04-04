@@ -386,6 +386,7 @@
     "chatLocationFailed": "Failed to share location",
     "chatLocationNotSupported": "Location not supported on this device",
     "chatLocationPermissionDenied": "Location permission denied",
+    "chatLocationAccuracyTooLow": "Location accuracy is too low ({meters} m). Move closer to a window or enable GPS, then try again.",
     "chatLocationSentWithAccuracy": "Location shared (accuracy {meters} m)",
     "chatLocationLowAccuracy": "Shared but accuracy is low ({meters} m) — try from mobile",
     "loadMoreMessages": "Load earlier messages",
