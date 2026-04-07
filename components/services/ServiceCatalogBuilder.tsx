@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { gsap } from "gsap";
 import {
@@ -39,6 +39,16 @@ const CATALOG_TAB_ICONS: Record<string, React.ElementType> = {
   "occupational-therapy": Brain,
   "imaging": Crosshair,
   "lab-diagnostics": FlaskConical,
+};
+
+// Maps ServiceCatalogSlug → exact service_categories.name value in DB
+const CATEGORY_NAME_MAP: Partial<Record<string, string>> = {
+  "medical-visits":       "خدمات طبية منزلية",
+  "nursing-care":         "رعاية تمريضية منزلية",
+  "physical-therapy":     "العلاج الطبيعي",
+  "occupational-therapy": "العلاج الوظيفي",
+  "imaging":              "أشعة منزلية",
+  // "lab-diagnostics" handled by source === "lab" branch
 };
 
 // ---------------------------------------------------------------------------
@@ -339,6 +349,16 @@ function ReviewDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
 
+  // Sync form fields when dialog opens or auth state changes
+  useEffect(() => {
+    if (isOpen) {
+      setName(isAuthenticated && patient ? (patient.full_name ?? "") : "");
+      setPhone(isAuthenticated && patient ? (patient.phone ?? "") : "");
+      setAddress(isAuthenticated && patient ? (patient.address ?? "") : "");
+      setSuccessId(null);
+    }
+  }, [isOpen, isAuthenticated, patient]);
+
   function buildNotes(): string {
     const lines = Array.from(selectedServices.values()).map(({ name: n }) => `• ${n}`);
     return (isAr ? "الخدمات المطلوبة:\n" : "Requested services:\n") + lines.join("\n");
@@ -354,26 +374,17 @@ function ReviewDialog({
     try {
       const notes = buildNotes();
 
-      let result;
-      if (isAuthenticated && patient) {
-        result = await requestsApi.create({
-          request_type: "PATIENT",
-          patient_id: patient.id,
-          service_type: "MEDICAL",
-          service_id: firstServiceId,
-          notes,
-        });
-      } else {
-        result = await requestsApi.createPublic({
-          request_type: "GUEST",
-          guest_name: name,
-          guest_phone: phone,
-          guest_address: address,
-          service_type: "MEDICAL",
-          service_id: firstServiceId,
-          notes,
-        });
-      }
+      // Always use public (guest) flow to avoid auth redirect issues.
+      // Admin receives all requests and can link to patient account manually.
+      const result = await requestsApi.createPublic({
+        request_type: "GUEST",
+        guest_name: name.trim(),
+        guest_phone: phone.trim(),
+        guest_address: address.trim(),
+        service_type: "MEDICAL",
+        service_id: firstServiceId,
+        notes,
+      });
 
       const requestId = result.data?.request?.id ?? "submitted";
       setSuccessId(requestId);
@@ -450,11 +461,7 @@ function ReviewDialog({
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                readOnly={isAuthenticated && !!patient}
-                className={cn(
-                  "w-full rounded-xl border bg-background px-3 py-2 text-sm",
-                  isAuthenticated && patient ? "opacity-60" : "",
-                )}
+                className="w-full rounded-xl border bg-background px-3 py-2 text-sm"
                 placeholder={isAr ? "الاسم الكامل" : "Full name"}
               />
             </div>
@@ -541,11 +548,22 @@ export function ServiceCatalogBuilder({ initialSlug, locale }: ServiceCatalogBui
       }
 
       const response = await servicesApi.listPublic({
-        limit: 100,
+        limit: 200,
         service_kind: activeTab.serviceKind === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL",
       });
-      const items = normalizeListResponse(response.data).data;
-      return normalizeServiceEntries(items);
+      const allItems = normalizeListResponse(response.data).data as ServiceItem[];
+
+      // Client-side filter by DB category name
+      const categoryNameFilter = CATEGORY_NAME_MAP[activeSlug];
+      const filtered = categoryNameFilter
+        ? allItems.filter((s) => s.category_name === categoryNameFilter)
+        : allItems;
+
+      return filtered.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description ?? null,
+      }));
     },
     staleTime: 10 * 60 * 1000,
   });
