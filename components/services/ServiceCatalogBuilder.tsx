@@ -509,14 +509,6 @@ function ReviewDialog({
 // ServiceCatalogBuilder (main export)
 // ---------------------------------------------------------------------------
 
-function normalizeServiceEntries(items: ServiceItem[]): CatalogEntry[] {
-  return items.map((item) => ({
-    id: item.id,
-    name: item.name,
-    description: item.description ?? null,
-  }));
-}
-
 function normalizeLabPanelEntries(items: LabPanelItem[], locale: string): CatalogEntry[] {
   return items.map((item) => ({
     id: item.id,
