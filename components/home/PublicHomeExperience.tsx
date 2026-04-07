@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { gsap } from "gsap";
@@ -8,21 +8,19 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import {
-  ArrowUpRight,
+  Activity,
+  Brain,
   CheckCircle2,
   Crosshair,
   FlaskConical,
+  Heart,
   Home,
   Package2,
   Shield,
   Stethoscope,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/lib/stores/auth.store";
 import {
-  buildAuthRedirectHref,
-  buildNewRequestHref,
   fetchPublicServiceCounts,
   PUBLIC_SERVICE_CATEGORIES,
 } from "@/lib/public-service-categories";
@@ -32,19 +30,20 @@ const categoryIcons = {
   imaging: Crosshair,
   labDiagnostics: FlaskConical,
   carePrograms: Package2,
+  nursingCare: Heart,
+  physicalTherapy: Activity,
+  occupationalTherapy: Brain,
 } as const;
 
 export function PublicHomeExperience() {
   const locale = useLocale();
   const t = useTranslations("homeExperience");
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const prefersReducedMotion = useReducedMotion();
   const isArabic = locale === "ar";
   const rtlBidiStyle = isArabic ? ({ unicodeBidi: "plaintext" } as const) : undefined;
   const displayFontClass = "font-editorial-display font-[family-name:var(--font-cormorant)]";
 
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const servicesRef = useRef<HTMLElement | null>(null);
   const workflowRef = useRef<HTMLElement | null>(null);
 
   const countsQuery = useQuery({
@@ -53,14 +52,6 @@ export function PublicHomeExperience() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const totalCatalogCount = useMemo(() => {
-    if (!countsQuery.data) return 0;
-    return Object.values(countsQuery.data).reduce((sum, value) => sum + Number(value || 0), 0);
-  }, [countsQuery.data]);
-
-  const readyHref = isAuthenticated
-    ? buildNewRequestHref(locale, { serviceType: "MEDICAL" })
-    : buildAuthRedirectHref(locale, { serviceType: "MEDICAL" });
 
   useLayoutEffect(() => {
     if (typeof window === "undefined" || prefersReducedMotion) return undefined;
@@ -76,8 +67,6 @@ export function PublicHomeExperience() {
         .from("[data-hero-title-line]", { yPercent: 100, autoAlpha: 0, stagger: 0.12 }, "-=0.55")
         .from("[data-hero-copy]", { y: 30, autoAlpha: 0 }, "-=0.55")
         .from("[data-hero-marquee]", { y: 18, autoAlpha: 0 }, "-=0.45")
-        .from("[data-hero-actions] > *", { y: 18, autoAlpha: 0, stagger: 0.1 }, "-=0.45")
-        .from("[data-hero-metric]", { y: 18, autoAlpha: 0, stagger: 0.08 }, "-=0.45")
         .from("[data-hero-panel]", { y: 32, autoAlpha: 0, scale: 0.96, stagger: 0.12 }, "-=0.65");
 
       gsap.to("[data-hero-panel]", {
@@ -115,29 +104,6 @@ export function PublicHomeExperience() {
         },
       });
 
-      gsap.from("[data-service-intro]", {
-        y: 36,
-        autoAlpha: 0,
-        duration: 0.95,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: servicesRef.current,
-          start: "top 80%",
-        },
-      });
-
-      gsap.from("[data-service-card]", {
-        y: 62,
-        autoAlpha: 0,
-        scale: 0.94,
-        stagger: 0.14,
-        duration: 1.05,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: servicesRef.current,
-          start: "top 74%",
-        },
-      });
 
       gsap.from("[data-story-intro]", {
         y: 40,
@@ -349,36 +315,6 @@ export function PublicHomeExperience() {
     </div>
   );
 
-  const serviceBackdropOrbs = [
-    {
-      key: "orb-left-top",
-      className: "left-[4%] top-20 h-28 w-28 sm:h-32 sm:w-32",
-      motionClass: "perf-drift-slow",
-      shadow: "0 0 0 1px rgba(255,255,255,0.88), 0 22px 56px -30px rgba(16,77,73,0.18), inset 0 0 0 1px rgba(255,255,255,0.28)",
-      innerShadow: "0 0 0 1px rgba(255,255,255,0.44)",
-    },
-    {
-      key: "orb-left-center",
-      className: "left-[11%] top-[42%] h-36 w-36 sm:h-40 sm:w-40",
-      motionClass: "perf-drift-reverse",
-      shadow: "0 0 0 1px rgba(255,255,255,0.8), 0 30px 74px -38px rgba(90,122,80,0.28), inset 0 0 0 1px rgba(255,255,255,0.24)",
-      innerShadow: "0 0 0 1px rgba(134,171,98,0.28)",
-    },
-    {
-      key: "orb-right-top",
-      className: "right-[7%] top-16 h-32 w-32 sm:h-36 sm:w-36",
-      motionClass: "perf-drift-slow",
-      shadow: "0 0 0 1px rgba(255,255,255,0.86), 0 24px 60px -34px rgba(16,77,73,0.2), inset 0 0 0 1px rgba(255,255,255,0.26)",
-      innerShadow: "0 0 0 1px rgba(255,255,255,0.4)",
-    },
-    {
-      key: "orb-right-bottom",
-      className: "right-[13%] bottom-14 h-40 w-40 sm:h-44 sm:w-44",
-      motionClass: "perf-drift-reverse",
-      shadow: "0 0 0 1px rgba(255,255,255,0.78), 0 32px 78px -40px rgba(134,171,98,0.3), inset 0 0 0 1px rgba(255,255,255,0.22)",
-      innerShadow: "0 0 0 1px rgba(134,171,98,0.24)",
-    },
-  ] as const;
 
   const workflowSteps = [
     {
@@ -439,10 +375,6 @@ export function PublicHomeExperience() {
     },
   ];
 
-  const scrollToSection = (target: "services" | "workflow") => {
-    const element = target === "services" ? servicesRef.current : workflowRef.current;
-    element?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
 
   return (
     <div ref={rootRef} className="overflow-hidden bg-[#f5f8f6] text-slate-950">
@@ -549,66 +481,14 @@ export function PublicHomeExperience() {
               </div>
 
               <div data-hero-actions className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <Button
-                  type="button"
-                  className="min-h-12 w-full rounded-full bg-[#104d49] px-6 text-sm font-semibold text-white hover:bg-[#304a43] sm:w-auto"
-                  onClick={() => scrollToSection("services")}
-                >
-                  {t("hero.primaryCta")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-12 w-full rounded-full border-[#104d49]/15 bg-white/75 px-6 text-sm font-semibold text-[#104d49] hover:bg-white sm:w-auto"
-                  onClick={() => scrollToSection("workflow")}
+                <Link
+                  href={`/${locale}/register`}
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#104d49] px-6 text-sm font-semibold text-white transition hover:bg-[#304a43] hover:shadow-[0_8px_32px_-8px_rgba(16,77,73,0.4)] sm:w-auto"
                 >
                   {t("hero.secondaryCta")}
-                </Button>
-                <Link
-                  href={readyHref}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-2 text-sm font-semibold text-[#104d49] transition hover:text-[#304a43] sm:justify-start"
-                >
-                  {t("hero.readyLink")}
-                  <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </div>
 
-              <div className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 lg:grid-cols-3">
-                <div
-                  data-hero-metric
-                  className="rounded-[1.6rem] border border-white/70 bg-white/92 p-4 shadow-[0_24px_60px_-42px_rgba(15,79,72,0.35)]"
-                >
-                  <div className={cn("text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.26em]")}>
-                    {t("hero.metrics.catalogLabel")}
-                  </div>
-                  <div className="mt-3 text-3xl font-semibold text-[#104d49]">
-                    {countsQuery.data ? totalCatalogCount.toLocaleString(locale) : "--"}
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-[#304a43]">{t("hero.metrics.catalogCopy")}</p>
-                </div>
-                <div
-                  data-hero-metric
-                  className="rounded-[1.6rem] border border-white/70 bg-white/92 p-4 shadow-[0_24px_60px_-42px_rgba(15,79,72,0.35)]"
-                >
-                  <div className={cn("text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.26em]")}>
-                    {t("hero.metrics.streamsLabel")}
-                  </div>
-                  <div className="mt-3 text-3xl font-semibold text-[#104d49]">4</div>
-                  <p className="mt-2 text-sm leading-6 text-[#304a43]">{t("hero.metrics.streamsCopy")}</p>
-                </div>
-                <div
-                  data-hero-metric
-                  className="rounded-[1.6rem] border border-white/70 bg-white/92 p-4 shadow-[0_24px_60px_-42px_rgba(15,79,72,0.35)]"
-                >
-                  <div className={cn("text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.26em]")}>
-                    {t("hero.metrics.followupLabel")}
-                  </div>
-                  <div className="mt-3 text-3xl font-semibold text-[#104d49]">
-                    {t("hero.metrics.followupValue")}
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-[#304a43]">{t("hero.metrics.followupCopy")}</p>
-                </div>
-              </div>
             </div>
 
             <div className="relative mx-auto min-h-0 w-full max-w-xl lg:max-w-none lg:min-h-[30rem]">
@@ -673,169 +553,6 @@ export function PublicHomeExperience() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="services" ref={servicesRef} className="relative isolate overflow-hidden border-y border-[#d9e6df] bg-[#fbfcfa]">
-        <div className="absolute inset-x-0 top-0 h-px bg-white" />
-        <div className="absolute inset-y-0 right-0 w-1/3 bg-[radial-gradient(circle_at_top_right,rgba(134,171,98,0.11),transparent_42%)]" />
-        <div className="perf-drift-slow pointer-events-none absolute left-[-8rem] top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(16,77,73,0.11)_0%,rgba(16,77,73,0.03)_38%,transparent_70%)]" />
-        <div className="perf-drift-reverse pointer-events-none absolute bottom-[-7rem] right-[-5rem] h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(134,171,98,0.12)_0%,rgba(134,171,98,0.03)_40%,transparent_72%)]" />
-        {serviceBackdropOrbs.map((orb) => (
-          <div
-            key={orb.key}
-            className={cn(
-              orb.motionClass,
-              "pointer-events-none absolute rounded-full border border-white/90 opacity-95",
-              orb.className,
-            )}
-            style={{ boxShadow: orb.shadow }}
-          >
-            <span
-              aria-hidden="true"
-              className="absolute inset-[12%] rounded-full border border-white/45"
-              style={{ boxShadow: orb.innerShadow }}
-            />
-          </div>
-        ))}
-
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-          <div data-service-intro className="max-w-3xl">
-            <div className={cn("text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.08em]" : "uppercase tracking-[0.32em]")}>
-              {t("categories.eyebrow")}
-            </div>
-            <h2 className={cn("font-editorial-display mt-4 text-[clamp(2.3rem,6vw,4.1rem)] leading-[0.92] text-[#104d49]", displayFontClass)}>
-              {t("categories.title")}
-            </h2>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-[#304a43] sm:text-lg">
-              {t("categories.copy")}
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 2xl:grid-cols-4">
-            {categoryCards.map((card, index) => (
-              <motion.article
-                key={card.slug}
-                data-service-card
-                whileHover={
-                  prefersReducedMotion
-                    ? undefined
-                    : {
-                        y: -14,
-                        rotateX: 3,
-                        rotateY: isArabic ? -5 : 5,
-                      }
-                }
-                transition={{ type: "spring", stiffness: 210, damping: 18, mass: 0.7 }}
-                className="h-full transform-gpu [perspective:1200px]"
-              >
-                <Link
-                  href={card.href}
-                  className="group relative flex h-full min-h-[22rem] transform-gpu flex-col overflow-hidden rounded-[2rem] border border-white bg-white p-5 shadow-[0_34px_80px_-52px_rgba(15,79,72,0.34)] transition-[box-shadow,transform] duration-500 hover:shadow-[0_42px_110px_-52px_rgba(15,79,72,0.42)]"
-                  style={{
-                    background: `linear-gradient(180deg, ${card.theme.soft} 0%, #ffffff 54%, #ffffff 100%)`,
-                    boxShadow: `0 34px 80px -52px ${card.theme.shadow}`,
-                  }}
-                >
-                  <div className="pointer-events-none absolute inset-0">
-                    <div
-                      className={cn(
-                        "absolute top-8 h-28 w-28 rounded-full opacity-0 transition-[opacity,transform] duration-500 group-hover:opacity-100",
-                        isArabic ? "-left-12 -translate-x-6 group-hover:translate-x-0" : "-right-12 translate-x-6 group-hover:translate-x-0",
-                      )}
-                      style={{ backgroundColor: `${card.theme.accent}26` }}
-                    />
-                    <div
-                      className="absolute inset-x-5 top-0 h-20 translate-y-[-30%] opacity-0 transition-[opacity,transform] duration-500 group-hover:translate-y-0 group-hover:opacity-100"
-                      style={{ background: `radial-gradient(circle, ${card.theme.accent}22 0%, transparent 72%)` }}
-                    />
-                    <div className="absolute inset-x-5 bottom-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                    <div className="absolute inset-y-0 left-0 w-1 scale-y-0 rounded-full transition-transform duration-500 group-hover:scale-y-100" style={{ backgroundColor: card.theme.base }} />
-                  </div>
-
-                  <div className="relative z-10 flex items-start justify-between gap-4">
-                    <div
-                      className="flex h-14 w-14 items-center justify-center rounded-[1.2rem] text-white shadow-[0_20px_50px_-30px_rgba(0,0,0,0.25)] transition-transform duration-500 group-hover:-translate-y-1 group-hover:rotate-3"
-                      style={{
-                        background: `linear-gradient(145deg, ${card.theme.base} 0%, ${card.theme.secondary} 100%)`,
-                      }}
-                    >
-                      <card.Icon className="h-6 w-6" />
-                    </div>
-                    <div
-                      className={cn(
-                        "rounded-full px-3 py-1 text-[0.72rem] font-semibold",
-                        isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.2em]",
-                      )}
-                      style={{
-                        color: card.theme.base,
-                        backgroundColor: `${card.theme.accent}20`,
-                      }}
-                    >
-                      {t(`categories.${card.translationKey}.eyebrow`)}
-                    </div>
-                  </div>
-
-                  <div className="relative z-10 mt-8">
-                    <div
-                      className={cn("text-sm font-semibold", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.22em]")}
-                      style={{ color: card.theme.muted }}
-                    >
-                      {card.countLabel}
-                    </div>
-                    <h3 className="mt-3 text-2xl font-semibold leading-tight text-[#104d49]">
-                      {t(`categories.${card.translationKey}.title`)}
-                    </h3>
-                    <p className="mt-4 text-sm leading-7 text-[#304a43]">
-                      {t(`categories.${card.translationKey}.summary`)}
-                    </p>
-                  </div>
-
-                  <div className="relative z-10 mt-7 flex items-center justify-between gap-3 rounded-[1.2rem] border border-[#104d49]/8 bg-white/70 px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="perf-pulse-ring relative h-2.5 w-2.5 rounded-full" style={{ backgroundColor: card.theme.accent }} />
-                      <span className="text-sm font-semibold text-[#104d49]">
-                        {typeof countsQuery.data?.[card.translationKey] === "number"
-                          ? countsQuery.data[card.translationKey].toLocaleString(locale)
-                          : "--"}
-                      </span>
-                    </div>
-                    <div className="text-[0.72rem] font-semibold text-[#9c9fa2]">
-                      {String(index + 1).padStart(2, "0")}
-                    </div>
-                  </div>
-
-                  <div className="relative z-10 mt-auto pt-8">
-                    <div
-                      className="rounded-[1.4rem] border px-4 py-4 transition-transform duration-500 group-hover:-translate-y-1"
-                      style={{
-                        borderColor: `${card.theme.base}12`,
-                        backgroundColor: "rgba(255,255,255,0.72)",
-                      }}
-                    >
-                      <div
-                        className={cn("text-[0.72rem] font-semibold", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.22em]")}
-                        style={{ color: card.theme.muted }}
-                      >
-                        {t(`categories.${card.translationKey}.routeLabel`)}
-                      </div>
-                      <div className="mt-2 flex items-center justify-between gap-4 text-sm font-semibold" style={{ color: card.theme.base }}>
-                        <span>{t("categories.cardCta")}</span>
-                        <ArrowUpRight
-                          className={cn(
-                            "h-4 w-4 transition-transform duration-500",
-                            isArabic
-                              ? "group-hover:-translate-x-1 group-hover:-translate-y-0.5"
-                              : "group-hover:translate-x-1 group-hover:-translate-y-0.5",
-                          )}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.article>
-            ))}
           </div>
         </div>
       </section>

@@ -636,16 +636,17 @@
       "titleAccent": "absolute clarity.",
       "copy": "Curevie orchestrates the fragmented layers of home healthcare into a single, seamless narrative. From selection to digital closure, we ensure every clinical step is visible, coordinated, and calm.",
       "primaryCta": "Explore Care Paths",
-      "secondaryCta": "View the Workflow",
+      "secondaryCta": "Your Records, Your Health — We Care",
       "readyLink": "Defined Priority? Begin Your Request",
-      "metrics": {
-        "catalogLabel": "Clinical Catalog",
-        "catalogCopy": "A curated range of services and programs optimized for home delivery.",
-        "streamsLabel": "Clinical Lanes",
-        "streamsCopy": "Physician visits, precision diagnostics, and grouped care programs.",
-        "followupLabel": "Digital Closure",
-        "followupValue": "Record-ready",
-        "followupCopy": "Every clinical journey concludes with a comprehensive digital history."
+      "features": {
+        "speedTitle": "Fast Response",
+        "speedCopy": "Our medical team reaches you as quickly as possible, available around the clock.",
+        "qualityTitle": "Certified Professionals",
+        "qualityCopy": "Licensed physicians and health specialists with verified clinical expertise.",
+        "reportsTitle": "Instant Digital Reports",
+        "reportsCopy": "Every visit concludes with a comprehensive digital medical report kept securely.",
+        "homeTitle": "Care at Home",
+        "homeCopy": "Receive professional medical care without leaving home, with full privacy standards."
       },
       "board": {
         "eyebrow": "Clinical Dispatch",
@@ -668,7 +669,7 @@
       }
     },
     "categories": {
-      "eyebrow": "Four Specialized Clinical Lanes",
+      "eyebrow": "Specialized Care Paths",
       "title": "Select the care path that matches your needs.",
       "copy": "Healthcare should not be a puzzle. We have organized our expertise into distinct lanes, ensuring your journey starts with the correct medical context and moves without noise.",
       "countLabel": "{count} active paths",
