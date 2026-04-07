@@ -540,7 +540,7 @@ export function ServiceCatalogBuilder({ initialSlug, locale }: ServiceCatalogBui
       }
 
       const response = await servicesApi.listPublic({
-        limit: 200,
+        limit: 100,
         service_kind: activeTab.serviceKind === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL",
       });
       const allItems = normalizeListResponse(response.data).data as ServiceItem[];
