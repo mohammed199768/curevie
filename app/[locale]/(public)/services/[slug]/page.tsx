@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ServiceCatalogBuilder } from "@/components/services/ServiceCatalogBuilder";
+import { PublicServiceCategoryExplorer } from "@/components/services/PublicServiceCategoryExplorer";
 import type { AppLocale } from "@/i18n";
-import { getPublicServiceCategory } from "@/lib/public-service-categories";
 import {
-  getServiceCatalogTab,
-  SERVICE_CATALOG_TABS,
-  type ServiceCatalogSlug,
-} from "@/lib/service-catalog-config";
+  getPublicServiceCategory,
+  PUBLIC_SERVICE_CATEGORIES,
+} from "@/lib/public-service-categories";
 import { buildPublicPageMetadata, getServicePageSeo } from "@/lib/seo";
 
 export const revalidate = 3600;
@@ -21,21 +19,14 @@ interface PublicServiceCategoryPageProps {
 }
 
 export function generateStaticParams() {
-  return SERVICE_CATALOG_TABS.map((tab) => ({ slug: tab.slug }));
+  return PUBLIC_SERVICE_CATEGORIES.map((category) => ({ slug: category.slug }));
 }
 
 export function generateMetadata({ params }: PublicServiceCategoryPageProps): Metadata {
   const category = getPublicServiceCategory(params.slug);
 
   if (!category) {
-    const tab = getServiceCatalogTab(params.slug);
-    if (!tab) return {};
-    return buildPublicPageMetadata({
-      locale: params.locale,
-      pathname: `/services/${params.slug}`,
-      title: params.locale === "ar" ? tab.hero.title.ar : tab.hero.title.en,
-      description: params.locale === "ar" ? tab.hero.summary.ar : tab.hero.summary.en,
-    });
+    return {};
   }
 
   const seo = getServicePageSeo(category.slug);
@@ -50,14 +41,13 @@ export function generateMetadata({ params }: PublicServiceCategoryPageProps): Me
 }
 
 export default function PublicServiceCategoryPage({ params }: PublicServiceCategoryPageProps) {
-  if (!getServiceCatalogTab(params.slug)) {
+  const category = getPublicServiceCategory(params.slug);
+
+  if (!category) {
     notFound();
   }
 
   return (
-    <ServiceCatalogBuilder
-      initialSlug={params.slug as ServiceCatalogSlug}
-      locale={params.locale}
-    />
+    <PublicServiceCategoryExplorer slug={category.slug} />
   );
 }
