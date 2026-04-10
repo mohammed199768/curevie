@@ -17,13 +17,27 @@ import { AppPreloader } from "@/components/shared/AppPreloader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requestsApi } from "@/lib/api/requests";
-import type { RequestItem, RequestStatus } from "@/lib/api/types";
+import { casesApi, type PatientCase } from "@/lib/api/cases";
+import type { RequestStatus } from "@/lib/api/types";
 import { translateEnumValue } from "@/lib/i18n";
 import { cn, formatDateTime, formatRelativeTime, normalizeListResponse } from "@/lib/utils";
 
 type FilterKey = "ALL" | "ACTIVE" | "PENDING" | "IN_PROGRESS" | "CLOSED";
 type Translator = (key: string, values?: Record<string, string | number>) => string;
+type NormalizedRequest = {
+  id: string;
+  status: RequestStatus;
+  created_at: string;
+  updated_at: string;
+  notes: string;
+  service_name: string;
+  service_type: "MEDICAL";
+  scheduled_at: string | null;
+  provider_name: string | null;
+  assigned_provider_id: string | null;
+  workflow_stage: null;
+  service_description: string;
+};
 
 const PAGE_SIZE = 8;
 const ACTIVE_STATUSES = new Set<RequestStatus>(["PENDING", "ACCEPTED", "ASSIGNED", "IN_PROGRESS", "COMPLETED"]);
@@ -91,6 +105,23 @@ function getRequestSurface(status?: string | null) {
   return REQUEST_SURFACES[String(status || "").toUpperCase()] || REQUEST_SURFACES.DEFAULT;
 }
 
+function normalizeCase(c: PatientCase): NormalizedRequest {
+  return {
+    id: c.id,
+    status: String(c.status || "PENDING") as RequestStatus,
+    created_at: c.created_at,
+    updated_at: c.updated_at ?? c.created_at,
+    notes: c.notes ?? "",
+    service_name: c.services?.[0]?.service_name ?? "",
+    service_type: "MEDICAL",
+    scheduled_at: c.appointments?.[0]?.scheduled_at ?? null,
+    provider_name: c.lead_provider_name ?? null,
+    assigned_provider_id: c.lead_provider_id ?? null,
+    workflow_stage: null,
+    service_description: c.services?.[0]?.service_description ?? "",
+  };
+}
+
 
 
 function RequestCard({
@@ -100,7 +131,7 @@ function RequestCard({
   tEnums,
   tPage,
 }: {
-  item: RequestItem;
+  item: NormalizedRequest;
   locale: string;
   prefersReducedMotion: boolean;
   tEnums: Translator;
@@ -219,10 +250,13 @@ export default function RequestsPage() {
 
   const query = useQuery({
     queryKey: ["patient-requests-dashboard"],
-    queryFn: async () =>
-      normalizeListResponse<RequestItem>(
-        (await requestsApi.list({ page: 1, limit: 100 })).data,
-      ),
+    queryFn: async () => {
+      const payload = normalizeListResponse<PatientCase>((await casesApi.list({ limit: 100 })).data);
+      return {
+        ...payload,
+        data: payload.data.map(normalizeCase),
+      };
+    },
     staleTime: 30_000,
   });
 

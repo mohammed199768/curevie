@@ -1,17 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import { FileText, Loader2, MapPin, MessageSquareMore, Navigation, Paperclip, Send, ShieldCheck, Stethoscope, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { requestsApi } from "@/lib/api/requests";
+import { casesApi } from "@/lib/api/cases";
 import type { RequestChatMessage, RequestStatus } from "@/lib/api/types";
 import { markRequestChatSeen } from "@/lib/request-chat-read-state";
 import { cn, formatRelativeTime } from "@/lib/utils";
@@ -24,12 +22,7 @@ interface PatientRequestChatProps {
 }
 
 const CHAT_VISIBLE_STATUSES: RequestStatus[] = ["IN_PROGRESS", "COMPLETED", "CLOSED"];
-const CHAT_SENDABLE_STATUSES: RequestStatus[] = ["IN_PROGRESS", "COMPLETED"];
 const LOCATION_LINK_REGEX = /https?:\/\/www\.google\.com\/maps\?q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i;
-
-function buildLocationMessage(label: string, latitude: number, longitude: number) {
-  return `${label}\nhttps://www.google.com/maps?q=${latitude},${longitude}`;
-}
 
 function extractLocationInfo(content: string | null) {
   if (!content) return null;
@@ -187,7 +180,6 @@ export default function PatientRequestChat({ requestId, requestStatus }: Patient
   const locale = useLocale();
   const t = useTranslations("requestDetail");
   const tCommon = useTranslations("common");
-  const queryClient = useQueryClient();
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const [messageText, setMessageText] = useState("");
@@ -195,32 +187,23 @@ export default function PatientRequestChat({ requestId, requestStatus }: Patient
   const [isSharingLocation, setIsSharingLocation] = useState(false);
 
   const chatAvailable = CHAT_VISIBLE_STATUSES.includes(requestStatus);
-  const canSend = CHAT_SENDABLE_STATUSES.includes(requestStatus);
+  const canSend = false;
 
-  const messagesQuery = useQuery({
-    queryKey: ["patient-request", requestId, "provider-patient-chat"],
-    queryFn: async () => (
-      await requestsApi.listChatMessages(requestId, "PROVIDER_PATIENT", { page: 1, limit: 50 })
-    ).data.data as RequestChatMessage[],
+  const roomsQuery = useQuery({
+    queryKey: ["patient-case", requestId, "chat-rooms"],
+    queryFn: async () => (await casesApi.getChatRooms(requestId)).data.data,
     enabled: chatAvailable,
-    refetchInterval: 5_000,
   });
 
-  const sendMutation = useMutation({
-    mutationFn: () =>
-      requestsApi.sendChatMessage(requestId, "PROVIDER_PATIENT", {
-        body: messageText.trim() || undefined,
-        file: file || undefined,
-      }),
-    onSuccess: async () => {
-      setMessageText("");
-      setFile(null);
-      await queryClient.invalidateQueries({ queryKey: ["patient-request", requestId, "provider-patient-chat"] });
-    },
-    onError: (error) => {
-      const message = axios.isAxiosError(error) ? error.response?.data?.message : null;
-      toast.error(message || t("chatSendError"));
-    },
+  const activeRoomId = roomsQuery.data?.[0]?.id || null;
+
+  const messagesQuery = useQuery({
+    queryKey: ["patient-case", requestId, activeRoomId, "provider-chat"],
+    queryFn: async () => (
+      await casesApi.getChatMessages(activeRoomId || "", { limit: 50 })
+    ).data.data as RequestChatMessage[],
+    enabled: chatAvailable && Boolean(activeRoomId),
+    refetchInterval: 5_000,
   });
 
   useEffect(() => {
@@ -237,49 +220,13 @@ export default function PatientRequestChat({ requestId, requestStatus }: Patient
   }, [messages, requestId]);
 
   const handleSubmit = () => {
-    if (!messageText.trim() && !file) return;
-    if (sendMutation.isPending || !canSend) return;
-    sendMutation.mutate();
+    void messageText;
+    void file;
   };
 
   const shareCurrentLocation = () => {
-    if (isSharingLocation || !canSend) return;
-
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      toast.error(t("chatLocationNotSupported"));
-      return;
-    }
-
-    setIsSharingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          await requestsApi.sendChatMessage(requestId, "PROVIDER_PATIENT", {
-            body: buildLocationMessage(
-              t("chatLocationMessagePrefix"),
-              position.coords.latitude,
-              position.coords.longitude,
-            ),
-          });
-          await queryClient.invalidateQueries({ queryKey: ["patient-request", requestId, "provider-patient-chat"] });
-          toast.success(t("chatLocationSent"));
-        } catch {
-          toast.error(t("chatLocationFailed"));
-        } finally {
-          setIsSharingLocation(false);
-        }
-      },
-      (error) => {
-        const denied = error.code === error.PERMISSION_DENIED;
-        toast.error(denied ? t("chatLocationPermissionDenied") : t("chatLocationFailed"));
-        setIsSharingLocation(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      },
-    );
+    void isSharingLocation;
+    setIsSharingLocation(false);
   };
 
   if (!chatAvailable) {
@@ -444,17 +391,13 @@ export default function PatientRequestChat({ requestId, requestStatus }: Patient
                 </label>
                 <Button
                   type="submit"
-                  disabled={sendMutation.isPending || (!messageText.trim() && !file)}
+                  disabled={!canSend || (!messageText.trim() && !file)}
                   className="min-h-11 rounded-full px-5"
                 >
-                  {sendMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      {t("chatSend")}
-                    </>
-                  )}
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    {t("chatSend")}
+                  </>
                 </Button>
               </div>
             </div>

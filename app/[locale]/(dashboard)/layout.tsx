@@ -114,7 +114,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     refetchInterval: isChatRoute ? false : UNREAD_CHAT_REFETCH_INTERVAL_MS,
     refetchIntervalInBackground: false,
     retry: shouldRetryDashboardQuery,
-    enabled: hydrated && isAuthenticated && Boolean(accessToken),
+    enabled: false,
   });
 
   useEffect(() => {
@@ -122,6 +122,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [notificationsQuery.data, setUnreadNotifications]);
 
   useEffect(() => {
+    if (!unreadChatQuery.data) return;
     const count = Number(unreadChatQuery.data || 0);
     setUnreadChat(count);
   }, [setUnreadChat, unreadChatQuery.data]);

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
-import { requestsApi } from "@/lib/api/requests";
+import { casesApi } from "@/lib/api/cases";
 
 interface ChatMediaDisplayProps {
   filePath: string;
@@ -44,8 +44,10 @@ export function ChatMediaDisplay({
       };
     }
 
-    if (isDirectMediaPath(filePath)) {
-      setUrl(filePath);
+    const resolvedUrl = isDirectMediaPath(filePath) ? filePath : casesApi.resolveMediaUrl(filePath);
+
+    if (resolvedUrl) {
+      setUrl(resolvedUrl);
       setLoading(false);
       return () => {
         cancelled = true;
@@ -54,12 +56,7 @@ export function ChatMediaDisplay({
 
     setLoading(true);
     setUrl(null);
-
-    requestsApi.getSecureChatMediaUrl(filePath, requestId).then((signedUrl) => {
-      if (cancelled) return;
-      setUrl(signedUrl);
-      setLoading(false);
-    });
+    setLoading(false);
 
     return () => {
       cancelled = true;

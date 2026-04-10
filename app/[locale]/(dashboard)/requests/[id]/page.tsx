@@ -27,10 +27,15 @@ import { useLocale, useTranslations } from "next-intl";
 import { useParams, useSearchParams } from "next/navigation";
 import { cultureApi } from "@/lib/api/culture";
 import type { CultureResult } from "@/lib/api/culture";
-import { requestsApi } from "@/lib/api/requests";
-import type { RequestLifecycleEvent, RequestProviderReport, RequestStatus } from "@/lib/api/types";
+import {
+  casesApi,
+  type PatientCase,
+  type PatientCaseAppointment,
+  type PatientCaseService,
+} from "@/lib/api/cases";
+import type { RequestDetails, RequestLifecycleEvent, RequestStatus } from "@/lib/api/types";
 import { translateEnumValue } from "@/lib/i18n";
-import { cn, formatDateTime, formatRelativeTime, normalizeListResponse, triggerBlobDownload } from "@/lib/utils";
+import { cn, formatDateTime, formatRelativeTime, triggerBlobDownload } from "@/lib/utils";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -125,6 +130,8 @@ const STATUS_CONFIG: Record<RequestStatus, StatusConfig> = {
 };
 
 const EVENT_TONE_MAP: Record<string, TimelineTone> = {
+  APPOINTMENT_SCHEDULED: "sky",
+  FOLLOW_UP_SCHEDULED: "sky",
   REQUEST_CHAT_MESSAGE_SENT: "sky",
   TASK_ASSIGNED: "sky",
   TASK_ACCEPTED: "sky",
@@ -143,6 +150,8 @@ const EVENT_TONE_MAP: Record<string, TimelineTone> = {
 };
 
 const EVENT_ICON_MAP: Record<string, LucideIcon> = {
+  APPOINTMENT_SCHEDULED: CalendarClock,
+  FOLLOW_UP_SCHEDULED: CalendarClock,
   REQUEST_CHAT_MESSAGE_SENT: MessageCircleMore,
   PAYMENT_RECORDED: CreditCard,
   PAYMENT_APPROVED: CreditCard,
@@ -213,6 +222,7 @@ function getEventStageKey(eventType: string, metadata: Record<string, unknown> |
   const nextStage = typeof metadata?.to_stage === "string" ? metadata.to_stage : null;
 
   if (eventType === "PACKAGE_TASKS_GENERATED") return "received";
+  if (eventType === "APPOINTMENT_SCHEDULED" || eventType === "FOLLOW_UP_SCHEDULED") return "assigned";
   if (eventType === "TASK_ASSIGNED" || eventType === "TASK_ACCEPTED") return "assigned";
   if (eventType === "STATUS_CHANGED") {
     return isRequestStatus(nextStatus) ? STATUS_CONFIG[nextStatus].stageKey : "received";
@@ -340,6 +350,100 @@ function PackageContentCard({
   );
 }
 
+function normalizeCase(caseItem: PatientCase): RequestDetails {
+  const firstService = caseItem.services?.[0] || null;
+  const firstAppointment = caseItem.appointments?.[0] || null;
+  const totalOriginalAmount = (caseItem.services || []).reduce((sum, service) => sum + Number(service.original_price || 0), 0);
+  const totalBundleAmount = (caseItem.services || []).reduce((sum, service) => sum + Number(service.bundle_price || 0), 0);
+  const completedAt =
+    caseItem.services
+      ?.map((service) => service.completed_at)
+      .filter((value): value is string => Boolean(value))
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || null;
+
+  return {
+    id: caseItem.id,
+    request_id: caseItem.id,
+    invoice_id: null,
+    request_type: "PATIENT",
+    patient_id: caseItem.patient_id,
+    guest_name: null,
+    guest_phone: null,
+    guest_address: null,
+    guest_gender: null,
+    guest_age: null,
+    service_type: caseItem.package_id ? "PACKAGE" : "MEDICAL",
+    service_id: firstService?.service_id || null,
+    lab_test_id: null,
+    lab_panel_id: null,
+    lab_package_id: null,
+    package_id: caseItem.package_id || null,
+    status: String(caseItem.status || "PENDING") as RequestStatus,
+    assigned_provider_id: caseItem.lead_provider_id || null,
+    notes: caseItem.notes || null,
+    admin_notes: null,
+    requested_at: caseItem.created_at,
+    scheduled_at: firstAppointment?.scheduled_at || null,
+    completed_at: completedAt,
+    created_at: caseItem.created_at,
+    updated_at: caseItem.updated_at || caseItem.created_at,
+    patient_name: caseItem.patient_name || null,
+    patient_phone: caseItem.patient_phone || null,
+    patient_email: null,
+    patient_address: null,
+    provider_name: caseItem.lead_provider_name || null,
+    provider_type: null,
+    service_name: firstService?.service_name || null,
+    service_price: firstService?.bundle_price ?? null,
+    service_description: firstService?.service_description || null,
+    service_category_name: null,
+    lab_panel_name: null,
+    lab_package_name: null,
+    workflow_stage: null,
+    workflow_updated_at: null,
+    lead_provider_id: caseItem.lead_provider_id || null,
+    final_report_confirmed_by: null,
+    final_report_confirmed_at: null,
+    original_amount: totalOriginalAmount,
+    final_amount: totalBundleAmount,
+    total_paid: 0,
+    remaining_amount: totalBundleAmount,
+    is_patient_visible: null,
+    in_progress_at: null,
+    closed_at: caseItem.closed_at || null,
+    collected_amount: null,
+    collected_method: null,
+    collected_at: null,
+    collected_notes: null,
+    lab_results: [],
+    package_tests: [],
+    package_services: (caseItem.services || []).map((service) => ({
+      service_id: service.service_id,
+      name: service.service_name || null,
+      service_kind: "MEDICAL",
+      category_name: null,
+    })),
+  };
+}
+
+function mapAppointmentToLifecycleEvent(caseId: string, appointment: PatientCaseAppointment): RequestLifecycleEvent {
+  return {
+    id: appointment.id,
+    request_id: caseId,
+    actor_id: null,
+    actor_role: "SYSTEM",
+    actor_name: null,
+    event_type: appointment.type === "INITIAL" ? "APPOINTMENT_SCHEDULED" : "FOLLOW_UP_SCHEDULED",
+    description: appointment.notes || null,
+    metadata: {
+      service_name: appointment.service_name,
+      appointment_type: appointment.type,
+    },
+    workflow_stage_snapshot: null,
+    created_at: appointment.scheduled_at,
+  };
+}
+
 export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -365,7 +469,7 @@ export default function RequestDetailPage() {
 
   const requestQuery = useQuery({
     queryKey: ["patient-request", requestId],
-    queryFn: async () => (await requestsApi.getById(requestId)).data,
+    queryFn: async () => (await casesApi.getById(requestId)).data,
     enabled: Boolean(requestId),
   });
 
@@ -373,30 +477,18 @@ export default function RequestDetailPage() {
     queryKey: ["patient-request", requestId, "report"],
     queryFn: async () => {
       try {
-        return (await requestsApi.getReport(requestId)).data;
+        return (await casesApi.getReport(requestId)).data;
       } catch {
         return null;
       }
     },
     enabled: Boolean(requestId),
   });
-
-  const lifecycleQuery = useQuery({
-    queryKey: ["patient-request", requestId, "lifecycle"],
-    queryFn: async () => {
-      const payload = (await requestsApi.listLifecycle(requestId, { page: 1, limit: 100 })).data;
-      return normalizeListResponse<RequestLifecycleEvent>(payload).data;
-    },
-    enabled: Boolean(requestId),
-  });
-
-  const providerReportsQuery = useQuery({
-    queryKey: ["patient-request", requestId, "provider-reports"],
-    queryFn: async () => (await requestsApi.listProviderReports(requestId)).data.data || [],
-    enabled: Boolean(requestId),
-  });
-
-  const request = requestQuery.data;
+  const currentCase = requestQuery.data;
+  const request = useMemo(
+    () => (currentCase ? normalizeCase(currentCase) : null),
+    [currentCase],
+  );
 
   const labResultsWithCultureQ = useQuery({
     queryKey: ["patient-request", requestId, "lab-culture-results"],
@@ -435,28 +527,33 @@ export default function RequestDetailPage() {
     return <p className="text-sm">{t("notFound")}</p>;
   }
 
-  const lifecycleEvents = lifecycleQuery.data || [];
+  const lifecycleEvents = currentCase
+    ? currentCase.appointments.map((appointment) => mapAppointmentToLifecycleEvent(currentCase.id, appointment))
+    : [];
   const chronologicalEvents = [...lifecycleEvents].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-  const providerReports = [...(providerReportsQuery.data || [])].sort((a: RequestProviderReport, b: RequestProviderReport) => {
+  const caseServices = [...(currentCase?.services || [])].sort((a: PatientCaseService, b: PatientCaseService) => {
     const aTime = new Date(a.updated_at || a.created_at).getTime();
     const bTime = new Date(b.updated_at || b.created_at).getTime();
     return bTime - aTime;
   });
   const isClosed = request.status === "CLOSED";
-  const hasOpenPdf = isClosed && Boolean(report?.pdf_url || openPdfUrl);
+  const hasOpenPdf = isClosed && Boolean(report || openPdfUrl);
   const progressIndex = getProgressIndex(request.status);
 
   const handleOpenPdf = async () => {
-    const storedPath = report?.pdf_url;
-    if (!storedPath || !isClosed) return;
+    if (!report || !isClosed) return;
 
     setLoadingPdfUrl(true);
     try {
-      const url = await requestsApi.getSecurePdfUrl(requestId, storedPath);
-      if (url) {
-        setOpenPdfUrl(url);
-        window.open(url, "_blank", "noopener,noreferrer");
-      }
+      const response = await casesApi.downloadReportPdf(requestId);
+      const url = URL.createObjectURL(response.data);
+      setOpenPdfUrl((currentUrl) => {
+        if (currentUrl) {
+          URL.revokeObjectURL(currentUrl);
+        }
+        return url;
+      });
+      window.open(url, "_blank", "noopener,noreferrer");
     } finally {
       setLoadingPdfUrl(false);
     }
@@ -519,6 +616,11 @@ export default function RequestDetailPage() {
     let stateLabel: string | null = null;
 
     switch (event.event_type) {
+      case "APPOINTMENT_SCHEDULED":
+      case "FOLLOW_UP_SCHEDULED":
+        title = t("timelineScheduled");
+        description = event.description || getMetadataString(event.metadata, "service_name") || t("timelineHints.assigned");
+        break;
       case "PACKAGE_TASKS_GENERATED":
         title = t("timelineEvents.packageTasksGeneratedTitle");
         description = t("timelineEvents.packageTasksGeneratedDescription");
@@ -1211,7 +1313,7 @@ export default function RequestDetailPage() {
                   disabled={!isClosed}
                   onClick={async () => {
                     try {
-                      const response = await requestsApi.downloadMedicalPdf(requestId);
+                      const response = await casesApi.downloadReportPdf(requestId);
                       triggerBlobDownload(response.data, `medical-report-${requestId.slice(0, 8)}.pdf`);
                     } catch {
                       toast.error(t("downloadError"));
@@ -1240,39 +1342,26 @@ export default function RequestDetailPage() {
               <CardTitle>{t("reportDetailsTitle")}</CardTitle>
             </CardHeader>
             <CardContent className={cn("space-y-4 text-sm", isRtl && "text-right")}>
-              {isClosed && providerReports.length ? (
-                providerReports.map((providerReport: RequestProviderReport) => (
-                  <div key={providerReport.id} className="rounded-lg border p-4">
+              {caseServices.length ? (
+                caseServices.map((service: PatientCaseService) => (
+                  <div key={service.id} className="rounded-lg border p-4">
                     <div className={cn("flex flex-wrap items-center justify-between gap-2", isRtl && "text-right")}>
                       <div>
-                        <p className="font-semibold">{providerReport.provider_name || t("providerFallback")}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {translateEnumValue(
-                            providerReport.service_type || providerReport.provider_type || providerReport.report_type,
-                            tEnums,
-                          )}
-                        </p>
+                        <p className="font-semibold">{service.service_name || t("serviceType")}</p>
+                        <p className="text-xs text-muted-foreground">{service.provider_name || t("providerFallback")}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <StatusBadge value={providerReport.report_type} />
-                        <StatusBadge value={providerReport.status} />
+                        <StatusBadge value={service.status} />
                       </div>
                     </div>
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
-                      <ReportField label={t("summary")} value={providerReport.symptoms_summary} />
-                      <ReportField label={t("findings")} value={providerReport.findings} />
-                      <ReportField label={t("diagnosis")} value={providerReport.diagnosis} />
-                      <ReportField label={t("treatmentPlan")} value={providerReport.treatment_plan} />
-                      <ReportField label={t("recommendations")} value={providerReport.recommendations} />
-                      <ReportField label={t("procedures")} value={providerReport.procedures_done || providerReport.procedures_performed} />
-                      <ReportField label={t("allergies")} value={providerReport.patient_allergies || providerReport.allergies_noted} />
-                      <ReportField label={t("labNotes")} value={providerReport.lab_notes} />
-                      <ReportField label={t("imagingNotes")} value={providerReport.imaging_notes} />
-                      <ReportField label={t("nurseNotes")} value={providerReport.nurse_notes} />
-                      <ReportField label={t("generalNotes")} value={providerReport.notes} />
+                      <ReportField label={t("serviceType")} value={service.service_name} />
+                      <ReportField label={t("assignedProvider")} value={service.provider_name || t("providerFallback")} />
+                      <ReportField label={tCommon("amount")} value={`${Number(service.bundle_price || 0).toFixed(2)} JD`} />
+                      <ReportField label={t("generalNotes")} value={service.notes || request.notes} />
                     </div>
                     <p className="mt-4 text-xs text-muted-foreground">
-                      {t("updatedAt")} {formatDateTime(providerReport.updated_at, "dd/MM/yyyy, HH:mm", locale)}
+                      {t("updatedAt")} {formatDateTime(service.updated_at || service.created_at, "dd/MM/yyyy, HH:mm", locale)}
                     </p>
                   </div>
                 ))

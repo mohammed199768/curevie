@@ -2,17 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { MapPin, Phone, ShieldCheck, Stethoscope, UserRound, Wallet } from "lucide-react";
+import { MapPin, Phone, ShieldCheck, Stethoscope, UserRound, Wallet, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { invoicesApi } from "@/lib/api/invoices";
+import { casesApi } from "@/lib/api/cases";
 import { labPackagesApi, labPanelsApi } from "@/lib/api/lab-panels";
 import { patientsApi } from "@/lib/api/patients";
-import { requestsApi } from "@/lib/api/requests";
 import { servicesApi } from "@/lib/api/services";
 import type {
-  CreateRequestPayload,
   LabPackageItem,
   LabPanelItem,
   PackageItem,
@@ -26,7 +24,6 @@ import { formatCurrency } from "@/lib/formatting";
 import { translateEnumValue } from "@/lib/i18n";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { normalizeListResponse } from "@/lib/utils";
-import { getApiError } from "@/lib/utils/apiError";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,25 +57,15 @@ type LabTestSummary = {
   display_reference_range?: string | null;
 };
 
-function isCreateRequestPayload(payload: Partial<CreateRequestPayload>): payload is CreateRequestPayload {
-  if (payload.request_type !== "PATIENT" && payload.request_type !== "GUEST") {
-    return false;
-  }
+type SelectedCaseService = {
+  id: string;
+  name: string;
+  description?: string | null;
+  price: number;
+  serviceType: "MEDICAL" | "RADIOLOGY";
+};
 
-  if (payload.service_type === "MEDICAL" || payload.service_type === "RADIOLOGY") {
-    return Boolean(payload.service_id);
-  }
-
-  if (payload.service_type === "PACKAGE") {
-    return Boolean(payload.package_id);
-  }
-
-  if (payload.service_type === "LAB") {
-    return Boolean(payload.lab_test_id || payload.lab_panel_id || payload.lab_package_id);
-  }
-
-  return false;
-}
+const MAX_CASE_SERVICES = 5;
 
 function getLocalizedValue<T extends { name?: string; name_en?: string; name_ar?: string; description?: string | null; description_en?: string | null; description_ar?: string | null }>(
   item: T | null | undefined,
@@ -165,15 +152,7 @@ export default function NewRequestPage() {
   const [overridePhone, setOverridePhone] = useState<string>("");
   const [overrideAddress, setOverrideAddress] = useState<string>("");
   const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [couponCode, setCouponCode] = useState("");
-  const [couponResult, setCouponResult] = useState<{
-    discount_amount: number;
-    final_amount: number;
-    discount_type: "PERCENTAGE" | "FIXED";
-    discount_value: number;
-  } | null>(null);
-  const [couponError, setCouponError] = useState<string | null>(null);
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<SelectedCaseService[]>([]);
 
   const servicesQuery = useQuery({
     queryKey: ["new-request", "services", serviceType],
@@ -321,17 +300,37 @@ export default function NewRequestPage() {
     [effectiveServiceId, options],
   );
   const selectedName = getLocalizedValue(selectedOption, locale, "name");
-  const selectedDescription = getLocalizedValue(selectedOption, locale, "description");
-  const selectedPrice = useMemo(() => {
-    const rawPrice = getOptionRawPrice(selectedOption);
-    if (rawPrice === null || rawPrice === undefined || rawPrice === "") return null;
-    const numericPrice = Number(rawPrice);
-    return Number.isFinite(numericPrice) ? numericPrice : null;
-  }, [selectedOption]);
-  const formattedPrice = useMemo(() => {
-    if (selectedPrice === null) return tPage("notProvided");
-    return formatCurrency(selectedPrice, locale);
-  }, [locale, selectedPrice, tPage]);
+  const selectedServiceIds = useMemo(
+    () => new Set(selectedServices.map((service) => service.id)),
+    [selectedServices],
+  );
+  const totalSelectedPrice = useMemo(
+    () => selectedServices.reduce((sum, service) => sum + Number(service.price || 0), 0),
+    [selectedServices],
+  );
+  const formattedTotalPrice = useMemo(
+    () => formatCurrency(totalSelectedPrice, locale),
+    [locale, totalSelectedPrice],
+  );
+  const effectivePhone = overridePhone || patientPhone;
+  const effectiveAddress = overrideAddress || patientAddress;
+  const compiledNotes = useMemo(
+    () => [
+      notes,
+      (overridePhone.trim() && overridePhone.trim() !== patientPhone)
+        ? `📞 رقم بديل: ${overridePhone.trim()}`
+        : "",
+      (overrideAddress.trim() && overrideAddress.trim() !== patientAddress)
+        ? `📍 عنوان بديل: ${overrideAddress.trim()}`
+        : "",
+    ].filter(Boolean).join("\n") || null,
+    [notes, overrideAddress, overridePhone, patientAddress, patientPhone],
+  );
+  const reviewServiceHeading = selectedServices[0]?.name || selectedName || tPage("notProvided");
+  const reviewServiceTypes = useMemo(
+    () => Array.from(new Set(selectedServices.map((service) => service.serviceType))),
+    [selectedServices],
+  );
 
   useEffect(() => {
     if (appliedPresetRef.current) return;
@@ -390,96 +389,88 @@ export default function NewRequestPage() {
     }
   }, [options, serviceId]);
 
-  const resetCouponState = () => {
-    setCouponCode("");
-    setCouponResult(null);
-    setCouponError(null);
-  };
-
   const handleReviewOpenChange = (open: boolean) => {
     setIsReviewOpen(open);
-    if (!open) {
-      resetCouponState();
-    }
   };
 
-  const handleValidateCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setCouponError(null);
-    setCouponResult(null);
-    setIsValidatingCoupon(true);
-    try {
-      const res = await invoicesApi.validateCoupon(couponCode, Number(selectedPrice) || 0);
-      setCouponResult({
-        discount_amount: Number(res.data.discount_amount) || 0,
-        final_amount: Number(res.data.final_amount) || 0,
-        discount_type: res.data.coupon.discount_type,
-        discount_value: Number(res.data.coupon.discount_value) || 0,
-      });
-    } catch (err) {
-      const { error } = getApiError(err);
-      setCouponError(error ?? "Invalid coupon code");
-    } finally {
-      setIsValidatingCoupon(false);
+  const addServicesToSelection = (servicesToAdd: SelectedCaseService[]) => {
+    if (!servicesToAdd.length) return;
+
+    setSelectedServices((current) => {
+      const next = [...current];
+
+      for (const service of servicesToAdd) {
+        if (next.some((item) => item.id === service.id)) continue;
+        if (next.length >= MAX_CASE_SERVICES) break;
+        next.push(service);
+      }
+
+      return next;
+    });
+  };
+
+  const buildSelectableServices = (option: ServiceOption | null): SelectedCaseService[] => {
+    if (!option) return [];
+
+    if ((serviceType === "MEDICAL" || serviceType === "RADIOLOGY") && "service_kind" in option) {
+      return [{
+        id: option.id,
+        name: getLocalizedValue(option, locale, "name") || "",
+        description: getLocalizedValue(option, locale, "description") || undefined,
+        price: Number(getOptionRawPrice(option) || 0),
+        serviceType: serviceType === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL",
+      }];
     }
+
+    if (serviceType === "PACKAGE" && "services" in option && Array.isArray(option.services)) {
+      return option.services.map((service) => ({
+        id: service.id,
+        name: service.name,
+        description: service.description || undefined,
+        price: Number(service.price || 0),
+        serviceType: service.service_kind === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL",
+      }));
+    }
+
+    return [];
+  };
+
+  const handleOptionSelect = (item: ServiceOption) => {
+    setServiceId(item.id);
+    addServicesToSelection(buildSelectableServices(item));
+  };
+
+  const removeSelectedService = (serviceIdToRemove: string) => {
+    setSelectedServices((current) => current.filter((service) => service.id !== serviceIdToRemove));
   };
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!effectiveServiceId) throw new Error(tPage("noServices"));
-      const trimmedOverridePhone = overridePhone.trim();
-      const payload: Partial<CreateRequestPayload> = {
-        request_type: "PATIENT",
-        patient_id: patient?.id,
-        service_type: serviceType,
-        notes: [
-          notes,
-          (trimmedOverridePhone && trimmedOverridePhone !== patientPhone)
-            ? `📞 رقم بديل: ${trimmedOverridePhone}`
-            : "",
-          (overrideAddress.trim() && overrideAddress.trim() !== patientAddress)
-            ? `📍 عنوان بديل: ${overrideAddress.trim()}`
-            : "",
-        ].filter(Boolean).join("\n") || null,
-      };
+      if (!selectedServices.length) throw new Error(tPage("noServices"));
 
-      if (serviceType === "MEDICAL" || serviceType === "RADIOLOGY") {
-        payload.service_id = effectiveServiceId;
-      }
-      if (serviceType === "PACKAGE") {
-        payload.service_type = "PACKAGE";
-        payload.package_id = effectiveServiceId;
-      }
-      if (serviceType === "LAB") {
-        payload.service_type = "LAB";
-        if (labMode === "PANEL") {
-          payload.lab_panel_id = effectiveServiceId;
-        } else {
-          payload.lab_package_id = effectiveServiceId;
-        }
-      }
+      const response = await casesApi.create({
+        services: selectedServices.slice(0, MAX_CASE_SERVICES).map((service) => ({
+          service_id: service.id,
+          original_price: Number(service.price || 0),
+          bundle_price: Number(service.price || 0),
+          notes: "",
+        })),
+        package_id: serviceType === "PACKAGE" ? selectedMedicalPackage?.id : undefined,
+        notes: compiledNotes || undefined,
+      });
 
-      if (couponResult && couponCode.trim()) {
-        payload.coupon_code = couponCode.toUpperCase().trim();
-      }
-
-      if (!isCreateRequestPayload(payload)) {
-        throw new Error(tPage("noServices"));
-      }
-
-      const response = await requestsApi.create(payload);
-      return response.data.request;
+      return response.data.case;
     },
-    onSuccess: (request) => {
+    onSuccess: () => {
       handleReviewOpenChange(false);
       toast.success(tPage("requestSubmitted"));
-      router.push(`/${locale}/requests/${request.id}`);
+      router.push(`/${locale}/requests`);
     },
     onError: () => toast.error(tCommon("error")),
   });
 
   const handleOpenReview = () => {
-    if (!effectiveServiceId || !selectedOption) {
+    if (!selectedServices.length) {
       toast.error(tPage("noServices"));
       return;
     }
@@ -600,8 +591,8 @@ export default function NewRequestPage() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setServiceId(item.id)}
-                  className={`rounded-2xl border p-3 text-left transition ${serviceId === item.id ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40"}`}
+                  onClick={() => handleOptionSelect(item)}
+                  className={`rounded-2xl border p-3 text-left transition ${(serviceId === item.id || selectedServiceIds.has(item.id)) ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40"}`}
                 >
                   <p className="font-semibold">{getLocalizedValue(item, locale, "name")}</p>
                   <p className="text-xs text-muted-foreground">{getLocalizedValue(item, locale, "description") || "-"}</p>
@@ -623,6 +614,25 @@ export default function NewRequestPage() {
               ))}
             </div>
           )}
+
+          {selectedServices.length ? (
+            <div className="flex flex-wrap gap-2">
+              {selectedServices.map((service) => (
+                <Badge key={service.id} className="gap-2 rounded-full px-3 py-1.5">
+                  <span>{service.name}</span>
+                  <span className="opacity-75">{formatCurrency(service.price, locale)}</span>
+                  <button
+                    type="button"
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/10"
+                    onClick={() => removeSelectedService(service.id)}
+                    aria-label={service.name}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          ) : null}
 
           {selectedLabPanel ? (
             <Card className="border-dashed border-emerald-200 bg-white/80">
@@ -735,7 +745,7 @@ export default function NewRequestPage() {
 
           <Textarea rows={4} placeholder={tPage("notesPlaceholder")} value={notes} onChange={(event) => setNotes(event.target.value)} />
 
-          <Button className="min-h-12 bg-primary hover:bg-primary/90" onClick={handleOpenReview} disabled={mutation.isPending || activeCatalogLoading || !options.length}>
+          <Button className="min-h-12 bg-primary hover:bg-primary/90" onClick={handleOpenReview} disabled={mutation.isPending || activeCatalogLoading || !selectedServices.length}>
             {mutation.isPending ? tBooking("submitting") : tPage("reviewBeforeSubmit")}
           </Button>
         </CardContent>
@@ -769,7 +779,7 @@ export default function NewRequestPage() {
 
               <div className="w-full self-start rounded-[1.4rem] border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-sm sm:w-auto">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-emerald-50/65">{tCommon("amount")}</p>
-                <p className="mt-1 text-2xl font-semibold text-white">{formattedPrice}</p>
+                <p className="mt-1 text-2xl font-semibold text-white">{formattedTotalPrice}</p>
               </div>
             </div>
           </div>
@@ -798,7 +808,7 @@ export default function NewRequestPage() {
                       <Phone className="mt-0.5 h-4 w-4 text-[#14514b]" />
                       <div className="min-w-0">
                         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7a8f89]">{tPage("phoneLabel")}</p>
-                        <p className="mt-2 text-sm font-medium text-slate-900">{patientPhone || tPage("notProvided")}</p>
+                        <p className="mt-2 text-sm font-medium text-slate-900">{effectivePhone || tPage("notProvided")}</p>
                       </div>
                     </div>
                   </div>
@@ -808,7 +818,7 @@ export default function NewRequestPage() {
                       <MapPin className="mt-0.5 h-4 w-4 text-[#14514b]" />
                       <div className="min-w-0">
                         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7a8f89]">{tPage("addressLabel")}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-900">{patientAddress || tPage("notProvided")}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-900">{effectiveAddress || tPage("notProvided")}</p>
                       </div>
                     </div>
                   </div>
@@ -822,25 +832,36 @@ export default function NewRequestPage() {
                   </div>
                   <div>
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[#7a8f89]">{tPage("serviceCardTitle")}</p>
-                    <h3 className="text-lg font-semibold text-slate-900">{selectedName || tPage("notProvided")}</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">{reviewServiceHeading}</h3>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div className="rounded-2xl bg-[#f3faf7] p-4">
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7a8f89]">{tPage("selectedServiceLabel")}</p>
-                    <p className="mt-2 text-sm font-medium text-slate-900">{selectedName || tPage("notProvided")}</p>
-                    {selectedDescription ? (
-                      <p className="mt-2 text-sm leading-6 text-slate-600">{selectedDescription}</p>
-                    ) : null}
+                    <div className="mt-2 space-y-2">
+                      {selectedServices.map((service) => (
+                        <div key={service.id} className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-900">{service.name}</p>
+                            {service.description ? (
+                              <p className="mt-1 text-sm leading-6 text-slate-600">{service.description}</p>
+                            ) : null}
+                          </div>
+                          <p className="shrink-0 text-sm font-semibold text-slate-900">{formatCurrency(service.price, locale)}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="rounded-2xl bg-[#f3faf7] p-4">
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7a8f89]">{tPage("serviceTypeLabel")}</p>
-                    <div className="mt-2">
-                      <Badge className="rounded-full bg-[#14514b] px-3 py-1 text-white hover:bg-[#14514b]">
-                        {translateEnumValue(serviceType, tEnums)}
-                      </Badge>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {reviewServiceTypes.map((type) => (
+                        <Badge key={type} className="rounded-full bg-[#14514b] px-3 py-1 text-white hover:bg-[#14514b]">
+                          {translateEnumValue(type, tEnums)}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
 
@@ -849,66 +870,14 @@ export default function NewRequestPage() {
                       <Wallet className="mt-0.5 h-4 w-4 text-[#14514b]" />
                       <div className="min-w-0">
                         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7a8f89]">{tPage("priceLabel")}</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-900">{formattedPrice}</p>
+                        <p className="mt-2 text-lg font-semibold text-slate-900">{formattedTotalPrice}</p>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="mt-3 rounded-2xl border border-dashed border-[#14514b]/30 p-4">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#7a8f89]">Have a coupon?</p>
-
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Input
-                        type="text"
-                        value={couponCode}
-                        onChange={(event) => {
-                          setCouponCode(event.target.value.toUpperCase());
-                          setCouponResult(null);
-                          setCouponError(null);
-                        }}
-                        placeholder="Enter discount code"
-                        className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm uppercase tracking-wider focus:border-[#14514b] focus:outline-none disabled:opacity-50"
-                        disabled={isValidatingCoupon || mutation.isPending}
-                      />
-                      <Button
-                        type="button"
-                        onClick={handleValidateCoupon}
-                        disabled={!couponCode.trim() || isValidatingCoupon || mutation.isPending}
-                        className="min-h-11 rounded-xl bg-[#14514b] px-4 py-2 text-sm text-white transition-colors hover:bg-[#103e3a] disabled:opacity-40 sm:min-h-0"
-                      >
-                        {isValidatingCoupon ? "..." : "Verify"}
-                      </Button>
-                    </div>
-
-                    {couponError ? (
-                      <p className="mt-2 text-xs text-red-500">{couponError}</p>
-                    ) : null}
-
-                    {couponResult ? (
-                      <div className="mt-3 space-y-1.5 rounded-xl bg-[#14514b]/5 p-3">
-                        <div className="flex justify-between text-sm text-slate-500">
-                          <span>Original price</span>
-                          <span className="line-through">{Number(selectedPrice).toFixed(2)} JD</span>
-                        </div>
-                        <div className="flex justify-between text-sm font-medium text-green-600">
-                          <span>
-                            {couponResult.discount_type === "PERCENTAGE"
-                              ? `Discount (${couponResult.discount_value}%)`
-                              : "Discount"}
-                          </span>
-                          <span>- {couponResult.discount_amount.toFixed(2)} JD</span>
-                        </div>
-                        <div className="flex justify-between border-t border-slate-200 pt-1.5 text-base font-semibold text-[#14514b]">
-                          <span>Final amount</span>
-                          <span>{couponResult.final_amount.toFixed(2)} JD</span>
-                        </div>
-                      </div>
-                    ) : null}
                   </div>
 
                   <div className="rounded-2xl bg-[#f3faf7] p-4">
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-[#7a8f89]">{tPage("notesLabel")}</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-700">{notes.trim() || tPage("notProvided")}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{compiledNotes || tPage("notProvided")}</p>
                   </div>
                 </div>
               </section>
