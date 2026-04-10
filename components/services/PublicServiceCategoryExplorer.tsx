@@ -15,7 +15,6 @@ import {
   Package2,
   Plus,
   Search,
-  ShieldCheck,
   Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,9 +64,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const eyebrowClass = isArabic
     ? "text-xs font-medium normal-case tracking-normal"
     : "text-[0.72rem] font-semibold uppercase tracking-[0.24em]";
-  const detailLabelClass = isArabic
-    ? "text-xs font-medium normal-case tracking-normal"
-    : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]";
   const heroBadgeClass = isArabic
     ? "text-xs font-medium normal-case tracking-normal"
     : "text-xs font-semibold uppercase tracking-[0.3em]";
@@ -406,9 +402,19 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-600">{t("empty.copy")}</p>
           </section>
         ) : (
-          <section data-catalog-grid className="mt-8 grid gap-5 lg:grid-cols-2">
+          <section data-catalog-grid className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {filteredEntries.map((entry) => {
               const isSelected = selectedEntryIds.has(entry.id);
+              const typeLabel = entry.type === "service"
+                ? translateEnumValue(entry.serviceKind, tEnums)
+                : entry.type === "panel"
+                  ? tNewRequest("labPanel")
+                  : entry.type === "lab"
+                    ? t("labels.labTest")
+                    : entry.packageScope === "LAB_ONLY"
+                      ? tNewRequest("labPackage")
+                      : t("labels.comprehensiveBundle");
+
               return (
                 <motion.article
                   key={entry.id}
@@ -419,187 +425,71 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   className="h-full cursor-pointer"
                 >
                   <div
-                    className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white bg-white"
+                    className="relative flex h-full min-h-[180px] flex-col overflow-hidden rounded-2xl border border-white bg-white"
                     style={{
-                      background: `linear-gradient(180deg, ${category.theme.soft} 0%, #ffffff 44%, #ffffff 100%)`,
-                      boxShadow: `0 30px 82px -58px ${category.theme.shadow}`,
+                      background: "rgba(255, 255, 255, 0.96)",
+                      boxShadow: `0 24px 60px -48px ${category.theme.shadow}`,
                       outline: isSelected ? `2px solid ${category.theme.base}` : "none",
                       outlineOffset: isSelected ? "-2px" : "0px",
                     }}
                   >
-                    {isSelected ? (
-                      <div
-                        className="absolute end-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-lg"
-                        style={{ backgroundColor: category.theme.base }}
-                      >
-                        <Check className="h-4 w-4" />
-                      </div>
-                    ) : null}
-
-                    <div className="flex items-start justify-between gap-4 px-5 pb-4 pt-5 pe-16">
-                      <div>
-                        <div className={cn(detailLabelClass)} style={{ color: category.theme.muted }}>
-                          {entry.categoryName || t("labels.curatedForHome")}
+                    <div className="relative flex h-full flex-col gap-2 p-3">
+                      {isSelected ? (
+                        <div
+                          className="absolute start-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-white"
+                          style={{ backgroundColor: category.theme.base }}
+                        >
+                          <Check className="h-3.5 w-3.5" />
                         </div>
-                        <h3 className="mt-3 text-2xl font-semibold leading-tight text-[#12312d]">{entry.name}</h3>
+                      ) : null}
+
+                      <div className="flex items-center justify-between gap-2 ps-8">
+                        <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                          {entry.categoryName || t("labels.curatedForHome")}
+                        </span>
+                        <span
+                          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
+                          style={{ backgroundColor: category.theme.base }}
+                        >
+                          {typeLabel}
+                        </span>
                       </div>
-                      <div
-                        className={cn(
-                          "rounded-full px-3 py-1",
-                          isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.18em]",
-                        )}
+
+                      <h3 className="min-h-[2.5rem] text-sm font-semibold leading-snug text-gray-800 line-clamp-2">
+                        {entry.name}
+                      </h3>
+
+                      <div className="text-xs text-gray-500">
+                        {entry.price === null || entry.price === undefined || !Number.isFinite(entry.price)
+                          ? <span className="italic">{t("labels.priceOnRequest")}</span>
+                          : <span className="font-semibold text-gray-700">{formatCurrency(entry.price, locale)}</span>}
+                      </div>
+
+                      <div className="flex-1" />
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleEntry(entry.id);
+                        }}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                         style={{
-                          color: category.theme.base,
-                          backgroundColor: `${category.theme.accent}22`,
+                          backgroundColor: isSelected ? "#16a34a" : category.theme.base,
                         }}
                       >
-                        {entry.type === "service"
-                          ? translateEnumValue(entry.serviceKind, tEnums)
-                          : entry.type === "panel"
-                            ? tNewRequest("labPanel")
-                          : entry.type === "lab"
-                            ? t("labels.labTest")
-                            : entry.packageScope === "LAB_ONLY"
-                              ? tNewRequest("labPackage")
-                              : t("labels.comprehensiveBundle")}
-                      </div>
-                    </div>
-
-                    <div className="px-5">
-                      <div className="rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_20px_56px_-48px_rgba(15,79,72,0.26)]">
-                        <div className={cn(detailLabelClass)} style={{ color: category.theme.muted }}>
-                          {t("labels.price")}
-                        </div>
-                        <div className="mt-2 text-2xl font-semibold text-[#12312d]">
-                          {entry.price === null || entry.price === undefined || !Number.isFinite(entry.price)
-                            ? t("labels.priceOnRequest")
-                            : formatCurrency(entry.price, locale)}
-                        </div>
-                        <p className="mt-3 text-sm leading-7 text-[#617672]">
-                          {entry.description || t("labels.defaultDescription")}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-1 flex-col px-5 pb-5 pt-5">
-                      <div className="space-y-3 rounded-[1.5rem] border border-[#e7eeea] bg-[#fbfcfa] p-4">
-                        {entry.type === "service" ? (
+                        {isSelected ? (
                           <>
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="text-[#7b8d89]">{t("labels.serviceMode")}</span>
-                              <span className="font-semibold text-[#12312d]">
-                                {translateEnumValue(entry.serviceKind, tEnums)}
-                              </span>
-                            </div>
+                            <Check className="h-3 w-3" />
+                            {SELECTED_CARD_LABEL}
                           </>
-                        ) : null}
-
-                        {entry.type === "lab" ? (
+                        ) : (
                           <>
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="text-[#7b8d89]">{t("labels.unit")}</span>
-                              <span className="font-semibold text-[#12312d]">{entry.unit || "-"}</span>
-                            </div>
-                            <div className="flex items-start justify-between gap-3 text-sm">
-                              <span className="text-[#7b8d89]">{t("labels.referenceRange")}</span>
-                              <span className="max-w-[62%] text-right font-semibold leading-6 text-[#12312d]">
-                                {entry.referenceRange || "-"}
-                              </span>
-                            </div>
+                            <Plus className="h-3 w-3" />
+                            {SELECT_CARD_LABEL}
                           </>
-                        ) : null}
-
-                        {entry.type === "panel" ? (
-                          <>
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="text-[#7b8d89]">{t("labels.includedTests")}</span>
-                              <span className="font-semibold text-[#12312d]">
-                                {entry.testsCount.toLocaleString(locale)}
-                              </span>
-                            </div>
-                            {entry.testsPreview.length ? (
-                              <div className="pt-1">
-                                <div className={cn(isArabic ? "text-xs font-medium normal-case tracking-normal text-[#7b8d89]" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#7b8d89]")}>
-                                  {t("labels.preview")}
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  {entry.testsPreview.map((testName) => (
-                                    <span
-                                      key={`${entry.id}-${testName}`}
-                                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#12312d]"
-                                    >
-                                      {testName}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
-                          </>
-                        ) : null}
-
-                        {entry.type === "package" ? (
-                          <>
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="text-[#7b8d89]">
-                                {entry.packageScope === "LAB_ONLY" ? tNewRequest("labPanels") : t("labels.includedServices")}
-                              </span>
-                              <span className="font-semibold text-[#12312d]">
-                                {entry.servicesCount.toLocaleString(locale)}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="text-[#7b8d89]">{t("labels.includedTests")}</span>
-                              <span className="font-semibold text-[#12312d]">
-                                {entry.testsCount.toLocaleString(locale)}
-                              </span>
-                            </div>
-                            {(entry.servicesPreview.length || entry.testsPreview.length) ? (
-                              <div className="pt-1">
-                                <div className={cn(isArabic ? "text-xs font-medium normal-case tracking-normal text-[#7b8d89]" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#7b8d89]")}>
-                                  {t("labels.preview")}
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  {entry.servicesPreview.map((serviceName) => (
-                                    <span
-                                      key={`${entry.id}-${serviceName}`}
-                                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#12312d]"
-                                    >
-                                      {serviceName}
-                                    </span>
-                                  ))}
-                                  {entry.testsPreview.map((testName) => (
-                                    <span
-                                      key={`${entry.id}-${testName}`}
-                                      className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#12312d]"
-                                    >
-                                      {testName}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
-                          </>
-                        ) : null}
-                      </div>
-
-                      <div className="mt-auto flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2 text-sm text-[#617672]">
-                          <ShieldCheck className="h-4 w-4" style={{ color: category.theme.base }} />
-                          <span>{t("labels.requestReady")}</span>
-                        </div>
-                        <Button
-                          type="button"
-                          className="min-h-11 rounded-full px-5 text-sm font-semibold text-white hover:opacity-90"
-                          style={{ backgroundColor: isSelected ? "#15803d" : category.theme.base }}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            toggleEntry(entry.id);
-                          }}
-                        >
-                          {isSelected ? SELECTED_CARD_LABEL : SELECT_CARD_LABEL}
-                          {isSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                        </Button>
-                      </div>
+                        )}
+                      </button>
                     </div>
                   </div>
                 </motion.article>
