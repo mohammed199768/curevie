@@ -24,11 +24,13 @@ export default function DashboardPage() {
   const requestsQuery = useQuery({
     queryKey: ["dashboard", "requests"],
     queryFn: async () => normalizeListResponse((await requestsApi.list({ page: 1, limit: 5 })).data),
+    enabled: false,
   });
 
   const invoicesQuery = useQuery({
     queryKey: ["dashboard", "invoices"],
     queryFn: async () => normalizeListResponse((await invoicesApi.list({ page: 1, limit: 5 })).data),
+    enabled: false,
   });
 
   const requests = requestsQuery.data?.data || [];

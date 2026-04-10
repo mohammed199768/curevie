@@ -450,6 +450,7 @@
     "viewAll": "عرض الكل",
     "view": "عرض",
     "noRequests": "لا توجد طلبات بعد",
+    "summaryDescription": "ملخص حالاتك الطبية",
     "recentNotifications": "آخر التنبيهات",
     "noNotifications": "لا توجد تنبيهات جديدة",
     "pendingInvoicesSummary": "لديك {count} فاتورة غير مدفوعة. الإجمالي: {amount} دينار"

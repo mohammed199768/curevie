@@ -361,6 +361,7 @@ export default function ReportsPage() {
         .filter((entry): entry is ReportsHistoryItem => Boolean(entry))
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
     },
+    enabled: false,
   });
 
   const filterCounts = useMemo(() => {

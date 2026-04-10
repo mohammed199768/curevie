@@ -450,6 +450,7 @@
     "viewAll": "View all",
     "view": "View",
     "noRequests": "No requests yet",
+    "summaryDescription": "Summary of your medical cases",
     "recentNotifications": "Recent Notifications",
     "noNotifications": "No notifications yet",
     "pendingInvoicesSummary": "You have {count} pending invoice(s). Total due: {amount} JD"

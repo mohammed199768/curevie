@@ -22,6 +22,7 @@ export default function InvoicesPage() {
   const query = useQuery({
     queryKey: ["invoices", page],
     queryFn: async () => normalizeListResponse((await invoicesApi.list({ page, limit: 10 })).data),
+    enabled: false,
   });
 
   const rows = query.data?.data || [];
