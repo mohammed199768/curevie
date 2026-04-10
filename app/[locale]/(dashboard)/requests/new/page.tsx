@@ -446,6 +446,12 @@ export default function NewRequestPage() {
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (!patient?.id) {
+        toast.error("يرجى تسجيل الدخول لإتمام الطلب");
+        router.push(`/${locale}/login?redirect=${encodeURIComponent(`/${locale}/requests/new`)}`);
+        throw new Error("AUTH_REQUIRED");
+      }
+
       if (!selectedServices.length) throw new Error(tPage("noServices"));
 
       const response = await casesApi.create({
@@ -455,8 +461,7 @@ export default function NewRequestPage() {
           bundle_price: Number(service.price || 0),
           notes: "",
         })),
-        package_id: serviceType === "PACKAGE" ? selectedMedicalPackage?.id : undefined,
-        notes: compiledNotes || undefined,
+        notes: compiledNotes ?? "",
       });
 
       return response.data.case;
@@ -466,7 +471,10 @@ export default function NewRequestPage() {
       toast.success(tPage("requestSubmitted"));
       router.push(`/${locale}/requests`);
     },
-    onError: () => toast.error(tCommon("error")),
+    onError: (error) => {
+      if (error instanceof Error && error.message === "AUTH_REQUIRED") return;
+      toast.error(tCommon("error"));
+    },
   });
 
   const handleOpenReview = () => {
