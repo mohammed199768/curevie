@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { casesApi } from "@/lib/api/cases";
 import { labPackagesApi, labPanelsApi } from "@/lib/api/lab-panels";
 import { patientsApi } from "@/lib/api/patients";
-import { requestsApi } from "@/lib/api/requests";
 import { servicesApi } from "@/lib/api/services";
 import type {
   LabPackageItem,
@@ -535,30 +534,33 @@ export default function NewRequestPage() {
       if (serviceType === "LAB") {
         if (!selectedCatalogItem) throw new Error(tPage("noServices"));
 
-        const response = await requestsApi.create({
-          request_type: "PATIENT",
-          patient_id: patient.id,
-          service_type: "LAB",
-          lab_panel_id: labMode === "PANEL" ? selectedCatalogItem.id : null,
-          lab_package_id: labMode === "PACKAGE" ? selectedCatalogItem.id : null,
-          notes: compiledNotes ?? "",
+        const response = await casesApi.create({
+          services: [{
+            service_id: selectedCatalogItem.id,
+            original_price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
+            bundle_price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
+            notes: "",
+          }],
+          notes: notes ?? "",
         });
 
-        return response.data.request;
+        return response.data.case;
       }
 
       if (serviceType === "PACKAGE") {
         if (!selectedCatalogItem) throw new Error(tPage("noServices"));
 
-        const response = await requestsApi.create({
-          request_type: "PATIENT",
-          patient_id: patient.id,
-          service_type: "PACKAGE",
-          package_id: selectedCatalogItem.id,
-          notes: compiledNotes ?? "",
+        const response = await casesApi.create({
+          services: [{
+            service_id: selectedCatalogItem.id,
+            original_price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
+            bundle_price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
+            notes: "",
+          }],
+          notes: notes ?? "",
         });
 
-        return response.data.request;
+        return response.data.case;
       }
 
       if (!selectedServices.length) throw new Error(tPage("noServices"));
