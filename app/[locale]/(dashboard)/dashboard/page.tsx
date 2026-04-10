@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { casesApi } from "@/lib/api/cases";
+import { casesApi, type PatientCase } from "@/lib/api/cases";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useAuthStore } from "@/lib/stores/auth.store";
@@ -18,24 +18,30 @@ export default function DashboardPage() {
   const locale = useLocale();
   const patient = useAuthStore((state) => state.patient);
 
-  const casesQuery = useQuery({
-    queryKey: ["dashboard", "cases-stats", patient?.id],
+  const casesStatsQuery = useQuery<{
+    total: number;
+    in_progress: number;
+    completed: number;
+    recent: PatientCase[];
+  }>({
+    queryKey: ["dashboard", "cases-stats"],
     queryFn: async () => {
       const result = await casesApi.list({ limit: 100 });
       const cases = result.data?.data ?? [];
-      const total = cases.length;
-      const completed = cases.filter((c) => c.status === "CLOSED").length;
-      const in_progress = cases.filter((c) =>
-        ["PENDING", "ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(c.status)
-      ).length;
-      return { cases, total, completed, in_progress };
+      return {
+        total: cases.length,
+        in_progress: cases.filter((c) =>
+          ["PENDING", "ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(c.status)
+        ).length,
+        completed: cases.filter((c) => c.status === "CLOSED").length,
+        recent: cases.slice(0, 3),
+      };
     },
-    enabled: Boolean(patient?.id),
-    initialData: { cases: [], total: 0, completed: 0, in_progress: 0 },
+    initialData: { total: 0, in_progress: 0, completed: 0, recent: [] },
   });
 
-  const recentCases = (casesQuery.data?.cases ?? []).slice(0, 3);
-  const isInitialLoading = casesQuery.isFetching && recentCases.length === 0;
+  const recentCases = casesStatsQuery.data.recent;
+  const isInitialLoading = casesStatsQuery.isFetching && recentCases.length === 0;
 
   if (isInitialLoading) {
     return <AppPreloader variant="page" title={tCommon("loading")} blockCount={3} />;
@@ -51,9 +57,9 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title={t("totalRequests")} value={casesQuery.data.total} ready={!casesQuery.isFetching} loadingLabel={tCommon("loading")} />
-        <StatCard title={t("pending")} value={casesQuery.data.in_progress} ready={!casesQuery.isFetching} loadingLabel={tCommon("loading")} />
-        <StatCard title={t("completed")} value={casesQuery.data.completed} ready={!casesQuery.isFetching} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("totalRequests")} value={casesStatsQuery.data.total} ready={!casesStatsQuery.isFetching} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("pending")} value={casesStatsQuery.data.in_progress} ready={!casesStatsQuery.isFetching} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("completed")} value={casesStatsQuery.data.completed} ready={!casesStatsQuery.isFetching} loadingLabel={tCommon("loading")} />
       </div>
 
       <div className="space-y-4">
@@ -63,7 +69,7 @@ export default function DashboardPage() {
             <Button asChild size="sm" variant="outline"><Link href={`/${locale}/requests`}>{tPage("viewAll")}</Link></Button>
           </CardHeader>
           <CardContent className="space-y-2">
-            {casesQuery.isFetching && recentCases.length === 0 ? (
+            {casesStatsQuery.isFetching && recentCases.length === 0 ? (
               <DashboardSectionPreloader title={t("recentRequests")} description={tPage("summaryDescription")} />
             ) : recentCases.length ? (
               recentCases.map((item) => (
