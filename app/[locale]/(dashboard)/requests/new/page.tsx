@@ -412,7 +412,7 @@ export default function NewRequestPage() {
   const buildSelectableServices = (option: ServiceOption | null): SelectedCaseService[] => {
     if (!option) return [];
 
-    if ((serviceType === "MEDICAL" || serviceType === "RADIOLOGY") && "service_kind" in option) {
+    if (serviceType === "MEDICAL" || serviceType === "RADIOLOGY") {
       return [{
         id: option.id,
         name: getLocalizedValue(option, locale, "name") || "",
