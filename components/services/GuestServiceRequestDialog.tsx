@@ -20,7 +20,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { requestsApi } from "@/lib/api/requests";
+import { casesApi } from "@/lib/api/cases";
 import { AMMAN_DISTRICT_KEYS, getDistrictLabel } from "@/lib/amman-districts";
 import { formatCurrency } from "@/lib/formatting";
 import { translateEnumValue } from "@/lib/i18n";
@@ -81,61 +81,6 @@ function getEntryTypeLabel(entry: PublicCatalogEntry, t: TranslateFn, tEnums: Tr
   return entry.packageScope === "LAB_ONLY"
     ? tNewRequest("labPackage")
     : t("labels.comprehensiveBundle");
-}
-
-function buildGuestPayload(entry: PublicCatalogEntry, values: GuestRequestValues) {
-  if (entry.type === "service") {
-    return {
-      request_type: "GUEST" as const,
-      guest_name: values.full_name,
-      guest_phone: values.phone,
-      guest_address: values.address,
-      service_type: entry.serviceKind,
-      service_id: entry.id,
-    };
-  }
-
-  if (entry.type === "lab") {
-    return {
-      request_type: "GUEST" as const,
-      guest_name: values.full_name,
-      guest_phone: values.phone,
-      guest_address: values.address,
-      service_type: "LAB" as const,
-      lab_test_id: entry.id,
-    };
-  }
-
-  if (entry.type === "panel") {
-    return {
-      request_type: "GUEST" as const,
-      guest_name: values.full_name,
-      guest_phone: values.phone,
-      guest_address: values.address,
-      service_type: "LAB" as const,
-      lab_panel_id: entry.id,
-    };
-  }
-
-  if (entry.packageScope === "LAB_ONLY") {
-    return {
-      request_type: "GUEST" as const,
-      guest_name: values.full_name,
-      guest_phone: values.phone,
-      guest_address: values.address,
-      service_type: "LAB" as const,
-      lab_package_id: entry.id,
-    };
-  }
-
-  return {
-    request_type: "GUEST" as const,
-    guest_name: values.full_name,
-    guest_phone: values.phone,
-    guest_address: values.address,
-    service_type: "PACKAGE" as const,
-    package_id: entry.id,
-  };
 }
 
 export function GuestServiceRequestDialog({
@@ -199,10 +144,23 @@ export function GuestServiceRequestDialog({
         throw new Error("ENTRY_NOT_FOUND");
       }
 
-      return (await requestsApi.createPublic(buildGuestPayload(targetEntry, values))).data;
+      const response = await casesApi.createPublic({
+        guest_name: values.full_name,
+        guest_phone: values.phone,
+        guest_address: values.address,
+        services: [{
+          service_id: targetEntry.id,
+          original_price: Number(targetEntry.price ?? 0),
+          bundle_price: Number(targetEntry.price ?? 0),
+          notes: "",
+        }],
+        notes: "",
+      });
+
+      return response.data.case;
     },
-    onSuccess: (data) => {
-      toast.success(tBooking("successMessage", { id: data.request.id }));
+    onSuccess: (createdCase) => {
+      toast.success(tBooking("successMessage", { id: createdCase.id }));
       form.reset({
         full_name: "",
         phone: "",

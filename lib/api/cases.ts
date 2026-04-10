@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, publicApiClient } from "./client";
 import type { ApiListResponse, ApiPagination, RequestChatMessage } from "./types";
 
 export interface PatientCase {
@@ -63,6 +63,19 @@ export interface CreateCasePayload {
   notes?: string;
 }
 
+export interface CreateGuestCasePayload {
+  guest_name: string;
+  guest_phone: string;
+  guest_address?: string;
+  services: Array<{
+    service_id: string;
+    original_price: number;
+    bundle_price: number;
+    notes?: string;
+  }>;
+  notes?: string;
+}
+
 export interface PatientCaseChatRoom {
   id: string;
   case_service_id: string;
@@ -87,6 +100,18 @@ type CaseDetailResponse = {
   services?: unknown[];
   appointments?: unknown[];
 };
+
+type CaseMutationPayload = {
+  case?: unknown;
+  services?: unknown[];
+  appointments?: unknown[];
+  invoice?: unknown;
+};
+
+type CaseMutationEnvelope = {
+  message?: string;
+  data?: CaseMutationPayload;
+} & CaseMutationPayload;
 
 function toStringValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
@@ -261,6 +286,14 @@ function normalizeChatMessage(message: unknown): RequestChatMessage {
   };
 }
 
+function unwrapCaseMutationPayload(payload: CaseMutationEnvelope): CaseMutationPayload {
+  if (payload?.data && typeof payload.data === "object") {
+    return payload.data;
+  }
+
+  return payload;
+}
+
 async function getCaseById(id: string) {
   const response = await apiClient.get<CaseDetailResponse | PatientCase>(`/cases/${id}`);
   return { data: normalizePatientCase(response.data) };
@@ -302,20 +335,32 @@ async function listCases(params?: { page?: number; limit?: number; status?: stri
 }
 
 async function createCase(payload: CreateCasePayload) {
-  const response = await apiClient.post<{
-    case?: unknown;
-    services?: unknown[];
-    appointments?: unknown[];
-    invoice?: unknown;
-  }>("/cases", payload);
+  const response = await apiClient.post<CaseMutationEnvelope>("/cases", payload);
+  const result = unwrapCaseMutationPayload(response.data);
 
   return {
     data: {
-      ...response.data,
+      ...result,
       case: normalizePatientCase({
-        case: response.data?.case,
-        services: response.data?.services || [],
-        appointments: response.data?.appointments || [],
+        case: result.case,
+        services: result.services || [],
+        appointments: result.appointments || [],
+      }),
+    },
+  };
+}
+
+async function createPublicCase(payload: CreateGuestCasePayload) {
+  const response = await publicApiClient.post<CaseMutationEnvelope>("/cases/public", payload);
+  const result = unwrapCaseMutationPayload(response.data);
+
+  return {
+    data: {
+      ...result,
+      case: normalizePatientCase({
+        case: result.case,
+        services: result.services || [],
+        appointments: result.appointments || [],
       }),
     },
   };
@@ -359,6 +404,7 @@ export const casesApi = {
   list: listCases,
   getById: getCaseById,
   create: createCase,
+  createPublic: createPublicCase,
   getReport: getCaseReport,
   getChatRooms: getCaseChatRooms,
   getChatMessages: getCaseChatMessages,
