@@ -15,12 +15,19 @@ export type AnalyticsServiceKind = "MEDICAL" | "RADIOLOGY" | "LAB" | "PACKAGE";
 
 export type PublicServiceCategorySlug =
   | "medical-visits"
+  | "home-nursing"
+  | "physical-therapy"
+  | "occupational-therapy"
   | "imaging"
   | "lab-diagnostics"
   | "care-programs";
 
 export type PublicServiceCategoryTranslationKey =
   | "medicalVisits"
+  | "nursingCare"
+  | "homeNursing"
+  | "physicalTherapy"
+  | "occupationalTherapy"
   | "imaging"
   | "labDiagnostics"
   | "carePrograms";
@@ -82,11 +89,14 @@ export type PublicCategoryCatalog = {
 
 export type PublicCategoryCountMap = Record<PublicServiceCategoryTranslationKey, number>;
 
+type PublicServiceCategoryRuntimeTranslationKey = Exclude<PublicServiceCategoryTranslationKey, "homeNursing">;
+
 type PublicServiceCategoryDefinition = {
   slug: PublicServiceCategorySlug;
-  translationKey: PublicServiceCategoryTranslationKey;
-  source: "services" | "lab" | "packages";
+  translationKey: PublicServiceCategoryRuntimeTranslationKey;
+  source: "services" | "services-by-category" | "lab" | "packages";
   serviceKind?: "MEDICAL" | "RADIOLOGY";
+  categoryId?: string;
   defaultRequestPreset: RequestPreset;
   theme: {
     base: string;
@@ -112,6 +122,54 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
       soft: "rgba(16, 77, 73, 0.08)",
       muted: BRAND_COLORS.stone,
       shadow: "rgba(16, 77, 73, 0.24)",
+    },
+  },
+  {
+    slug: "home-nursing",
+    translationKey: "nursingCare",
+    source: "services-by-category",
+    categoryId: "9bd587f7-2b6e-4885-b704-f3d53cd02414",
+    serviceKind: "MEDICAL",
+    defaultRequestPreset: { serviceType: "MEDICAL" },
+    theme: {
+      base: "#0f7c6e",
+      secondary: "#0a5c52",
+      accent: "#14a899",
+      soft: "rgba(15, 124, 110, 0.08)",
+      muted: "#4a7a74",
+      shadow: "rgba(15, 124, 110, 0.22)",
+    },
+  },
+  {
+    slug: "physical-therapy",
+    translationKey: "physicalTherapy",
+    source: "services-by-category",
+    categoryId: "3a3ab6d1-6b90-42b3-80aa-a0ef754576df",
+    serviceKind: "MEDICAL",
+    defaultRequestPreset: { serviceType: "MEDICAL" },
+    theme: {
+      base: "#1e6fa8",
+      secondary: "#155a8a",
+      accent: "#2d8fd4",
+      soft: "rgba(30, 111, 168, 0.08)",
+      muted: "#4a7a9b",
+      shadow: "rgba(30, 111, 168, 0.22)",
+    },
+  },
+  {
+    slug: "occupational-therapy",
+    translationKey: "occupationalTherapy",
+    source: "services-by-category",
+    categoryId: "53123e20-0e97-43b0-85e8-c8876e2b0dbc",
+    serviceKind: "MEDICAL",
+    defaultRequestPreset: { serviceType: "MEDICAL" },
+    theme: {
+      base: "#6b4fa8",
+      secondary: "#533d8a",
+      accent: "#8b6fd4",
+      soft: "rgba(107, 79, 168, 0.08)",
+      muted: "#7a6a9b",
+      shadow: "rgba(107, 79, 168, 0.22)",
     },
   },
   {
@@ -358,6 +416,22 @@ export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCateg
     };
   }
 
+  if (category.source === "services-by-category") {
+    const response = normalizeListResponse(
+      (await servicesApi.listPublic({
+        limit: 100,
+        category_id: category.categoryId,
+      })).data,
+    );
+    const entries = sortEntries(
+      response.data.map((item) => mapServiceEntry(item, "MEDICAL")),
+    );
+    return {
+      entries,
+      total: normalizeTotal(response.pagination.total, entries.length),
+    };
+  }
+
   if (category.source === "lab") {
     const [labPanelsResponse, labPackagesResponse] = await Promise.all([
       labPanelsApi.listPublic({ limit: 100, is_active: true }),
@@ -387,9 +461,21 @@ export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCateg
 }
 
 export async function fetchPublicServiceCounts(): Promise<PublicCategoryCountMap> {
-  const [medicalResponse, imagingResponse, labPanelsResponse, labPackagesResponse, packageResponse] =
+  const [
+    medicalResponse,
+    nursingResponse,
+    physicalTherapyResponse,
+    occupationalTherapyResponse,
+    imagingResponse,
+    labPanelsResponse,
+    labPackagesResponse,
+    packageResponse,
+  ] =
     await Promise.all([
       servicesApi.listPublic({ limit: 1, service_kind: "MEDICAL" }),
+      servicesApi.listPublic({ limit: 1, category_id: "9bd587f7-2b6e-4885-b704-f3d53cd02414" }),
+      servicesApi.listPublic({ limit: 1, category_id: "3a3ab6d1-6b90-42b3-80aa-a0ef754576df" }),
+      servicesApi.listPublic({ limit: 1, category_id: "53123e20-0e97-43b0-85e8-c8876e2b0dbc" }),
       servicesApi.listPublic({ limit: 1, service_kind: "RADIOLOGY" }),
       labPanelsApi.listPublic({ limit: 1, is_active: true }),
       labPackagesApi.listPublic({ limit: 1, is_active: true }),
@@ -397,6 +483,9 @@ export async function fetchPublicServiceCounts(): Promise<PublicCategoryCountMap
     ]);
 
   const medical = normalizeListResponse(medicalResponse.data);
+  const nursing = normalizeListResponse(nursingResponse.data);
+  const physicalTherapy = normalizeListResponse(physicalTherapyResponse.data);
+  const occupationalTherapy = normalizeListResponse(occupationalTherapyResponse.data);
   const imaging = normalizeListResponse(imagingResponse.data);
   const labPanels = normalizeListResponse(labPanelsResponse.data);
   const labPackages = normalizeListResponse(labPackagesResponse.data);
@@ -404,6 +493,10 @@ export async function fetchPublicServiceCounts(): Promise<PublicCategoryCountMap
 
   return {
     medicalVisits: normalizeTotal(medical.pagination.total, medical.data.length),
+    nursingCare: normalizeTotal(nursing.pagination.total, nursing.data.length),
+    homeNursing: normalizeTotal(nursing.pagination.total, nursing.data.length),
+    physicalTherapy: normalizeTotal(physicalTherapy.pagination.total, physicalTherapy.data.length),
+    occupationalTherapy: normalizeTotal(occupationalTherapy.pagination.total, occupationalTherapy.data.length),
     imaging: normalizeTotal(imaging.pagination.total, imaging.data.length),
     labDiagnostics:
       normalizeTotal(labPanels.pagination.total, labPanels.data.length)

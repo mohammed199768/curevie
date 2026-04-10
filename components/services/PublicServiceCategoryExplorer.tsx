@@ -8,10 +8,13 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import {
+  Activity,
   Check,
   ArrowRight,
+  Brain,
   Crosshair,
   FlaskConical,
+  Heart,
   Package2,
   Plus,
   Search,
@@ -37,6 +40,10 @@ import { onGuestRequestDialogOpen, onServiceCategoryView } from "@/lib/analytics
 
 const categoryIcons = {
   medicalVisits: Stethoscope,
+  nursingCare: Heart,
+  homeNursing: Heart,
+  physicalTherapy: Activity,
+  occupationalTherapy: Brain,
   imaging: Crosshair,
   labDiagnostics: FlaskConical,
   carePrograms: Package2,
@@ -44,6 +51,10 @@ const categoryIcons = {
 
 const categoryTitleFallbacks: Record<PublicServiceCategoryTranslationKey, string> = {
   medicalVisits: "Medical Visits",
+  nursingCare: "Home Nursing",
+  homeNursing: "Home Nursing",
+  physicalTherapy: "Physical Therapy",
+  occupationalTherapy: "Occupational Therapy",
   imaging: "Radiology",
   labDiagnostics: "Lab Diagnostics",
   carePrograms: "Care Programs",

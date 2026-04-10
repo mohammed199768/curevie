@@ -683,6 +683,27 @@
         "summary": "Expert clinical evaluations and hands-on care visits for patients requiring direct medical attention in their own space.",
         "routeLabel": "Physician and nursing expertise joined in a single path"
       },
+      "nursingCare": {
+        "eyebrow": "Clinical support",
+        "title": "Home Nursing",
+        "short": "Professional nursing care",
+        "summary": "Skilled nursing services at home for injections, wound care, monitoring, and ongoing bedside support.",
+        "routeLabel": "Specialized nursing services delivered through a focused home-care path"
+      },
+      "physicalTherapy": {
+        "eyebrow": "Recovery movement",
+        "title": "Physical Therapy",
+        "short": "Rehabilitation at home",
+        "summary": "Personalized rehabilitation sessions designed to restore mobility, strength, and confidence in the home setting.",
+        "routeLabel": "A guided rehabilitation path for safe home-based recovery"
+      },
+      "occupationalTherapy": {
+        "eyebrow": "Daily function",
+        "title": "Occupational Therapy",
+        "short": "Functional therapy at home",
+        "summary": "Targeted therapy that helps patients rebuild independence and daily living skills within their own environment.",
+        "routeLabel": "Functional therapy organized around real-life home routines"
+      },
       "imaging": {
         "eyebrow": "Precision diagnostics",
         "title": "Radiology",
@@ -818,7 +839,36 @@
         "eyebrow": "Clinical presence",
         "title": "Medical Visits",
         "subtitle": "A focused catalog for physician-led visits and specialized bedside care.",
-        "story": "This lane ensures high-touch clinical care: consultation, expert assessment, and immediate intervention, all within your space."
+        "story": "This lane ensures high-touch clinical care: consultation, expert assessment, and immediate intervention, all within your space.",
+        "description": "Focused physician-led visits and bedside care"
+      },
+      "nursingCare": {
+        "eyebrow": "Nursing support",
+        "title": "Home Nursing",
+        "subtitle": "Professional nursing care delivered at home for continuous bedside support and clinical follow-up.",
+        "story": "This lane is designed for practical care delivery at home: wound dressing, injections, monitoring, and specialized nursing interventions.",
+        "description": "Professional nursing care at home"
+      },
+      "homeNursing": {
+        "eyebrow": "Nursing support",
+        "title": "Home Nursing",
+        "subtitle": "Professional nursing care delivered at home for continuous bedside support and clinical follow-up.",
+        "story": "This lane is designed for practical care delivery at home: wound dressing, injections, monitoring, and specialized nursing interventions.",
+        "description": "Professional nursing care at home"
+      },
+      "physicalTherapy": {
+        "eyebrow": "Rehabilitation",
+        "title": "Physical Therapy",
+        "subtitle": "Structured physical rehabilitation sessions designed for safe recovery and mobility support at home.",
+        "story": "This lane focuses on movement recovery, strength building, and guided rehabilitation programs tailored to the home environment.",
+        "description": "Physical rehabilitation at home"
+      },
+      "occupationalTherapy": {
+        "eyebrow": "Daily independence",
+        "title": "Occupational Therapy",
+        "subtitle": "Functional therapy that helps patients rebuild confidence and independence in daily activities at home.",
+        "story": "This lane supports real-life recovery goals by improving routine function, coordination, and independence within the home setting.",
+        "description": "Occupational therapy at home"
       },
       "imaging": {
         "eyebrow": "Diagnostic power",

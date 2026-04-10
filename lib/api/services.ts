@@ -6,6 +6,7 @@ export interface ServicesQuery {
   limit?: number;
   search?: string;
   service_kind?: "MEDICAL" | "RADIOLOGY";
+  category_id?: string;
 }
 
 export interface PackagesQuery {
