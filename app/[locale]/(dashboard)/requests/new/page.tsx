@@ -40,6 +40,7 @@ const ALL_CATEGORIES = [
   { id: "3a3ab6d1-6b90-42b3-80aa-a0ef754576df", label: "العلاج الطبيعي", type: "MEDICAL" },
   { id: "53123e20-0e97-43b0-85e8-c8876e2b0dbc", label: "العلاج الوظيفي", type: "MEDICAL" },
   { id: "81b02ae3-76f5-4fd4-9221-6eb069c87d1a", label: "الأشعة", type: "RADIOLOGY" },
+  { id: "fc689658-060f-4d2f-b455-b333f523703d", label: "المختبر الطبي", type: "MEDICAL" as const },
 ] as const;
 
 type SupportedServiceType = (typeof ALL_CATEGORIES)[number]["type"];
