@@ -113,6 +113,14 @@ type CaseMutationEnvelope = {
   data?: CaseMutationPayload;
 } & CaseMutationPayload;
 
+type CaseListEnvelope = {
+  data?: CaseListResponse;
+} | CaseListResponse;
+
+type CaseDetailEnvelope = {
+  data?: CaseDetailResponse | PatientCase;
+} | CaseDetailResponse | PatientCase;
+
 function toStringValue(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
@@ -294,22 +302,37 @@ function unwrapCaseMutationPayload(payload: CaseMutationEnvelope): CaseMutationP
   return payload;
 }
 
+function unwrapCasePayload<T>(payload: T | { data?: T }): T {
+  if (
+    payload
+    && typeof payload === "object"
+    && "data" in payload
+    && payload.data
+    && typeof payload.data === "object"
+  ) {
+    return payload.data as T;
+  }
+
+  return payload as T;
+}
+
 async function getCaseById(id: string) {
-  const response = await apiClient.get<CaseDetailResponse | PatientCase>(`/cases/${id}`);
-  return { data: normalizePatientCase(response.data) };
+  const response = await apiClient.get<CaseDetailEnvelope>(`/cases/${id}`);
+  return { data: normalizePatientCase(unwrapCasePayload(response.data)) };
 }
 
 async function listCases(params?: { page?: number; limit?: number; status?: string }) {
-  const response = await apiClient.get<CaseListResponse>(
+  const response = await apiClient.get<CaseListEnvelope>(
     "/cases", { params }
   );
+  const payload = unwrapCasePayload<CaseListResponse>(response.data);
 
-  const rawCases = Array.isArray(response.data?.cases)
-    ? response.data.cases
+  const rawCases = Array.isArray(payload?.cases)
+    ? payload.cases
     : [];
-  const page = Number(response.data?.page ?? params?.page ?? 1);
-  const limit = Number(response.data?.limit ?? params?.limit ?? 20);
-  const total = Number(response.data?.total ?? rawCases.length);
+  const page = Number(payload?.page ?? params?.page ?? 1);
+  const limit = Number(payload?.limit ?? params?.limit ?? 20);
+  const total = Number(payload?.total ?? rawCases.length);
 
   const cases = rawCases.map((c) => normalizePatientCase(c));
 
