@@ -112,8 +112,8 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
   {
     slug: "medical-visits",
     translationKey: "medicalVisits",
-    source: "services",
-    serviceKind: "MEDICAL",
+    source: "services-by-category",
+    categoryId: "79242b41-42dd-44a0-a944-77488fac2441",
     defaultRequestPreset: { serviceType: "MEDICAL" },
     theme: {
       base: BRAND_COLORS.primary,
@@ -132,12 +132,12 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
     serviceKind: "MEDICAL",
     defaultRequestPreset: { serviceType: "MEDICAL" },
     theme: {
-      base: "#0f7c6e",
-      secondary: "#0a5c52",
-      accent: "#14a899",
-      soft: "rgba(15, 124, 110, 0.08)",
-      muted: "#4a7a74",
-      shadow: "rgba(15, 124, 110, 0.22)",
+      base: "#104d49",
+      secondary: "#304a43",
+      accent: "#86ab62",
+      soft: "rgba(16, 77, 73, 0.06)",
+      muted: "#5a7a50",
+      shadow: "rgba(16, 77, 73, 0.20)",
     },
   },
   {
@@ -148,12 +148,12 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
     serviceKind: "MEDICAL",
     defaultRequestPreset: { serviceType: "MEDICAL" },
     theme: {
-      base: "#1e6fa8",
-      secondary: "#155a8a",
-      accent: "#2d8fd4",
-      soft: "rgba(30, 111, 168, 0.08)",
-      muted: "#4a7a9b",
-      shadow: "rgba(30, 111, 168, 0.22)",
+      base: "#304a43",
+      secondary: "#104d49",
+      accent: "#5a7a50",
+      soft: "rgba(48, 74, 67, 0.06)",
+      muted: "#5a7a50",
+      shadow: "rgba(48, 74, 67, 0.20)",
     },
   },
   {
@@ -164,19 +164,19 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
     serviceKind: "MEDICAL",
     defaultRequestPreset: { serviceType: "MEDICAL" },
     theme: {
-      base: "#6b4fa8",
-      secondary: "#533d8a",
-      accent: "#8b6fd4",
-      soft: "rgba(107, 79, 168, 0.08)",
-      muted: "#7a6a9b",
-      shadow: "rgba(107, 79, 168, 0.22)",
+      base: "#5a7a50",
+      secondary: "#304a43",
+      accent: "#86ab62",
+      soft: "rgba(90, 122, 80, 0.06)",
+      muted: "#9c9fa2",
+      shadow: "rgba(90, 122, 80, 0.18)",
     },
   },
   {
     slug: "imaging",
     translationKey: "imaging",
-    source: "services",
-    serviceKind: "RADIOLOGY",
+    source: "services-by-category",
+    categoryId: "81b02ae3-76f5-4fd4-9221-6eb069c87d1a",
     defaultRequestPreset: { serviceType: "RADIOLOGY" },
     theme: {
       base: BRAND_COLORS.secondary,
@@ -316,6 +316,13 @@ export function getPublicServiceCategoryAnalyticsKind(slug: string): AnalyticsSe
     return null;
   }
 
+  if (
+    category.defaultRequestPreset.serviceType === "MEDICAL"
+    || category.defaultRequestPreset.serviceType === "RADIOLOGY"
+  ) {
+    return category.defaultRequestPreset.serviceType;
+  }
+
   if (category.serviceKind) {
     return category.serviceKind;
   }
@@ -417,6 +424,8 @@ export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCateg
   }
 
   if (category.source === "services-by-category") {
+    const serviceKind =
+      category.defaultRequestPreset.serviceType === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL";
     const response = normalizeListResponse(
       (await servicesApi.listPublic({
         limit: 100,
@@ -424,7 +433,7 @@ export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCateg
       })).data,
     );
     const entries = sortEntries(
-      response.data.map((item) => mapServiceEntry(item, "MEDICAL")),
+      response.data.map((item) => mapServiceEntry(item, serviceKind)),
     );
     return {
       entries,
@@ -472,11 +481,11 @@ export async function fetchPublicServiceCounts(): Promise<PublicCategoryCountMap
     packageResponse,
   ] =
     await Promise.all([
-      servicesApi.listPublic({ limit: 1, service_kind: "MEDICAL" }),
+      servicesApi.listPublic({ limit: 1, category_id: "79242b41-42dd-44a0-a944-77488fac2441" }),
       servicesApi.listPublic({ limit: 1, category_id: "9bd587f7-2b6e-4885-b704-f3d53cd02414" }),
       servicesApi.listPublic({ limit: 1, category_id: "3a3ab6d1-6b90-42b3-80aa-a0ef754576df" }),
       servicesApi.listPublic({ limit: 1, category_id: "53123e20-0e97-43b0-85e8-c8876e2b0dbc" }),
-      servicesApi.listPublic({ limit: 1, service_kind: "RADIOLOGY" }),
+      servicesApi.listPublic({ limit: 1, category_id: "81b02ae3-76f5-4fd4-9221-6eb069c87d1a" }),
       labPanelsApi.listPublic({ limit: 1, is_active: true }),
       labPackagesApi.listPublic({ limit: 1, is_active: true }),
       servicesApi.listPackagesPublic({ limit: 1 }),
