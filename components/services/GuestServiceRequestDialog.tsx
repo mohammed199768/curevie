@@ -4,10 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2, MapPin, Phone, Shield, User2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,6 +33,9 @@ import {
 } from "@/lib/public-service-categories";
 
 const phonePattern = /^[0-9+\-\s()]{7,20}$/;
+const MIN_SELECTION_ERROR = "\u064A\u0631\u062C\u0649 \u0627\u062E\u062A\u064A\u0627\u0631 \u062E\u062F\u0645\u0629 \u0648\u0627\u062D\u062F\u0629 \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644";
+const MAX_SELECTION_HINT = "\u064A\u0645\u0643\u0646 \u0627\u062E\u062A\u064A\u0627\u0631 5 \u062E\u062F\u0645\u0627\u062A \u0643\u062D\u062F \u0623\u0642\u0635\u0649";
+const SELECTED_COUNT_LABEL = "\u062E\u062F\u0645\u0629 \u0645\u062D\u062F\u062F\u0629";
 
 type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
 
@@ -49,7 +53,6 @@ function createGuestRequestSchema(tBooking: TranslateFn) {
     full_name: z.string().trim().min(2, tBooking("fullNameMin")),
     phone: z.string().trim().regex(phonePattern, tBooking("invalidPhone")),
     address: z.string().trim().min(1, tBooking("addressMin")),
-    entry_id: z.string().trim().min(1, tBooking("selectService")),
   });
 }
 
@@ -98,6 +101,13 @@ export function GuestServiceRequestDialog({
   const tNewRequest = useTranslations("newRequestPage");
   const tEnums = useTranslations("enums");
   const pendingTrackingRef = useRef<Parameters<typeof onRequestCreated>[0] | null>(null);
+  const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>(() => {
+    if (defaultEntryId && entries.some((entry) => entry.id === defaultEntryId)) {
+      return [defaultEntryId];
+    }
+
+    return [];
+  });
 
   const form = useForm<GuestRequestValues>({
     resolver: zodResolver(createGuestRequestSchema(tBooking)),
@@ -105,42 +115,61 @@ export function GuestServiceRequestDialog({
       full_name: "",
       phone: "",
       address: "",
-      entry_id: defaultEntryId || entries[0]?.id || "",
     },
   });
 
   useEffect(() => {
     if (!open) return;
 
-    const nextEntryId = defaultEntryId || entries[0]?.id || "";
-    const currentEntryId = form.getValues("entry_id");
-
-    if (!currentEntryId && nextEntryId) {
-      form.setValue("entry_id", nextEntryId, { shouldValidate: true });
+    if (defaultEntryId && entries.some((entry) => entry.id === defaultEntryId)) {
+      setSelectedEntryIds([defaultEntryId]);
       return;
     }
 
-    const currentStillExists = entries.some((entry) => entry.id === currentEntryId);
-    if (!currentStillExists && nextEntryId) {
-      form.setValue("entry_id", nextEntryId, { shouldValidate: true });
-      return;
-    }
+    setSelectedEntryIds((current) => current.filter((id) => entries.some((entry) => entry.id === id)));
+  }, [defaultEntryId, entries, open]);
 
-    if (defaultEntryId && currentEntryId !== defaultEntryId) {
-      form.setValue("entry_id", defaultEntryId, { shouldValidate: true });
-    }
-  }, [defaultEntryId, entries, form, open]);
-
-  const selectedEntryId = form.watch("entry_id");
-  const selectedEntry = useMemo(
-    () => entries.find((entry) => entry.id === selectedEntryId) || null,
-    [entries, selectedEntryId],
+  const selectedEntries = useMemo(
+    () =>
+      selectedEntryIds
+        .map((id) => entries.find((entry) => entry.id === id) || null)
+        .filter((entry): entry is PublicCatalogEntry => entry !== null),
+    [entries, selectedEntryIds],
   );
+  const totalSelectedPrice = useMemo(
+    () => selectedEntries.reduce((sum, entry) => sum + Number(entry.price ?? 0), 0),
+    [selectedEntries],
+  );
+  const selectionLimitReached = selectedEntryIds.length >= 5;
+
+  const handleEntryCheckedChange = (entryId: string, checked: boolean) => {
+    setSelectedEntryIds((current) => {
+      if (checked) {
+        if (current.includes(entryId) || current.length >= 5) {
+          return current;
+        }
+
+        return [...current, entryId];
+      }
+
+      return current.filter((id) => id !== entryId);
+    });
+  };
 
   const createMutation = useMutation({
     mutationFn: async (values: GuestRequestValues) => {
-      const targetEntry = entries.find((entry) => entry.id === values.entry_id);
-      if (!targetEntry) {
+      const services = selectedEntryIds.map((id) => {
+        const entry = entries.find((item) => item.id === id);
+
+        return {
+          service_id: id,
+          original_price: Number(entry?.price ?? 0),
+          bundle_price: Number(entry?.price ?? 0),
+          notes: "",
+        };
+      });
+
+      if (!services.length) {
         throw new Error("ENTRY_NOT_FOUND");
       }
 
@@ -148,12 +177,7 @@ export function GuestServiceRequestDialog({
         guest_name: values.full_name,
         guest_phone: values.phone,
         guest_address: values.address,
-        services: [{
-          service_id: targetEntry.id,
-          original_price: Number(targetEntry.price ?? 0),
-          bundle_price: Number(targetEntry.price ?? 0),
-          notes: "",
-        }],
+        services,
         notes: "",
       });
 
@@ -165,8 +189,8 @@ export function GuestServiceRequestDialog({
         full_name: "",
         phone: "",
         address: "",
-        entry_id: defaultEntryId || entries[0]?.id || "",
       });
+      setSelectedEntryIds(defaultEntryId && entries.some((entry) => entry.id === defaultEntryId) ? [defaultEntryId] : []);
       onOpenChange(false);
 
       if (pendingTrackingRef.current) {
@@ -180,7 +204,12 @@ export function GuestServiceRequestDialog({
   });
 
   const handleSubmit = (values: GuestRequestValues) => {
-    const targetEntry = entries.find((entry) => entry.id === values.entry_id);
+    if (selectedEntryIds.length === 0) {
+      toast.error(MIN_SELECTION_ERROR);
+      return;
+    }
+
+    const targetEntry = entries.find((entry) => entry.id === selectedEntryIds[0]);
 
     pendingTrackingRef.current = targetEntry
       ? {
@@ -297,30 +326,54 @@ export function GuestServiceRequestDialog({
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="entry_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("guestRequest.serviceFieldLabel")}</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
-                            <FormControl>
-                              <SelectTrigger className="h-12 rounded-full text-sm">
-                                <SelectValue placeholder={t("guestRequest.serviceFieldPlaceholder")} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {entries.map((entry) => (
-                                <SelectItem key={entry.id} value={entry.id}>
-                                  {entry.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-3">
+                      <FormLabel>{t("guestRequest.serviceFieldLabel")}</FormLabel>
+                      <div className="max-h-[200px] overflow-y-auto rounded-[1.4rem] border border-[#dbe7e2] bg-[#f9fbfa] p-2">
+                        <div className="space-y-2">
+                          {entries.map((entry) => {
+                            const isChecked = selectedEntryIds.includes(entry.id);
+                            const isDisabled = !isChecked && selectionLimitReached;
+
+                            return (
+                              <label
+                                key={entry.id}
+                                className={`flex cursor-pointer items-start gap-3 rounded-xl border bg-white p-2 transition ${
+                                  isChecked
+                                    ? "border-[#bcd2ca] shadow-[0_14px_34px_-28px_rgba(15,79,72,0.35)]"
+                                    : "border-[#e4eeea]"
+                                } ${isDisabled ? "cursor-not-allowed opacity-55" : "hover:border-[#c8d9d2]"}`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  disabled={isDisabled}
+                                  onChange={(event) => handleEntryCheckedChange(entry.id, event.target.checked)}
+                                  className="mt-0.5 h-4 w-4 rounded border-[#bfd3ca] accent-[#104d49]"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm font-medium text-[#12312d]">{entry.name}</p>
+                                      <p className="mt-1 text-xs text-[#7a8f89]">
+                                        {entry.price === null || entry.price === undefined || !Number.isFinite(entry.price)
+                                          ? t("labels.priceOnRequest")
+                                          : formatCurrency(entry.price, locale)}
+                                      </p>
+                                    </div>
+                                    <Badge variant="outline" className="shrink-0 rounded-full border-[#dbe7e2] text-[0.65rem] text-[#46625b]">
+                                      {getEntryTypeLabel(entry, t, tEnums, tNewRequest)}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {selectionLimitReached ? (
+                        <p className="text-xs font-medium text-[#a15b18]">{MAX_SELECTION_HINT}</p>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
@@ -359,14 +412,35 @@ export function GuestServiceRequestDialog({
                 </div>
 
                 <div className="mt-4 rounded-[1.5rem] border border-white/70 p-4 shadow-[0_20px_56px_-50px_rgba(15,79,72,0.2)]" style={{ background: `linear-gradient(180deg, ${categoryTheme.soft} 0%, #ffffff 100%)` }}>
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] sm:text-sm sm:tracking-[0.22em]" style={{ color: categoryTheme.muted }}>
-                    {selectedEntry ? getEntryTypeLabel(selectedEntry, t, tEnums, tNewRequest) : categoryTitle}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs font-semibold uppercase tracking-[0.18em] sm:text-sm sm:tracking-[0.22em]" style={{ color: categoryTheme.muted }}>
+                      {categoryTitle}
+                    </div>
+                    <Badge className="rounded-full bg-[#12312d] px-3 py-1 text-xs font-semibold text-white hover:bg-[#12312d]">
+                      {selectedEntries.length} {SELECTED_COUNT_LABEL}
+                    </Badge>
                   </div>
                   <div className="mt-3 break-words text-xl font-semibold text-[#12312d] sm:text-2xl">
-                    {selectedEntry?.name || t("guestRequest.serviceFieldPlaceholder")}
+                    {selectedEntries.length ? t("guestRequest.serviceCardTitle") : t("guestRequest.serviceFieldPlaceholder")}
                   </div>
-                  <p className="mt-3 text-sm leading-7 text-[#617672]">
-                    {selectedEntry?.description || t("guestRequest.serviceHint")}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedEntries.length ? (
+                      selectedEntries.map((entry) => (
+                        <span
+                          key={entry.id}
+                          className="inline-flex items-center rounded-full border border-[#d9e6df] bg-white/90 px-3 py-1 text-xs font-medium text-[#12312d]"
+                        >
+                          {entry.name}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-sm leading-7 text-[#617672]">{t("guestRequest.serviceHint")}</p>
+                    )}
+                  </div>
+                  <p className="mt-4 text-sm font-semibold text-[#12312d]">
+                    {selectedEntries.length
+                      ? formatCurrency(totalSelectedPrice, locale)
+                      : t("labels.priceOnRequest")}
                   </p>
                 </div>
               </div>
@@ -388,7 +462,10 @@ export function GuestServiceRequestDialog({
                         {t("guestRequest.categoryLabel")}
                       </div>
                       <div className="mt-2 text-sm font-semibold text-[#12312d]">
-                        {selectedEntry?.categoryName || categoryTitle}
+                        {categoryTitle}
+                      </div>
+                      <div className="mt-1 text-xs text-[#7a8f89]">
+                        {selectedEntries.length} / 5
                       </div>
                     </div>
                     <div className="rounded-[1.25rem] border border-[#e5eeea] bg-[#f9fbfa] p-4">
@@ -396,9 +473,9 @@ export function GuestServiceRequestDialog({
                         {t("guestRequest.priceLabel")}
                       </div>
                       <div className="mt-2 text-sm font-semibold text-[#12312d]">
-                        {selectedEntry?.price === null || selectedEntry?.price === undefined || !Number.isFinite(selectedEntry.price)
+                        {!selectedEntries.length
                           ? t("labels.priceOnRequest")
-                          : formatCurrency(selectedEntry.price, locale)}
+                          : formatCurrency(totalSelectedPrice, locale)}
                       </div>
                     </div>
                   </div>
