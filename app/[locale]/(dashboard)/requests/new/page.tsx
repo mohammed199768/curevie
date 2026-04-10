@@ -7,18 +7,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { casesApi } from "@/lib/api/cases";
-import { labPackagesApi, labPanelsApi } from "@/lib/api/lab-panels";
 import { patientsApi } from "@/lib/api/patients";
 import { servicesApi } from "@/lib/api/services";
-import type {
-  LabPackageItem,
-  LabPanelItem,
-  PackageItem,
-  PatientUser,
-  ServiceItem,
-  ServiceOption,
-  ServiceType,
-} from "@/lib/api/types";
+import type { PatientUser, ServiceItem } from "@/lib/api/types";
 import { AMMAN_DISTRICT_KEYS, getDistrictLabel } from "@/lib/amman-districts";
 import { formatCurrency } from "@/lib/formatting";
 import { translateEnumValue } from "@/lib/i18n";
@@ -33,8 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-type LabMode = "PANEL" | "PACKAGE";
-
 interface PatientProfileData extends PatientUser {
   secondary_phone?: string | null;
   total_points?: number;
@@ -45,36 +34,34 @@ interface PatientProfileResponse {
 }
 
 const EMPTY_SERVICE_ITEMS: ServiceItem[] = [];
-const EMPTY_LAB_PANEL_ITEMS: LabPanelItem[] = [];
-const EMPTY_LAB_PACKAGE_ITEMS: LabPackageItem[] = [];
-const EMPTY_PACKAGE_ITEMS: PackageItem[] = [];
+const ALL_CATEGORIES = [
+  { id: "79242b41-42dd-44a0-a944-77488fac2441", label: "الزيارات الطبية", type: "MEDICAL" },
+  { id: "9bd587f7-2b6e-4885-b704-f3d53cd02414", label: "رعاية تمريضية منزلية", type: "MEDICAL" },
+  { id: "3a3ab6d1-6b90-42b3-80aa-a0ef754576df", label: "العلاج الطبيعي", type: "MEDICAL" },
+  { id: "53123e20-0e97-43b0-85e8-c8876e2b0dbc", label: "العلاج الوظيفي", type: "MEDICAL" },
+  { id: "81b02ae3-76f5-4fd4-9221-6eb069c87d1a", label: "الأشعة", type: "RADIOLOGY" },
+] as const;
 
-type LabTestSummary = {
-  id: string;
-  name: string;
-  unit?: string | null;
-  reference_range?: string | null;
-  display_reference_range?: string | null;
-};
+type SupportedServiceType = (typeof ALL_CATEGORIES)[number]["type"];
 
 type SelectedCaseService = {
   id: string;
   name: string;
   description?: string | null;
   price: number;
-  serviceType: "MEDICAL" | "RADIOLOGY";
+  serviceType: SupportedServiceType;
 };
 
 const MAX_CASE_SERVICES = 5;
-const RADIOLOGY_CATEGORY_ID = "81b02ae3-76f5-4fd4-9221-6eb069c87d1a";
-const MEDICAL_CATEGORIES = [
-  { id: "79242b41-42dd-44a0-a944-77488fac2441", label: "الزيارات الطبية" },
-  { id: "9bd587f7-2b6e-4885-b704-f3d53cd02414", label: "رعاية تمريضية منزلية" },
-  { id: "3a3ab6d1-6b90-42b3-80aa-a0ef754576df", label: "العلاج الطبيعي" },
-  { id: "53123e20-0e97-43b0-85e8-c8876e2b0dbc", label: "العلاج الوظيفي" },
-] as const;
 
-function getLocalizedValue<T extends { name?: string; name_en?: string; name_ar?: string; description?: string | null; description_en?: string | null; description_ar?: string | null }>(
+function getLocalizedValue<T extends {
+  name?: string;
+  name_en?: string;
+  name_ar?: string;
+  description?: string | null;
+  description_en?: string | null;
+  description_ar?: string | null;
+}>(
   item: T | null | undefined,
   locale: string,
   field: "name" | "description",
@@ -92,52 +79,8 @@ function getLocalizedValue<T extends { name?: string; name_en?: string; name_ar?
     : item.description_en || item.description_ar || item.description || null;
 }
 
-function getDisplayReferenceRange(test: { display_reference_range?: string | null; reference_range?: string | null }) {
-  return test.display_reference_range ?? test.reference_range ?? null;
-}
-
-function getOptionRawPrice(option: ServiceOption | null | undefined): number | string | null | undefined {
-  if (!option) return null;
-  if ("price" in option) return option.price;
-  if ("cost" in option) return option.cost;
-  if ("total_cost" in option) return option.total_cost;
-  return null;
-}
-
-function getOptionTestsCount(option: ServiceOption): number {
-  if ("tests" in option && Array.isArray(option.tests) && option.tests.length) {
-    return option.tests.length;
-  }
-  if ("test_ids" in option && Array.isArray(option.test_ids) && option.test_ids.length) {
-    return option.test_ids.length;
-  }
-  if ("tests_count" in option && typeof option.tests_count === "number") {
-    return option.tests_count;
-  }
-  return 0;
-}
-
-function getOptionPanelsCount(option: ServiceOption): number {
-  if ("panels" in option && Array.isArray(option.panels) && option.panels.length) {
-    return option.panels.length;
-  }
-  if ("panel_ids" in option && Array.isArray(option.panel_ids) && option.panel_ids.length) {
-    return option.panel_ids.length;
-  }
-  if ("panels_count" in option && typeof option.panels_count === "number") {
-    return option.panels_count;
-  }
-  return 0;
-}
-
-function getOptionServicesCount(option: ServiceOption): number {
-  if ("services" in option && Array.isArray(option.services) && option.services.length) {
-    return option.services.length;
-  }
-  if ("service_ids" in option && Array.isArray(option.service_ids) && option.service_ids.length) {
-    return option.service_ids.length;
-  }
-  return 0;
+function getServicePrice(service: ServiceItem | null | undefined) {
+  return Number(service?.price ?? service?.cost ?? service?.total_cost ?? 0);
 }
 
 export default function NewRequestPage() {
@@ -152,36 +95,27 @@ export default function NewRequestPage() {
   const patchPatient = useAuthStore((state) => state.patchPatient);
   const appliedPresetRef = useRef(false);
 
-  const [serviceType, setServiceType] = useState<ServiceType>("MEDICAL");
-  const [medicalCategoryId, setMedicalCategoryId] = useState<string>(
-    MEDICAL_CATEGORIES[0].id,
-  );
-  const [labMode, setLabMode] = useState<LabMode>("PANEL");
+  const [activeCategoryId, setActiveCategoryId] = useState<string>(ALL_CATEGORIES[0].id);
   const [serviceId, setServiceId] = useState("");
   const [notes, setNotes] = useState("");
   const [overridePhone, setOverridePhone] = useState<string>("");
   const [overrideAddress, setOverrideAddress] = useState<string>("");
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState<SelectedCaseService[]>([]);
-  const [selectedCatalogItemId, setSelectedCatalogItemId] = useState("");
+
+  const activeCategory = useMemo(
+    () => ALL_CATEGORIES.find((category) => category.id === activeCategoryId) ?? ALL_CATEGORIES[0],
+    [activeCategoryId],
+  );
+  const serviceType = activeCategory.type;
 
   const servicesQuery = useQuery({
-    queryKey: ["new-request", "services", serviceType, medicalCategoryId],
-    queryFn: async () => {
-      if (serviceType === "RADIOLOGY") {
-        return normalizeListResponse<ServiceItem>(
-          (await servicesApi.list({ limit: 100, category_id: RADIOLOGY_CATEGORY_ID })).data,
-        ).data;
-      }
-
-      return normalizeListResponse<ServiceItem>(
-        (await servicesApi.list({
-          limit: 100,
-          category_id: medicalCategoryId,
-        })).data,
-      ).data;
-    },
-    enabled: serviceType === "MEDICAL" || serviceType === "RADIOLOGY",
+    queryKey: ["new-request", "services", activeCategoryId],
+    queryFn: async () =>
+      normalizeListResponse<ServiceItem>(
+        (await servicesApi.list({ limit: 100, category_id: activeCategoryId })).data,
+      ).data,
+    enabled: true,
   });
 
   const patientProfileQuery = useQuery({
@@ -202,123 +136,14 @@ export default function NewRequestPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const labPanelsQuery = useQuery({
-    queryKey: ["lab-panels", "list"],
-    queryFn: async () => normalizeListResponse<LabPanelItem>((await labPanelsApi.list({ limit: 100, is_active: true })).data).data,
-    enabled: serviceType === "LAB" && labMode === "PANEL",
-  });
-
-  const labPackagesQuery = useQuery({
-    queryKey: ["lab-packages", "list"],
-    queryFn: async () => normalizeListResponse<LabPackageItem>((await labPackagesApi.list({ limit: 100, is_active: true })).data).data,
-    enabled: serviceType === "LAB" && labMode === "PACKAGE",
-  });
-
-  const medicalPackagesQuery = useQuery({
-    queryKey: ["new-request", "packages", "medical"],
-    queryFn: async () => normalizeListResponse<PackageItem>((await servicesApi.listPackages({ limit: 100 })).data).data,
-    enabled: serviceType === "PACKAGE",
-  });
-
-  const serviceOptions = servicesQuery.data ?? EMPTY_SERVICE_ITEMS;
-  const labPanelOptions = labPanelsQuery.data ?? EMPTY_LAB_PANEL_ITEMS;
-  const labPackageOptions = labPackagesQuery.data ?? EMPTY_LAB_PACKAGE_ITEMS;
-  const medicalPackageOptions = medicalPackagesQuery.data ?? EMPTY_PACKAGE_ITEMS;
-
-  const options = useMemo<ServiceOption[]>(() => {
-    if (serviceType === "LAB" && labMode === "PANEL") return labPanelOptions;
-    if (serviceType === "LAB" && labMode === "PACKAGE") return labPackageOptions;
-    if (serviceType === "PACKAGE") return medicalPackageOptions;
-    return serviceOptions;
-  }, [
-    labMode,
-    labPackageOptions,
-    labPanelOptions,
-    medicalPackageOptions,
-    serviceType,
-    serviceOptions,
-  ]);
-
-  const selectedMedicalPackage =
-    serviceType === "PACKAGE"
-      ? medicalPackageOptions.find((item) => item.id === serviceId) || null
-      : null;
-  const selectedLabPackageId =
-    serviceType === "LAB" && labMode === "PACKAGE"
-      ? serviceId || null
-      : null;
-  const selectedLabPanelId =
-    serviceType === "LAB" && labMode === "PANEL"
-      ? serviceId || null
-      : null;
-  const selectedLabPackage =
-    serviceType === "LAB" && labMode === "PACKAGE"
-      ? labPackageOptions.find((item) => item.id === selectedLabPackageId) || null
-      : null;
-  const selectedLabPanel =
-    serviceType === "LAB" && labMode === "PANEL"
-      ? labPanelOptions.find((item) => item.id === selectedLabPanelId) || null
-      : null;
-
-  const selectedLabPanelDetailsQuery = useQuery({
-    queryKey: ["lab-panels", "details", selectedLabPanelId],
-    queryFn: async () => {
-      if (!selectedLabPanelId) return null;
-      return (await labPanelsApi.getById(selectedLabPanelId ?? "")).data;
-    },
-    enabled: Boolean(selectedLabPanelId),
-  });
-
-  const selectedLabPackageDetailsQuery = useQuery({
-    queryKey: ["lab-packages", "details", selectedLabPackageId],
-    queryFn: async () => {
-      if (!selectedLabPackageId) return null;
-      return (await labPackagesApi.getById(selectedLabPackageId ?? "")).data;
-    },
-    enabled: Boolean(selectedLabPackageId),
-  });
-
-  const selectedLabPanelDetails = selectedLabPanelDetailsQuery.data || selectedLabPanel;
-  const selectedLabPackageDetails = selectedLabPackageDetailsQuery.data || selectedLabPackage;
-  const deduplicatedPackageTests = useMemo<LabTestSummary[]>(() => {
-    if (!selectedLabPackageDetails) return [];
-
-    const seen = new Set<string>();
-    const all: LabTestSummary[] = [];
-
-    for (const test of selectedLabPackageDetails.tests || []) {
-      if (!seen.has(test.id)) {
-        seen.add(test.id);
-        all.push(test);
-      }
-    }
-
-    for (const panel of selectedLabPackageDetails.panels || []) {
-      for (const test of panel.tests || []) {
-        if (!seen.has(test.id)) {
-          seen.add(test.id);
-          all.push(test);
-        }
-      }
-    }
-
-    return all;
-  }, [selectedLabPackageDetails]);
-
+  const options = servicesQuery.data ?? EMPTY_SERVICE_ITEMS;
   const patientProfile = patientProfileQuery.data;
   const patientDisplayName = patientProfile?.full_name || patient?.full_name || "";
   const patientPhone = patientProfile?.phone || patient?.phone || "";
   const patientAddress = patientProfile?.address || patient?.address || "";
   const selectDistrictLabel = tPage.has("selectDistrict") ? tPage("selectDistrict") : tBooking("selectDistrict");
-  const activeCatalogLoading = servicesQuery.isLoading
-    || labPanelsQuery.isLoading
-    || labPackagesQuery.isLoading
-    || medicalPackagesQuery.isLoading;
+  const activeCatalogLoading = servicesQuery.isLoading;
 
-  const selectedCatalogItem = useMemo(
-    () => options.find((item) => item.id === selectedCatalogItemId) || null,
-    [options, selectedCatalogItemId],
-  );
   const selectedServiceIds = useMemo(
     () => new Set(selectedServices.map((service) => service.id)),
     [selectedServices],
@@ -327,17 +152,9 @@ export default function NewRequestPage() {
     () => selectedServices.reduce((sum, service) => sum + Number(service.price || 0), 0),
     [selectedServices],
   );
-  const selectedCatalogPrice = useMemo(
-    () => Number(getOptionRawPrice(selectedCatalogItem) || 0),
-    [selectedCatalogItem],
-  );
-  const effectiveTotalPrice = useMemo(
-    () => ((serviceType === "LAB" || serviceType === "PACKAGE") ? selectedCatalogPrice : totalSelectedPrice),
-    [selectedCatalogPrice, serviceType, totalSelectedPrice],
-  );
   const formattedTotalPrice = useMemo(
-    () => formatCurrency(effectiveTotalPrice, locale),
-    [effectiveTotalPrice, locale],
+    () => formatCurrency(totalSelectedPrice, locale),
+    [locale, totalSelectedPrice],
   );
   const effectivePhone = overridePhone || patientPhone;
   const effectiveAddress = overrideAddress || patientAddress;
@@ -345,82 +162,49 @@ export default function NewRequestPage() {
     () => [
       notes,
       (overridePhone.trim() && overridePhone.trim() !== patientPhone)
-        ? `📞 رقم بديل: ${overridePhone.trim()}`
+        ? `رقم بديل: ${overridePhone.trim()}`
         : "",
       (overrideAddress.trim() && overrideAddress.trim() !== patientAddress)
-        ? `📍 عنوان بديل: ${overrideAddress.trim()}`
+        ? `عنوان بديل: ${overrideAddress.trim()}`
         : "",
     ].filter(Boolean).join("\n") || null,
     [notes, overrideAddress, overridePhone, patientAddress, patientPhone],
   );
-  const reviewServices = useMemo(() => {
-    if (serviceType === "LAB" || serviceType === "PACKAGE") {
-      if (!selectedCatalogItem) return [];
-
-      return [{
-        id: selectedCatalogItem.id,
-        name: getLocalizedValue(selectedCatalogItem, locale, "name") || "",
-        description: getLocalizedValue(selectedCatalogItem, locale, "description") || undefined,
-        price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
-      }];
-    }
-
-    return selectedServices.map((service) => ({
+  const reviewServices = useMemo(
+    () => selectedServices.map((service) => ({
       id: service.id,
       name: service.name,
       description: service.description || undefined,
       price: Number(service.price || 0),
-    }));
-  }, [locale, selectedCatalogItem, selectedServices, serviceType]);
+    })),
+    [selectedServices],
+  );
   const reviewServiceHeading = reviewServices[0]?.name || tPage("notProvided");
   const reviewServiceTypes = useMemo(
-    () => {
-      if (serviceType === "LAB") return selectedCatalogItem ? ["LAB"] as const : [];
-      if (serviceType === "PACKAGE") return selectedCatalogItem ? ["PACKAGE"] as const : [];
-      return Array.from(new Set(selectedServices.map((service) => service.serviceType)));
-    },
-    [selectedCatalogItem, selectedServices, serviceType],
+    () => Array.from(new Set(selectedServices.map((service) => service.serviceType))),
+    [selectedServices],
   );
-  const canSubmitCurrentSelection = useMemo(() => {
-    if (serviceType === "LAB" || serviceType === "PACKAGE") {
-      return Boolean(selectedCatalogItem);
-    }
-
-    return selectedServices.length > 0;
-  }, [selectedCatalogItem, selectedServices.length, serviceType]);
-  const selectionBadges = useMemo(() => {
-    if (serviceType === "LAB" || serviceType === "PACKAGE") {
-      if (!selectedCatalogItem) return [];
-
-      return [{
-        id: selectedCatalogItem.id,
-        name: getLocalizedValue(selectedCatalogItem, locale, "name") || "",
-        price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
-        mode: "catalog" as const,
-      }];
-    }
-
-    return selectedServices.map((service) => ({
+  const canSubmitCurrentSelection = selectedServices.length > 0;
+  const selectionBadges = useMemo(
+    () => selectedServices.map((service) => ({
       id: service.id,
       name: service.name,
       price: Number(service.price || 0),
-      mode: "service" as const,
-    }));
-  }, [locale, selectedCatalogItem, selectedServices, serviceType]);
+    })),
+    [selectedServices],
+  );
 
   useEffect(() => {
     if (appliedPresetRef.current) return;
 
+    const presetCategoryId = searchParams.get("categoryId");
     const presetServiceType = searchParams.get("serviceType");
-    const presetLabMode = searchParams.get("labMode");
     const presetServiceId = searchParams.get("serviceId");
 
-    if (presetServiceType === "MEDICAL" || presetServiceType === "RADIOLOGY" || presetServiceType === "LAB" || presetServiceType === "PACKAGE") {
-      setServiceType(presetServiceType);
-    }
-
-    if (presetLabMode === "PANEL" || presetLabMode === "PACKAGE") {
-      setLabMode(presetLabMode);
+    if (presetCategoryId && ALL_CATEGORIES.some((category) => category.id === presetCategoryId)) {
+      setActiveCategoryId(presetCategoryId);
+    } else if (presetServiceType === "RADIOLOGY") {
+      setActiveCategoryId("81b02ae3-76f5-4fd4-9221-6eb069c87d1a");
     }
 
     if (presetServiceId) {
@@ -465,13 +249,6 @@ export default function NewRequestPage() {
     }
   }, [options, serviceId]);
 
-  useEffect(() => {
-    if (!selectedCatalogItemId) return;
-    if (!options.some((item) => item.id === selectedCatalogItemId)) {
-      setSelectedCatalogItemId("");
-    }
-  }, [options, selectedCatalogItemId]);
-
   const handleReviewOpenChange = (open: boolean) => {
     setIsReviewOpen(open);
   };
@@ -492,30 +269,20 @@ export default function NewRequestPage() {
     });
   };
 
-  const buildSelectableServices = (option: ServiceOption | null): SelectedCaseService[] => {
+  const buildSelectableServices = (option: ServiceItem | null): SelectedCaseService[] => {
     if (!option) return [];
 
-    if (serviceType === "MEDICAL" || serviceType === "RADIOLOGY") {
-      return [{
-        id: option.id,
-        name: getLocalizedValue(option, locale, "name") || "",
-        description: getLocalizedValue(option, locale, "description") || undefined,
-        price: Number(getOptionRawPrice(option) || 0),
-        serviceType: serviceType === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL",
-      }];
-    }
-
-    return [];
+    return [{
+      id: option.id,
+      name: getLocalizedValue(option, locale, "name") || "",
+      description: getLocalizedValue(option, locale, "description") || undefined,
+      price: getServicePrice(option),
+      serviceType,
+    }];
   };
 
-  const handleOptionSelect = (item: ServiceOption) => {
+  const handleOptionSelect = (item: ServiceItem) => {
     setServiceId(item.id);
-
-    if (serviceType === "LAB" || serviceType === "PACKAGE") {
-      setSelectedCatalogItemId(item.id);
-      return;
-    }
-
     addServicesToSelection(buildSelectableServices(item));
   };
 
@@ -531,27 +298,13 @@ export default function NewRequestPage() {
         throw new Error("AUTH_REQUIRED");
       }
 
-      if (serviceType === "LAB") {
-        if (!selectedCatalogItem) throw new Error(tPage("noServices"));
-
-        toast.error("خدمة المختبر ستكون متاحة قريباً");
-        return null;
-      }
-
-      if (serviceType === "PACKAGE") {
-        if (!selectedCatalogItem) throw new Error(tPage("noServices"));
-
-        toast.error("الباقات ستكون متاحة قريباً");
-        return null;
-      }
-
       if (!selectedServices.length) throw new Error(tPage("noServices"));
 
       const response = await casesApi.create({
         services: selectedServices.slice(0, MAX_CASE_SERVICES).map((service) => ({
           service_id: service.id,
-          original_price: Number(service.price || 0),
-          bundle_price: Number(service.price || 0),
+          original_price: service.price,
+          bundle_price: service.price,
           notes: "",
         })),
         notes: compiledNotes ?? "",
@@ -559,8 +312,7 @@ export default function NewRequestPage() {
 
       return response.data.case;
     },
-    onSuccess: (result) => {
-      if (!result) return;
+    onSuccess: () => {
       handleReviewOpenChange(false);
       toast.success(tPage("requestSubmitted"));
       router.push(`/${locale}/requests`);
@@ -597,7 +349,6 @@ export default function NewRequestPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <Input value={patientDisplayName} disabled />
 
-            {/* Phone: dropdown of available numbers */}
             <div className="space-y-1">
               {patientProfile?.secondary_phone ? (
                 <Select
@@ -619,7 +370,6 @@ export default function NewRequestPage() {
               )}
             </div>
 
-            {/* Address: dropdown of Amman districts */}
             <Select
               value={overrideAddress || patientAddress}
               onValueChange={setOverrideAddress}
@@ -637,82 +387,34 @@ export default function NewRequestPage() {
             </Select>
           </div>
 
-          <div className="grid gap-2 md:grid-cols-3">
-            {(["RADIOLOGY", "LAB", "PACKAGE"] as const).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => {
-                  setServiceType(type);
-                  setMedicalCategoryId(MEDICAL_CATEGORIES[0].id);
-                  setSelectedCatalogItemId("");
-                  if (type === "LAB") {
-                    setLabMode("PANEL");
-                  }
-                  setServiceId("");
-                }}
-                className={`rounded-2xl border p-3 text-left transition ${serviceType === type ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40"}`}
-              >
-                <p className="font-semibold">
-                  {type === "RADIOLOGY"
-                    ? tPage("radiology")
-                    : type === "LAB"
-                      ? tPage("lab")
-                      : tPage("comprehensivePackages")}
-                </p>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3">
-            <p className="mb-2 text-sm font-medium text-muted-foreground">
-              الخدمات الطبية المنزلية
-            </p>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">{tPage("serviceTypeLabel")}</p>
             <div className="flex flex-wrap gap-2">
-              {MEDICAL_CATEGORIES.map((cat) => (
+              {ALL_CATEGORIES.map((category) => (
                 <button
-                  key={cat.id}
+                  key={category.id}
                   type="button"
                   onClick={() => {
-                    setServiceType("MEDICAL");
-                    setMedicalCategoryId(cat.id);
-                    setSelectedCatalogItemId("");
+                    setActiveCategoryId(category.id);
                     setServiceId("");
                   }}
                   className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                    serviceType === "MEDICAL" && medicalCategoryId === cat.id
+                    activeCategoryId === category.id
                       ? "border-primary bg-primary text-white shadow-sm"
                       : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40"
                   }`}
                 >
-                  {cat.label}
+                  {category.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {serviceType === "LAB" ? (
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant={labMode === "PANEL" ? "default" : "outline"} onClick={() => { setLabMode("PANEL"); setSelectedCatalogItemId(""); setServiceId(""); }}>
-                {tPage("testPanel")}
-              </Button>
-              <Button type="button" variant={labMode === "PACKAGE" ? "default" : "outline"} onClick={() => { setLabMode("PACKAGE"); setSelectedCatalogItemId(""); setServiceId(""); }}>
-                {tPage("labPackage")}
-              </Button>
-            </div>
-          ) : null}
-
           {activeCatalogLoading ? (
             <AppPreloader variant="panel" title={tCommon("loading")} blockCount={3} blockVariant="line" />
           ) : !options.length ? (
             <p className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/50 p-4 text-sm text-muted-foreground">
-              {serviceType === "PACKAGE"
-                ? tPage("noComprehensivePackages")
-                : serviceType === "LAB" && labMode === "PACKAGE"
-                  ? tPage("noLabPackages")
-                  : serviceType === "LAB" && labMode === "PANEL"
-                    ? tPage("noLabPanels")
-                    : tPage("noServices")}
+              {tPage("noServices")}
             </p>
           ) : (
             <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -721,24 +423,15 @@ export default function NewRequestPage() {
                   key={item.id}
                   type="button"
                   onClick={() => handleOptionSelect(item)}
-                  className={`rounded-2xl border p-3 text-left transition ${((serviceType === "LAB" || serviceType === "PACKAGE") ? selectedCatalogItemId === item.id : (serviceId === item.id || selectedServiceIds.has(item.id))) ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40"}`}
+                  className={`rounded-2xl border p-3 text-left transition ${(serviceId === item.id || selectedServiceIds.has(item.id)) ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40"}`}
                 >
                   <p className="font-semibold">{getLocalizedValue(item, locale, "name")}</p>
                   <p className="text-xs text-muted-foreground">{getLocalizedValue(item, locale, "description") || "-"}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {"price" in item && item.price ? <Badge>{item.price} JD</Badge> : null}
-                    {"cost" in item && item.cost ? <Badge>{item.cost} JD</Badge> : null}
-                    {"total_cost" in item && item.total_cost ? <Badge>{item.total_cost} JD</Badge> : null}
-                    {getOptionTestsCount(item)
-                      ? <Badge variant="outline">{tPage("testsCount", { count: getOptionTestsCount(item) })}</Badge>
-                      : null}
-                    {getOptionPanelsCount(item)
-                      ? <Badge variant="outline">{tPage("panelsCount", { count: getOptionPanelsCount(item) })}</Badge>
-                      : null}
-                    {getOptionServicesCount(item)
-                      ? <Badge variant="outline">{tPage("servicesCount", { count: getOptionServicesCount(item) })}</Badge>
-                      : null}
-                  </div>
+                  {getServicePrice(item) ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Badge>{formatCurrency(getServicePrice(item), locale)}</Badge>
+                    </div>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -753,14 +446,7 @@ export default function NewRequestPage() {
                   <button
                     type="button"
                     className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/10"
-                    onClick={() => {
-                      if (badge.mode === "catalog") {
-                        setSelectedCatalogItemId("");
-                        return;
-                      }
-
-                      removeSelectedService(badge.id);
-                    }}
+                    onClick={() => removeSelectedService(badge.id)}
                     aria-label={badge.name}
                   >
                     <X className="h-3 w-3" />
@@ -768,115 +454,6 @@ export default function NewRequestPage() {
                 </Badge>
               ))}
             </div>
-          ) : null}
-
-          {selectedLabPanel ? (
-            <Card className="border-dashed border-emerald-200 bg-white/80">
-              <CardHeader>
-                <CardTitle className="text-base">{tPage("panelTests")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                {selectedLabPanelDetailsQuery.isLoading ? (
-                  <p className="text-muted-foreground">{tCommon("loading")}</p>
-                  ) : (selectedLabPanelDetails?.tests || []).length ? (
-                    (selectedLabPanelDetails?.tests || []).map((test) => (
-                      <div key={test.id} className="rounded-lg border border-slate-200 p-3">
-                        <p className="font-medium">{test.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {tPage("unit")}: {test.unit || "-"} | {tPage("reference")}: {getDisplayReferenceRange(test) || "-"}
-                        </p>
-                      </div>
-                    ))
-                ) : (
-                  <p className="text-muted-foreground">{tPage("noLabTestsInPackage")}</p>
-                )}
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {selectedLabPackage ? (
-            <Card className="border-dashed border-emerald-200 bg-white/80">
-              <CardHeader>
-                <CardTitle className="text-base">{tPage("packageContents")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <div className="space-y-2">
-                  <p className="font-medium">{tPage("labPanels")}</p>
-                  {selectedLabPackageDetailsQuery.isLoading ? (
-                    <p className="text-muted-foreground">{tCommon("loading")}</p>
-                  ) : (selectedLabPackageDetails?.panels || []).length ? (
-                    (selectedLabPackageDetails?.panels || []).map((panel) => (
-                      <div key={panel.id} className="rounded-lg border border-slate-200 p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-medium">{getLocalizedValue(panel, locale, "name")}</p>
-                          <Badge variant="outline">{tPage("testsCount", { count: panel.tests?.length || panel.tests_count || 0 })}</Badge>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground">{tPage("noLabPanels")}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <p className="font-medium">{tPage("includedLabTests")}</p>
-                  {selectedLabPackageDetailsQuery.isLoading ? (
-                    <p className="text-muted-foreground">{tCommon("loading")}</p>
-                  ) : deduplicatedPackageTests.length ? (
-                    deduplicatedPackageTests.map((test) => (
-                      <div key={test.id} className="rounded-lg border border-slate-200 p-3">
-                        <p className="font-medium">{test.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {tPage("unit")}: {test.unit || "-"} | {tPage("reference")}: {getDisplayReferenceRange(test) || "-"}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground">{tPage("noLabTestsInPackage")}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {selectedMedicalPackage ? (
-            <Card className="border-dashed border-emerald-200 bg-white/80">
-              <CardHeader>
-                <CardTitle className="text-base">{tPage("packageContents")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                {(selectedMedicalPackage.services || []).length ? (
-                  <div className="space-y-2">
-                    <p className="font-medium">{tPage("includedConsultations")}</p>
-                    {(selectedMedicalPackage.services || []).map((service) => (
-                      <div key={service.id} className="rounded-lg border border-slate-200 p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-medium">{service.name}</p>
-                          <Badge variant="outline">{translateEnumValue(service.service_kind || "MEDICAL", tEnums)}</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{service.category_name || "-"}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="space-y-2">
-                  <p className="font-medium">{tPage("includedLabTests")}</p>
-                  {(selectedMedicalPackage.tests || []).length ? (
-                    (selectedMedicalPackage.tests || []).map((test) => (
-                      <div key={test.id} className="rounded-lg border border-slate-200 p-3">
-                        <p className="font-medium">{test.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {tPage("unit")}: {test.unit || "-"} | {tPage("reference")}: {getDisplayReferenceRange(test) || "-"}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground">{tPage("noLabTestsInPackage")}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           ) : null}
 
           <Textarea rows={4} placeholder={tPage("notesPlaceholder")} value={notes} onChange={(event) => setNotes(event.target.value)} />
@@ -1021,36 +598,36 @@ export default function NewRequestPage() {
 
             <div className="sticky bottom-0 z-10 -mx-3 mt-4 border-t border-emerald-100 bg-[#f5fbf8]/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.65rem)] pt-3 backdrop-blur sm:static sm:mx-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-0">
               <div className="rounded-[1.4rem] border border-emerald-100 bg-white px-4 py-4 shadow-sm">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-2xl bg-emerald-50 p-2.5 text-[#14514b]">
-                    <ShieldCheck className="h-5 w-5" />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-emerald-50 p-2.5 text-[#14514b]">
+                      <ShieldCheck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{tPage("confirmRequest")}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">{tPage("reviewHint")}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{tPage("confirmRequest")}</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-600">{tPage("reviewHint")}</p>
-                  </div>
-                </div>
 
-                <DialogFooter className="w-full gap-3 sm:w-auto sm:flex-row sm:items-center sm:space-x-0">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-h-11 w-full rounded-full border-slate-200 bg-white px-5 sm:w-auto"
-                    onClick={() => handleReviewOpenChange(false)}
-                  >
-                    {tPage("editRequest")}
-                  </Button>
-                  <Button
-                    type="button"
-                    className="min-h-11 w-full rounded-full bg-[#14514b] px-6 hover:bg-[#103e3a] sm:w-auto"
-                    onClick={() => mutation.mutate()}
-                    disabled={mutation.isPending}
-                  >
-                    {mutation.isPending ? tBooking("submitting") : tPage("confirmRequest")}
-                  </Button>
-                </DialogFooter>
-              </div>
+                  <DialogFooter className="w-full gap-3 sm:w-auto sm:flex-row sm:items-center sm:space-x-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11 w-full rounded-full border-slate-200 bg-white px-5 sm:w-auto"
+                      onClick={() => handleReviewOpenChange(false)}
+                    >
+                      {tPage("editRequest")}
+                    </Button>
+                    <Button
+                      type="button"
+                      className="min-h-11 w-full rounded-full bg-[#14514b] px-6 hover:bg-[#103e3a] sm:w-auto"
+                      onClick={() => mutation.mutate()}
+                      disabled={mutation.isPending}
+                    >
+                      {mutation.isPending ? tBooking("submitting") : tPage("confirmRequest")}
+                    </Button>
+                  </DialogFooter>
+                </div>
               </div>
             </div>
           </div>
