@@ -34,14 +34,10 @@ export function ChatMediaDisplay({
   );
 
   useEffect(() => {
-    let cancelled = false;
-
     if (!filePath) {
       setUrl(null);
       setLoading(false);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
 
     const resolvedUrl = isDirectMediaPath(filePath) ? filePath : casesApi.resolveMediaUrl(filePath);
@@ -49,18 +45,12 @@ export function ChatMediaDisplay({
     if (resolvedUrl) {
       setUrl(resolvedUrl);
       setLoading(false);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
 
     setLoading(true);
     setUrl(null);
     setLoading(false);
-
-    return () => {
-      cancelled = true;
-    };
   }, [filePath, requestId]);
 
   if (loading) {
