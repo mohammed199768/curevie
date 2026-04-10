@@ -66,6 +66,12 @@ type SelectedCaseService = {
 };
 
 const MAX_CASE_SERVICES = 5;
+const MEDICAL_CATEGORIES = [
+  { id: "79242b41-42dd-44a0-a944-77488fac2441", label: "الزيارات الطبية" },
+  { id: "9bd587f7-2b6e-4885-b704-f3d53cd02414", label: "رعاية تمريضية منزلية" },
+  { id: "3a3ab6d1-6b90-42b3-80aa-a0ef754576df", label: "العلاج الطبيعي" },
+  { id: "53123e20-0e97-43b0-85e8-c8876e2b0dbc", label: "العلاج الوظيفي" },
+] as const;
 
 function getLocalizedValue<T extends { name?: string; name_en?: string; name_ar?: string; description?: string | null; description_en?: string | null; description_ar?: string | null }>(
   item: T | null | undefined,
@@ -146,6 +152,9 @@ export default function NewRequestPage() {
   const appliedPresetRef = useRef(false);
 
   const [serviceType, setServiceType] = useState<ServiceType>("MEDICAL");
+  const [medicalCategoryId, setMedicalCategoryId] = useState<string>(
+    MEDICAL_CATEGORIES[0].id,
+  );
   const [labMode, setLabMode] = useState<LabMode>("PANEL");
   const [serviceId, setServiceId] = useState("");
   const [notes, setNotes] = useState("");
@@ -155,11 +164,21 @@ export default function NewRequestPage() {
   const [selectedServices, setSelectedServices] = useState<SelectedCaseService[]>([]);
 
   const servicesQuery = useQuery({
-    queryKey: ["new-request", "services", serviceType],
-    queryFn: async () =>
-      normalizeListResponse<ServiceItem>(
-        (await servicesApi.list({ limit: 100, service_kind: serviceType === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL" })).data,
-      ).data,
+    queryKey: ["new-request", "services", serviceType, medicalCategoryId],
+    queryFn: async () => {
+      if (serviceType === "RADIOLOGY") {
+        return normalizeListResponse<ServiceItem>(
+          (await servicesApi.list({ limit: 100, service_kind: "RADIOLOGY" })).data,
+        ).data;
+      }
+
+      return normalizeListResponse<ServiceItem>(
+        (await servicesApi.list({
+          limit: 100,
+          category_id: medicalCategoryId,
+        })).data,
+      ).data;
+    },
     enabled: serviceType === "MEDICAL" || serviceType === "RADIOLOGY",
   });
 
@@ -543,13 +562,14 @@ export default function NewRequestPage() {
             </Select>
           </div>
 
-          <div className="grid gap-2 md:grid-cols-4">
-            {(["MEDICAL", "RADIOLOGY", "LAB", "PACKAGE"] as const).map((type) => (
+          <div className="grid gap-2 md:grid-cols-3">
+            {(["RADIOLOGY", "LAB", "PACKAGE"] as const).map((type) => (
               <button
                 key={type}
                 type="button"
                 onClick={() => {
                   setServiceType(type);
+                  setMedicalCategoryId(MEDICAL_CATEGORIES[0].id);
                   if (type === "LAB") {
                     setLabMode("PANEL");
                   }
@@ -558,16 +578,40 @@ export default function NewRequestPage() {
                 className={`rounded-2xl border p-3 text-left transition ${serviceType === type ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40"}`}
               >
                 <p className="font-semibold">
-                  {type === "MEDICAL"
-                    ? tPage("medical")
-                    : type === "RADIOLOGY"
-                      ? tPage("radiology")
-                      : type === "LAB"
-                        ? tPage("lab")
-                        : tPage("comprehensivePackages")}
+                  {type === "RADIOLOGY"
+                    ? tPage("radiology")
+                    : type === "LAB"
+                      ? tPage("lab")
+                      : tPage("comprehensivePackages")}
                 </p>
               </button>
             ))}
+          </div>
+
+          <div className="mt-3">
+            <p className="mb-2 text-sm font-medium text-muted-foreground">
+              الخدمات الطبية المنزلية
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {MEDICAL_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    setServiceType("MEDICAL");
+                    setMedicalCategoryId(cat.id);
+                    setServiceId("");
+                  }}
+                  className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
+                    serviceType === "MEDICAL" && medicalCategoryId === cat.id
+                      ? "border-primary bg-primary text-white shadow-sm"
+                      : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/40"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {serviceType === "LAB" ? (
