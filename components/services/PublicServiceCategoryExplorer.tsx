@@ -51,7 +51,7 @@ const categoryTitleFallbacks: Record<PublicServiceCategoryTranslationKey, string
 const SELECT_CARD_LABEL = "\u0627\u062E\u062A\u0631";
 const SELECTED_CARD_LABEL = "\u0645\u062D\u062F\u062F";
 const SELECTED_SERVICES_LABEL = "\u062E\u062F\u0645\u0629 \u0645\u062D\u062F\u062F\u0629";
-const REQUEST_SELECTED_LABEL = "\u0637\u0644\u0628 \u0627\u0644\u062E\u062F\u0645\u0627\u062A \u0627\u0644\u0645\u062D\u062F\u062F\u0629";
+const REQUEST_SELECTED_LABEL = "\u0625\u062A\u0645\u0627\u0645 \u0627\u0644\u0637\u0644\u0628";
 
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
   const locale = useLocale();
@@ -535,18 +535,21 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
 
       <div
         className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 border-t bg-white/95 px-4 py-3 shadow-lg backdrop-blur transition-transform duration-300",
+          "fixed bottom-0 left-0 right-0 z-[100] border-t border-gray-200 bg-white/95 px-4 py-3 shadow-2xl backdrop-blur-sm transition-transform duration-300 safe-area-pb",
           selectedEntryIds.size > 0 ? "translate-y-0" : "translate-y-full",
         )}
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <span className="text-sm font-medium text-gray-700">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+          <span className="shrink-0 text-sm font-medium text-gray-700">
             {selectedEntryIds.size} {SELECTED_SERVICES_LABEL}
           </span>
           <Button
-            onClick={openGuestRequestDialog}
+            onClick={() => {
+              setGuestRequestOpen(true);
+            }}
+            className="shrink-0 rounded-full px-6 py-2.5 text-sm font-semibold text-white"
             style={{ backgroundColor: category.theme.base }}
-            className="rounded-full px-6 text-sm font-semibold text-white"
           >
             {REQUEST_SELECTED_LABEL}
           </Button>
