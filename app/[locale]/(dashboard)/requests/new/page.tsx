@@ -534,33 +534,15 @@ export default function NewRequestPage() {
       if (serviceType === "LAB") {
         if (!selectedCatalogItem) throw new Error(tPage("noServices"));
 
-        const response = await casesApi.create({
-          services: [{
-            service_id: selectedCatalogItem.id,
-            original_price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
-            bundle_price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
-            notes: "",
-          }],
-          notes: notes ?? "",
-        });
-
-        return response.data.case;
+        toast.error("خدمة المختبر ستكون متاحة قريباً");
+        return null;
       }
 
       if (serviceType === "PACKAGE") {
         if (!selectedCatalogItem) throw new Error(tPage("noServices"));
 
-        const response = await casesApi.create({
-          services: [{
-            service_id: selectedCatalogItem.id,
-            original_price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
-            bundle_price: Number(getOptionRawPrice(selectedCatalogItem) || 0),
-            notes: "",
-          }],
-          notes: notes ?? "",
-        });
-
-        return response.data.case;
+        toast.error("الباقات ستكون متاحة قريباً");
+        return null;
       }
 
       if (!selectedServices.length) throw new Error(tPage("noServices"));
@@ -577,7 +559,8 @@ export default function NewRequestPage() {
 
       return response.data.case;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (!result) return;
       handleReviewOpenChange(false);
       toast.success(tPage("requestSubmitted"));
       router.push(`/${locale}/requests`);
