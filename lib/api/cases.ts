@@ -300,36 +300,31 @@ async function getCaseById(id: string) {
 }
 
 async function listCases(params?: { page?: number; limit?: number; status?: string }) {
-  const response = await apiClient.get<CaseListResponse>("/cases", { params });
-  const rawCases = Array.isArray(response.data?.cases) ? response.data.cases : [];
+  const response = await apiClient.get<CaseListResponse>(
+    "/cases", { params }
+  );
+
+  const rawCases = Array.isArray(response.data?.cases)
+    ? response.data.cases
+    : [];
   const page = Number(response.data?.page ?? params?.page ?? 1);
   const limit = Number(response.data?.limit ?? params?.limit ?? 20);
   const total = Number(response.data?.total ?? rawCases.length);
 
-  const enrichedCases = await Promise.all(
-    rawCases.map(async (caseRow) => {
-      const caseId = caseRow && typeof caseRow === "object" ? toStringValue((caseRow as Record<string, unknown>).id) : "";
-      if (!caseId) {
-        return normalizePatientCase(caseRow);
-      }
-
-      try {
-        const detail = await getCaseById(caseId);
-        return detail.data;
-      } catch {
-        return normalizePatientCase(caseRow);
-      }
-    }),
-  );
+  const cases = rawCases.map((c) => normalizePatientCase(c));
 
   const filteredCases = params?.status
-    ? enrichedCases.filter((item) => item.status === params.status)
-    : enrichedCases;
+    ? cases.filter((item) => item.status === params.status)
+    : cases;
 
   return {
     data: {
       data: filteredCases,
-      pagination: buildPagination(params?.status ? filteredCases.length : total, page, limit),
+      pagination: buildPagination(
+        params?.status ? filteredCases.length : total,
+        page,
+        limit
+      ),
     } satisfies ApiListResponse<PatientCase>,
   };
 }
