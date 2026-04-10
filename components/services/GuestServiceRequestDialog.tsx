@@ -157,6 +157,18 @@ export function GuestServiceRequestDialog({
     () => selectedEntries.reduce((sum, entry) => sum + Number(entry.price ?? 0), 0),
     [selectedEntries],
   );
+  const groupedEntries = useMemo(() => {
+    const groups: Record<string, typeof entries> = {};
+
+    for (const entry of entries) {
+      const key = entry.categoryName || "\u0623\u062E\u0631\u0649";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(entry);
+    }
+
+    return groups;
+  }, [entries]);
+  const shouldShowGroupHeaders = Object.keys(groupedEntries).length > 1;
   const selectionLimitReached = selectedEntryIds.length >= 5;
 
   const handleEntryCheckedChange = (entryId: string, checked: boolean) => {
@@ -347,46 +359,55 @@ export function GuestServiceRequestDialog({
                       <label className="text-sm font-medium leading-none text-foreground">
                         {t("guestRequest.serviceFieldLabel")}
                       </label>
-                      <div className="max-h-[200px] overflow-y-auto rounded-[1.4rem] border border-[#dbe7e2] bg-[#f9fbfa] p-2">
+                    <div className="max-h-[200px] overflow-y-auto rounded-[1.4rem] border border-[#dbe7e2] bg-[#f9fbfa] p-2">
                         <div className="space-y-2">
-                          {entries.map((entry) => {
-                            const isChecked = selectedEntryIds.includes(entry.id);
-                            const isDisabled = !isChecked && selectionLimitReached;
-
-                            return (
-                              <label
-                                key={entry.id}
-                                className={`flex cursor-pointer items-start gap-3 rounded-xl border bg-white p-2 transition ${
-                                  isChecked
-                                    ? "border-[#bcd2ca] shadow-[0_14px_34px_-28px_rgba(15,79,72,0.35)]"
-                                    : "border-[#e4eeea]"
-                                } ${isDisabled ? "cursor-not-allowed opacity-55" : "hover:border-[#c8d9d2]"}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  disabled={isDisabled}
-                                  onChange={(event) => handleEntryCheckedChange(entry.id, event.target.checked)}
-                                  className="mt-0.5 h-4 w-4 rounded border-[#bfd3ca] accent-[#104d49]"
-                                />
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                      <p className="truncate text-sm font-medium text-[#12312d]">{entry.name}</p>
-                                      <p className="mt-1 text-xs text-[#7a8f89]">
-                                        {entry.price === null || entry.price === undefined || !Number.isFinite(entry.price)
-                                          ? t("labels.priceOnRequest")
-                                          : formatCurrency(entry.price, locale)}
-                                      </p>
-                                    </div>
-                                    <Badge variant="outline" className="shrink-0 rounded-full border-[#dbe7e2] text-[0.65rem] text-[#46625b]">
-                                      {getEntryTypeLabel(entry, t, tEnums, tNewRequest)}
-                                    </Badge>
-                                  </div>
+                          {Object.entries(groupedEntries).map(([groupName, groupEntries]) => (
+                            <div key={groupName} className="space-y-2">
+                              {shouldShowGroupHeaders ? (
+                                <div className="px-1 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                                  {groupName}
                                 </div>
-                              </label>
-                            );
-                          })}
+                              ) : null}
+                              {groupEntries.map((entry) => {
+                                const isChecked = selectedEntryIds.includes(entry.id);
+                                const isDisabled = !isChecked && selectionLimitReached;
+
+                                return (
+                                  <label
+                                    key={entry.id}
+                                    className={`flex cursor-pointer items-start gap-3 rounded-xl border bg-white p-2 transition ${
+                                      isChecked
+                                        ? "border-[#bcd2ca] shadow-[0_14px_34px_-28px_rgba(15,79,72,0.35)]"
+                                        : "border-[#e4eeea]"
+                                    } ${isDisabled ? "cursor-not-allowed opacity-55" : "hover:border-[#c8d9d2]"}`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      disabled={isDisabled}
+                                      onChange={(event) => handleEntryCheckedChange(entry.id, event.target.checked)}
+                                      className="mt-0.5 h-4 w-4 rounded border-[#bfd3ca] accent-[#104d49]"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                          <p className="truncate text-sm font-medium text-[#12312d]">{entry.name}</p>
+                                          <p className="mt-1 text-xs text-[#7a8f89]">
+                                            {entry.price === null || entry.price === undefined || !Number.isFinite(entry.price)
+                                              ? t("labels.priceOnRequest")
+                                              : formatCurrency(entry.price, locale)}
+                                          </p>
+                                        </div>
+                                        <Badge variant="outline" className="shrink-0 rounded-full border-[#dbe7e2] text-[0.65rem] text-[#46625b]">
+                                          {getEntryTypeLabel(entry, t, tEnums, tNewRequest)}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          ))}
                         </div>
                       </div>
                       {selectionLimitReached ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -63,6 +63,12 @@ const SELECT_CARD_LABEL = "\u0627\u062E\u062A\u0631";
 const SELECTED_CARD_LABEL = "\u0645\u062D\u062F\u062F";
 const SELECTED_SERVICES_LABEL = "\u062E\u062F\u0645\u0629 \u0645\u062D\u062F\u062F\u0629";
 const REQUEST_SELECTED_LABEL = "\u0625\u062A\u0645\u0627\u0645 \u0627\u0644\u0637\u0644\u0628";
+const MEDICAL_GROUP_SLUGS = [
+  "medical-visits",
+  "home-nursing",
+  "physical-therapy",
+  "occupational-therapy",
+] as const;
 
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
   const locale = useLocale();
@@ -88,12 +94,32 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const [search, setSearch] = useState("");
   const [guestRequestOpen, setGuestRequestOpen] = useState(false);
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
+  const isMedicalGroup = MEDICAL_GROUP_SLUGS.includes(slug as any);
 
   const dataQuery = useQuery({
     queryKey: ["public-category-explorer", slug],
     queryFn: () => fetchPublicServiceCategoryCatalog(slug),
     staleTime: 10 * 60 * 1000,
   });
+  const medicalGroupQueries = useQueries({
+    queries: MEDICAL_GROUP_SLUGS.map((groupSlug) => ({
+      queryKey: ["public-category-explorer", groupSlug],
+      queryFn: () => fetchPublicServiceCategoryCatalog(groupSlug),
+      staleTime: 10 * 60 * 1000,
+      enabled: isMedicalGroup,
+    })),
+  });
+
+  const resolveCategoryTitle = (translationKey: PublicServiceCategoryTranslationKey) => {
+    const key = `categories.${translationKey}.title` as const;
+
+    try {
+      const label = t(key);
+      return label && label !== key ? label : categoryTitleFallbacks[translationKey];
+    } catch {
+      return categoryTitleFallbacks[translationKey];
+    }
+  };
 
   const entries = useMemo(() => {
     const data = dataQuery.data?.entries || [];
@@ -114,6 +140,21 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         .includes(normalizedSearch),
     );
   }, [entries, search]);
+  const allMedicalEntries = useMemo(() => {
+    if (!isMedicalGroup) return entries;
+
+    return medicalGroupQueries.flatMap((query, index) => {
+      const slugForQuery = MEDICAL_GROUP_SLUGS[index];
+      const matchingCategory = PUBLIC_SERVICE_CATEGORIES.find((item) => item.slug === slugForQuery);
+
+      return (query.data?.entries || []).map((entry) => ({
+        ...entry,
+        categoryName: matchingCategory
+          ? resolveCategoryTitle(matchingCategory.translationKey)
+          : entry.categoryName,
+      }));
+    });
+  }, [entries, isMedicalGroup, locale, medicalGroupQueries]);
 
   const toggleEntry = (entryId: string) => {
     setSelectedEntryIds((prev) => {
@@ -139,11 +180,10 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
       const heroCopy = rootRef.current?.querySelector("[data-explorer-hero-copy]");
       const heroActions = Array.from(rootRef.current?.querySelectorAll("[data-explorer-hero-actions] > *") || []);
       const heroNav = rootRef.current?.querySelector("[data-explorer-hero-nav]");
-      const heroPanel = rootRef.current?.querySelector("[data-explorer-hero-panel]");
       const catalogGrid = rootRef.current?.querySelector("[data-catalog-grid]");
       const catalogCards = Array.from(rootRef.current?.querySelectorAll("[data-catalog-card]") || []);
 
-      if (heroBadge || heroTitle || heroCopy || heroActions.length || heroNav || heroPanel) {
+      if (heroBadge || heroTitle || heroCopy || heroActions.length || heroNav) {
         const timeline = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.85 } });
 
         if (heroBadge) timeline.from(heroBadge, { y: 22, autoAlpha: 0 });
@@ -151,7 +191,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         if (heroCopy) timeline.from(heroCopy, { y: 28, autoAlpha: 0 }, "-=0.45");
         if (heroActions.length) timeline.from(heroActions, { y: 18, autoAlpha: 0, stagger: 0.08 }, "-=0.4");
         if (heroNav) timeline.from(heroNav, { y: 18, autoAlpha: 0 }, "-=0.4");
-        if (heroPanel) timeline.from(heroPanel, { y: 36, autoAlpha: 0, scale: 0.96 }, "-=0.55");
       }
 
       if (catalogGrid && catalogCards.length) {
@@ -193,21 +232,10 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
     ? `/${locale}/dashboard`
     : buildAuthRedirectHref(locale, category.defaultRequestPreset, "register");
 
-  const resolveCategoryTitle = (translationKey: PublicServiceCategoryTranslationKey) => {
-    const key = `categories.${translationKey}.title` as const;
-
-    try {
-      const label = t(key);
-      return label && label !== key ? label : categoryTitleFallbacks[translationKey];
-    } catch {
-      return categoryTitleFallbacks[translationKey];
-    }
-  };
-
   const categoryTitle = resolveCategoryTitle(category.translationKey);
   const categorySubtitle = t(`categories.${category.translationKey}.subtitle`);
   const categoryStory = t(`categories.${category.translationKey}.story`);
-  const canOpenGuestRequest = entries.length > 0 && !dataQuery.isLoading && !dataQuery.isError;
+  const canOpenGuestRequest = allMedicalEntries.length > 0 && !dataQuery.isLoading && !dataQuery.isError;
 
   const openGuestRequestDialog = () => {
     if (!canOpenGuestRequest) return;
@@ -291,11 +319,11 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   </Button>
                 </div>
 
-                <div className="mt-8 -mx-4 max-w-[calc(100%+2rem)] overflow-x-auto px-4 pb-1 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="mt-6 w-full overflow-x-auto pb-1 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   <div
                     data-explorer-hero-nav
                     dir={isArabic ? "rtl" : "ltr"}
-                    className="inline-flex min-w-max gap-2 whitespace-nowrap rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm sm:rounded-full"
+                    className="flex min-w-max flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm sm:rounded-full"
                   >
                     {PUBLIC_SERVICE_CATEGORIES.map((navCat) => {
                       const NavIcon = categoryIcons[navCat.translationKey];
@@ -321,35 +349,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                         </Button>
                       );
                     })}
-                  </div>
-                </div>
-              </div>
-
-              <div data-explorer-hero-panel className="relative z-10 mt-4 grid min-w-0 w-full gap-4 md:grid-cols-2 lg:mt-0 lg:w-auto lg:grid-cols-3">
-                <div className="min-w-0 rounded-[2rem] border border-white/12 bg-white/10 p-5 backdrop-blur">
-                  <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
-                    {t("stats.liveCatalog")}
-                  </div>
-                  <div className="mt-3 text-4xl font-semibold text-white">
-                    {typeof dataQuery.data?.total === "number" ? dataQuery.data.total.toLocaleString(locale) : "--"}
-                  </div>
-                  <p className="mt-3 max-w-full whitespace-normal break-words text-sm leading-7 text-white">{categoryStory}</p>
-                </div>
-
-                <div className="grid min-w-0 gap-4 md:contents">
-                  <div className="min-w-0 rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
-                    <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
-                      {t("stats.searchReady")}
-                    </div>
-                    <div className="mt-3 text-lg font-semibold text-white">{t("stats.searchReadyValue")}</div>
-                    <p className="mt-2 max-w-full whitespace-normal break-words text-sm leading-7 text-white">{t("stats.searchReadyCopy")}</p>
-                  </div>
-                  <div className="min-w-0 rounded-[1.6rem] border border-white/12 bg-black/10 p-5">
-                    <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-[0.72rem] font-semibold uppercase tracking-[0.22em]")}>
-                      {t("stats.requestPath")}
-                    </div>
-                    <div className="mt-3 text-lg font-semibold text-white">{t("stats.requestPathValue")}</div>
-                    <p className="mt-2 max-w-full whitespace-normal break-words text-sm leading-7 text-white">{t("stats.requestPathCopy")}</p>
                   </div>
                 </div>
               </div>
@@ -570,7 +569,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
       <GuestServiceRequestDialog
         open={guestRequestOpen}
         onOpenChange={setGuestRequestOpen}
-        entries={entries}
+        entries={allMedicalEntries}
         serviceSlug={slug}
         categoryTitle={categoryTitle}
         categoryTheme={category.theme}
