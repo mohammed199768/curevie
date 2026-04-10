@@ -5,51 +5,37 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { requestsApi } from "@/lib/api/requests";
-import { invoicesApi } from "@/lib/api/invoices";
+import { casesApi } from "@/lib/api/cases";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { translateEnumValue } from "@/lib/i18n";
 import { useAuthStore } from "@/lib/stores/auth.store";
-import { formatDateTime, normalizeListResponse, toNumber } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const tPage = useTranslations("dashboardPage");
   const tCommon = useTranslations("common");
-  const tEnums = useTranslations("enums");
   const locale = useLocale();
   const patient = useAuthStore((state) => state.patient);
 
-  const requestsQuery = useQuery({
-    queryKey: ["dashboard", "requests"],
-    queryFn: async () => normalizeListResponse((await requestsApi.list({ page: 1, limit: 5 })).data),
-    enabled: false,
-    initialData: normalizeListResponse({
-      data: [],
-      pagination: { page: 1, limit: 5, total: 0, total_pages: 1, pages: 1 },
-    }),
+  const casesQuery = useQuery({
+    queryKey: ["dashboard", "cases-stats", patient?.id],
+    queryFn: async () => {
+      const result = await casesApi.list({ limit: 100 });
+      const cases = result.data?.data ?? [];
+      const total = cases.length;
+      const completed = cases.filter((c) => c.status === "CLOSED").length;
+      const in_progress = cases.filter((c) =>
+        ["PENDING", "ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(c.status)
+      ).length;
+      return { cases, total, completed, in_progress };
+    },
+    enabled: Boolean(patient?.id),
+    initialData: { cases: [], total: 0, completed: 0, in_progress: 0 },
   });
 
-  const invoicesQuery = useQuery({
-    queryKey: ["dashboard", "invoices"],
-    queryFn: async () => normalizeListResponse((await invoicesApi.list({ page: 1, limit: 5 })).data),
-    enabled: false,
-    initialData: normalizeListResponse({
-      data: [],
-      pagination: { page: 1, limit: 5, total: 0, total_pages: 1, pages: 1 },
-    }),
-  });
-
-  const requests = requestsQuery.data?.data || [];
-  const invoices = invoicesQuery.data?.data || [];
-
-  const pending = requests.filter((row: any) => row.status === "PENDING").length;
-  const completed = requests.filter((row: any) => row.status === "COMPLETED").length;
-  const pendingInvoices = invoices.filter((row: any) => row.payment_status !== "PAID");
-  const isInitialLoading =
-    (requestsQuery.isLoading && !requestsQuery.data) ||
-    (invoicesQuery.isLoading && !invoicesQuery.data);
+  const recentCases = (casesQuery.data?.cases ?? []).slice(0, 3);
+  const isInitialLoading = casesQuery.isFetching && recentCases.length === 0;
 
   if (isInitialLoading) {
     return <AppPreloader variant="page" title={tCommon("loading")} blockCount={3} />;
@@ -65,36 +51,25 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title={t("totalRequests")} value={requests.length} ready={Boolean(requestsQuery.data)} loadingLabel={tCommon("loading")} />
-        <StatCard title={t("pending")} value={pending} ready={Boolean(requestsQuery.data)} loadingLabel={tCommon("loading")} />
-        <StatCard title={t("completed")} value={completed} ready={Boolean(requestsQuery.data)} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("totalRequests")} value={casesQuery.data.total} ready={!casesQuery.isFetching} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("pending")} value={casesQuery.data.in_progress} ready={!casesQuery.isFetching} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("completed")} value={casesQuery.data.completed} ready={!casesQuery.isFetching} loadingLabel={tCommon("loading")} />
       </div>
 
       <div className="space-y-4">
-        {pendingInvoices.length ? (
-          <Card className="rounded-2xl border-yellow-500/40 bg-yellow-50 dark:bg-yellow-950/20">
-            <CardContent className="p-4 text-sm">
-              {tPage("pendingInvoicesSummary", {
-                count: pendingInvoices.length,
-                amount: pendingInvoices.reduce((sum: number, row: any) => sum + toNumber(row.remaining_amount), 0).toFixed(2),
-              })}
-            </CardContent>
-          </Card>
-        ) : null}
-
         <Card className="rounded-2xl shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t("recentRequests")}</CardTitle>
             <Button asChild size="sm" variant="outline"><Link href={`/${locale}/requests`}>{tPage("viewAll")}</Link></Button>
           </CardHeader>
           <CardContent className="space-y-2">
-            {!requestsQuery.data ? (
+            {casesQuery.isFetching && recentCases.length === 0 ? (
               <DashboardSectionPreloader title={t("recentRequests")} description={tPage("summaryDescription")} />
-            ) : requests.length ? (
-              requests.map((item: any) => (
+            ) : recentCases.length ? (
+              recentCases.map((item) => (
                 <div key={item.id} className="flex items-center justify-between rounded-xl border p-3 text-sm">
                   <div>
-                    <p className="font-semibold">{translateEnumValue(item.service_type, tEnums)}</p>
+                    <p className="font-semibold">{item.services?.[0]?.service_name || `#${item.id.slice(0, 8)}`}</p>
                     <p className="text-xs text-muted-foreground">{formatDateTime(item.created_at)}</p>
                   </div>
                   <div className="flex items-center gap-2">
