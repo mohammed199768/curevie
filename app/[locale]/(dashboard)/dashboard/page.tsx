@@ -27,7 +27,7 @@ export default function DashboardPage() {
     queryKey: ["dashboard", "cases-stats"],
     queryFn: async () => {
       const result = await casesApi.list({ limit: 100 });
-      console.log("DASHBOARD DEBUG:", JSON.stringify(result));
+      console.log("DASHBOARD DEBUG:", JSON.stringify(result?.data));
       const cases = result.data?.data ?? [];
       return {
         total: cases.length,
@@ -38,11 +38,14 @@ export default function DashboardPage() {
         recent: cases.slice(0, 3),
       };
     },
-    initialData: { total: 0, in_progress: 0, completed: 0, recent: [] },
+    staleTime: 30_000,
   });
 
-  const recentCases = casesStatsQuery.data.recent;
-  const isInitialLoading = casesStatsQuery.isFetching && recentCases.length === 0;
+  const statsTotal = casesStatsQuery.data?.total ?? 0;
+  const statsInProgress = casesStatsQuery.data?.in_progress ?? 0;
+  const statsCompleted = casesStatsQuery.data?.completed ?? 0;
+  const statsRecent = casesStatsQuery.data?.recent ?? [];
+  const isInitialLoading = casesStatsQuery.isLoading && statsRecent.length === 0;
 
   if (isInitialLoading) {
     return <AppPreloader variant="page" title={tCommon("loading")} blockCount={3} />;
@@ -58,9 +61,9 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title={t("totalRequests")} value={casesStatsQuery.data.total} ready={!casesStatsQuery.isFetching} loadingLabel={tCommon("loading")} />
-        <StatCard title={t("pending")} value={casesStatsQuery.data.in_progress} ready={!casesStatsQuery.isFetching} loadingLabel={tCommon("loading")} />
-        <StatCard title={t("completed")} value={casesStatsQuery.data.completed} ready={!casesStatsQuery.isFetching} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("totalRequests")} value={statsTotal} ready={!casesStatsQuery.isLoading} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("pending")} value={statsInProgress} ready={!casesStatsQuery.isLoading} loadingLabel={tCommon("loading")} />
+        <StatCard title={t("completed")} value={statsCompleted} ready={!casesStatsQuery.isLoading} loadingLabel={tCommon("loading")} />
       </div>
 
       <div className="space-y-4">
@@ -70,10 +73,10 @@ export default function DashboardPage() {
             <Button asChild size="sm" variant="outline"><Link href={`/${locale}/requests`}>{tPage("viewAll")}</Link></Button>
           </CardHeader>
           <CardContent className="space-y-2">
-            {casesStatsQuery.isFetching && recentCases.length === 0 ? (
+            {casesStatsQuery.isLoading && statsRecent.length === 0 ? (
               <DashboardSectionPreloader title={t("recentRequests")} description={tPage("summaryDescription")} />
-            ) : recentCases.length ? (
-              recentCases.map((item) => (
+            ) : statsRecent.length ? (
+              statsRecent.map((item) => (
                 <div key={item.id} className="flex items-center justify-between rounded-xl border p-3 text-sm">
                   <div>
                     <p className="font-semibold">{item.services?.[0]?.service_name || `#${item.id.slice(0, 8)}`}</p>
