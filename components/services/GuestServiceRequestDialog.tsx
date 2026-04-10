@@ -327,7 +327,9 @@ export function GuestServiceRequestDialog({
                     />
 
                     <div className="space-y-3">
-                      <FormLabel>{t("guestRequest.serviceFieldLabel")}</FormLabel>
+                      <label className="text-sm font-medium leading-none text-foreground">
+                        {t("guestRequest.serviceFieldLabel")}
+                      </label>
                       <div className="max-h-[200px] overflow-y-auto rounded-[1.4rem] border border-[#dbe7e2] bg-[#f9fbfa] p-2">
                         <div className="space-y-2">
                           {entries.map((entry) => {
