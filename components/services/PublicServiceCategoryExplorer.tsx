@@ -8,11 +8,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import {
+  Check,
   ArrowRight,
-  ArrowUpRight,
   Crosshair,
   FlaskConical,
   Package2,
+  Plus,
   Search,
   ShieldCheck,
   Stethoscope,
@@ -48,6 +49,10 @@ const categoryTitleFallbacks: Record<PublicServiceCategoryTranslationKey, string
   labDiagnostics: "Lab Diagnostics",
   carePrograms: "Care Programs",
 };
+const SELECT_CARD_LABEL = "\u0627\u062E\u062A\u0631";
+const SELECTED_CARD_LABEL = "\u0645\u062D\u062F\u062F";
+const SELECTED_SERVICES_LABEL = "\u062E\u062F\u0645\u0629 \u0645\u062D\u062F\u062F\u0629";
+const REQUEST_SELECTED_LABEL = "\u0637\u0644\u0628 \u0627\u0644\u062E\u062F\u0645\u0627\u062A \u0627\u0644\u0645\u062D\u062F\u062F\u0629";
 
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
   const locale = useLocale();
@@ -75,7 +80,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
   const [guestRequestOpen, setGuestRequestOpen] = useState(false);
-  const [guestRequestEntryId, setGuestRequestEntryId] = useState<string | null>(null);
+  const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
 
   const dataQuery = useQuery({
     queryKey: ["public-category-explorer", slug],
@@ -102,6 +107,19 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         .includes(normalizedSearch),
     );
   }, [entries, search]);
+
+  const toggleEntry = (entryId: string) => {
+    setSelectedEntryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(entryId)) {
+        next.delete(entryId);
+      } else {
+        if (next.size >= 5) return prev;
+        next.add(entryId);
+      }
+      return next;
+    });
+  };
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -184,7 +202,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const categoryStory = t(`categories.${category.translationKey}.story`);
   const canOpenGuestRequest = entries.length > 0 && !dataQuery.isLoading && !dataQuery.isError;
 
-  const openGuestRequestDialog = (entryId?: string) => {
+  const openGuestRequestDialog = () => {
     if (!canOpenGuestRequest) return;
 
     if (!guestRequestOpen) {
@@ -194,7 +212,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
       });
     }
 
-    setGuestRequestEntryId(entryId || entries[0]?.id || null);
     setGuestRequestOpen(true);
   };
 
@@ -255,7 +272,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                     type="button"
                     className="min-h-12 rounded-full border border-white/14 px-6 text-sm font-semibold text-white hover:opacity-90"
                     style={{ backgroundColor: category.theme.accent }}
-                    onClick={() => openGuestRequestDialog()}
+                    onClick={openGuestRequestDialog}
                     disabled={!canOpenGuestRequest}
                   >
                     {t("actions.startRequest")}
@@ -391,22 +408,35 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         ) : (
           <section data-catalog-grid className="mt-8 grid gap-5 lg:grid-cols-2">
             {filteredEntries.map((entry) => {
+              const isSelected = selectedEntryIds.has(entry.id);
               return (
                 <motion.article
                   key={entry.id}
                   data-catalog-card
+                  onClick={() => toggleEntry(entry.id)}
                   whileHover={{ y: -7, scale: 1.008 }}
                   transition={{ type: "spring", stiffness: 220, damping: 20 }}
-                  className="h-full"
+                  className="h-full cursor-pointer"
                 >
                   <div
-                    className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-white bg-white"
+                    className="relative flex h-full flex-col overflow-hidden rounded-[2rem] border border-white bg-white"
                     style={{
                       background: `linear-gradient(180deg, ${category.theme.soft} 0%, #ffffff 44%, #ffffff 100%)`,
                       boxShadow: `0 30px 82px -58px ${category.theme.shadow}`,
+                      outline: isSelected ? `2px solid ${category.theme.base}` : "none",
+                      outlineOffset: isSelected ? "-2px" : "0px",
                     }}
                   >
-                    <div className="flex items-start justify-between gap-4 px-5 pb-4 pt-5">
+                    {isSelected ? (
+                      <div
+                        className="absolute end-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full text-white shadow-lg"
+                        style={{ backgroundColor: category.theme.base }}
+                      >
+                        <Check className="h-4 w-4" />
+                      </div>
+                    ) : null}
+
+                    <div className="flex items-start justify-between gap-4 px-5 pb-4 pt-5 pe-16">
                       <div>
                         <div className={cn(detailLabelClass)} style={{ color: category.theme.muted }}>
                           {entry.categoryName || t("labels.curatedForHome")}
@@ -560,11 +590,14 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                         <Button
                           type="button"
                           className="min-h-11 rounded-full px-5 text-sm font-semibold text-white hover:opacity-90"
-                          style={{ backgroundColor: category.theme.base }}
-                          onClick={() => openGuestRequestDialog(entry.id)}
+                          style={{ backgroundColor: isSelected ? "#15803d" : category.theme.base }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleEntry(entry.id);
+                          }}
                         >
-                          {t("actions.requestThis")}
-                          <ArrowUpRight className="h-4 w-4" />
+                          {isSelected ? SELECTED_CARD_LABEL : SELECT_CARD_LABEL}
+                          {isSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                         </Button>
                       </div>
                     </div>
@@ -595,7 +628,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   type="button"
                   className="min-h-11 rounded-full px-5 text-sm font-semibold text-white hover:opacity-90"
                   style={{ backgroundColor: category.theme.base }}
-                  onClick={() => openGuestRequestDialog()}
+                  onClick={openGuestRequestDialog}
                   disabled={!canOpenGuestRequest}
                 >
                   {t("actions.startRequest")}
@@ -610,14 +643,34 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         </section>
       </div>
 
+      <div
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-50 border-t bg-white/95 px-4 py-3 shadow-lg backdrop-blur transition-transform duration-300",
+          selectedEntryIds.size > 0 ? "translate-y-0" : "translate-y-full",
+        )}
+      >
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+          <span className="text-sm font-medium text-gray-700">
+            {selectedEntryIds.size} {SELECTED_SERVICES_LABEL}
+          </span>
+          <Button
+            onClick={openGuestRequestDialog}
+            style={{ backgroundColor: category.theme.base }}
+            className="rounded-full px-6 text-sm font-semibold text-white"
+          >
+            {REQUEST_SELECTED_LABEL}
+          </Button>
+        </div>
+      </div>
+
       <GuestServiceRequestDialog
         open={guestRequestOpen}
         onOpenChange={setGuestRequestOpen}
         entries={entries}
-        defaultEntryId={guestRequestEntryId}
         serviceSlug={slug}
         categoryTitle={categoryTitle}
         categoryTheme={category.theme}
+        preSelectedEntryIds={Array.from(selectedEntryIds)}
       />
     </div>
   );

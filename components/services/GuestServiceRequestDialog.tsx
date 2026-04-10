@@ -63,6 +63,7 @@ type GuestServiceRequestDialogProps = {
   onOpenChange: (open: boolean) => void;
   entries: PublicCatalogEntry[];
   defaultEntryId?: string | null;
+  preSelectedEntryIds?: string[];
   serviceSlug: PublicServiceCategorySlug;
   categoryTitle: string;
   categoryTheme: CategoryTheme;
@@ -91,6 +92,7 @@ export function GuestServiceRequestDialog({
   onOpenChange,
   entries,
   defaultEntryId,
+  preSelectedEntryIds,
   serviceSlug,
   categoryTitle,
   categoryTheme,
@@ -102,12 +104,22 @@ export function GuestServiceRequestDialog({
   const tEnums = useTranslations("enums");
   const pendingTrackingRef = useRef<Parameters<typeof onRequestCreated>[0] | null>(null);
   const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>(() => {
+    if (preSelectedEntryIds?.length) {
+      return preSelectedEntryIds;
+    }
+
     if (defaultEntryId && entries.some((entry) => entry.id === defaultEntryId)) {
       return [defaultEntryId];
     }
 
     return [];
   });
+
+  useEffect(() => {
+    if (open && preSelectedEntryIds) {
+      setSelectedEntryIds(preSelectedEntryIds);
+    }
+  }, [open, preSelectedEntryIds]);
 
   const form = useForm<GuestRequestValues>({
     resolver: zodResolver(createGuestRequestSchema(tBooking)),
@@ -121,13 +133,18 @@ export function GuestServiceRequestDialog({
   useEffect(() => {
     if (!open) return;
 
+    if (preSelectedEntryIds) {
+      setSelectedEntryIds(preSelectedEntryIds.filter((id) => entries.some((entry) => entry.id === id)));
+      return;
+    }
+
     if (defaultEntryId && entries.some((entry) => entry.id === defaultEntryId)) {
       setSelectedEntryIds([defaultEntryId]);
       return;
     }
 
     setSelectedEntryIds((current) => current.filter((id) => entries.some((entry) => entry.id === id)));
-  }, [defaultEntryId, entries, open]);
+  }, [defaultEntryId, entries, open, preSelectedEntryIds]);
 
   const selectedEntries = useMemo(
     () =>
