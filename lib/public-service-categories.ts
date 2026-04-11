@@ -190,7 +190,8 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
   {
     slug: "lab-diagnostics",
     translationKey: "labDiagnostics",
-    source: "lab",
+    source: "services-by-category",
+    categoryId: "fc689658-060f-4d2f-b455-b333f523703d",
     defaultRequestPreset: { serviceType: "LAB", labMode: "PANEL" },
     theme: {
       base: BRAND_COLORS.olive,

@@ -65,6 +65,7 @@ const MEDICAL_GROUP_SLUGS = [
   "home-nursing",
   "physical-therapy",
   "occupational-therapy",
+  "lab-diagnostics",
 ] as const;
 
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
