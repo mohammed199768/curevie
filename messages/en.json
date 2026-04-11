@@ -56,7 +56,10 @@
     "fullNameMin": "Full name must be at least 2 characters",
     "invalidPhone": "Invalid phone number format",
     "addressMin": "Address must be at least 5 characters",
-    "selectDistrict": "Select district"
+    "selectDistrict": "Select district",
+    "fullNamePlaceholder": "Full name",
+    "phonePlaceholder": "Phone number",
+    "addressPlaceholder": "Select your district"
   },
   "howItWorks": {
     "title": "Clarity in Motion",

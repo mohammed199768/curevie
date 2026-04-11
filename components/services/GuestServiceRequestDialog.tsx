@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { casesApi } from "@/lib/api/cases";
@@ -295,11 +295,10 @@ export function GuestServiceRequestDialog({
                       name="full_name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{tBooking("fullName")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <User2 className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9c9fa2]" />
-                              <Input {...field} className="h-12 rounded-full ps-11 text-sm" />
+                              <Input {...field} placeholder={tBooking("fullNamePlaceholder")} className="h-12 rounded-full ps-11 text-sm" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -312,11 +311,10 @@ export function GuestServiceRequestDialog({
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{tBooking("phone")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Phone className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9c9fa2]" />
-                              <Input {...field} className="h-12 rounded-full ps-11 text-sm" />
+                              <Input {...field} placeholder={tBooking("phonePlaceholder")} className="h-12 rounded-full ps-11 text-sm" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -329,13 +327,12 @@ export function GuestServiceRequestDialog({
                       name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{tBooking("address")}</FormLabel>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <FormControl>
                               <SelectTrigger className="h-12 rounded-full ps-4 text-sm">
                                 <div className="flex items-center gap-2">
                                   <MapPin className="h-4 w-4 shrink-0 text-[#9c9fa2]" />
-                                  <SelectValue placeholder={tBooking("selectDistrict")} />
+                                  <SelectValue placeholder={tBooking("addressPlaceholder")} />
                                 </div>
                               </SelectTrigger>
                             </FormControl>
