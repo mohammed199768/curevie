@@ -96,7 +96,6 @@ export function GuestServiceRequestDialog({
 }: GuestServiceRequestDialogProps) {
   const locale = useLocale();
   const t = useTranslations("serviceExplorer");
-  const tExplorer = useTranslations("serviceExplorer");
   const tBooking = useTranslations("booking");
   const tNewRequest = useTranslations("newRequestPage");
   const tEnums = useTranslations("enums");
@@ -159,13 +158,13 @@ export function GuestServiceRequestDialog({
     const groups: Record<string, typeof entries> = {};
 
     for (const entry of entries) {
-      const key = entry.categoryName || tExplorer("otherCategory");
+      const key = entry.categoryName || t("otherCategory");
       if (!groups[key]) groups[key] = [];
       groups[key].push(entry);
     }
 
     return groups;
-  }, [entries, tExplorer]);
+  }, [entries, t]);
   const shouldShowGroupHeaders = Object.keys(groupedEntries).length > 1;
   const selectionLimitReached = selectedEntryIds.length >= 5;
 
@@ -232,7 +231,7 @@ export function GuestServiceRequestDialog({
 
   const handleSubmit = (values: GuestRequestValues) => {
     if (selectedEntryIds.length === 0) {
-      toast.error(tExplorer("minSelectionError"));
+      toast.error(t("minSelectionError"));
       return;
     }
 
@@ -353,11 +352,11 @@ export function GuestServiceRequestDialog({
                       )}
                     />
 
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium leading-none text-foreground">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-foreground">
                         {t("guestRequest.serviceFieldLabel")}
-                      </label>
-                    <div className="max-h-[200px] overflow-y-auto rounded-[1.4rem] border border-[#dbe7e2] bg-[#f9fbfa] p-2">
+                      </p>
+                      <div className="max-h-[200px] overflow-y-auto rounded-2xl border border-[#dbe7e2] bg-[#f9fbfa] p-2.5">
                         <div className="space-y-2">
                           {Object.entries(groupedEntries).map(([groupName, groupEntries]) => (
                             <div key={groupName} className="space-y-2">
@@ -409,7 +408,7 @@ export function GuestServiceRequestDialog({
                         </div>
                       </div>
                       {selectionLimitReached ? (
-                        <p className="text-xs font-medium text-[#a15b18]">{tExplorer("maxSelectionHint")}</p>
+                        <p className="text-xs font-medium text-[#a15b18]">{t("maxSelectionHint")}</p>
                       ) : null}
                     </div>
                   </div>
@@ -455,7 +454,7 @@ export function GuestServiceRequestDialog({
                       {categoryTitle}
                     </div>
                     <Badge className="rounded-full bg-[#12312d] px-3 py-1 text-xs font-semibold text-white hover:bg-[#12312d]">
-                      {selectedEntries.length} {tExplorer("selectedCount")}
+                      {selectedEntries.length} {t("selectedCount")}
                     </Badge>
                   </div>
                   <div className="mt-3 break-words text-xl font-semibold text-[#12312d] sm:text-2xl">
