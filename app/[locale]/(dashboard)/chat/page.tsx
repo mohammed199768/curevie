@@ -11,16 +11,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { casesApi } from "@/lib/api/cases";
 import { chatApi } from "@/lib/api/chat";
 import { requestsApi } from "@/lib/api/requests";
 import type { Conversation, Message, RequestChatMessage, RequestItem, RequestStatus } from "@/lib/api/types";
 import { markRequestChatSeen, readRequestChatLastSeenMap } from "@/lib/request-chat-read-state";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import { translateEnumValue } from "@/lib/i18n";
 import { cn, formatRelativeTime, normalizeListResponse } from "@/lib/utils";
 
 const REQUEST_ROOM_STATUSES = new Set<RequestStatus>(["IN_PROGRESS", "COMPLETED", "CLOSED"]);
 const REQUEST_ROOM_ACTIVE_STATUSES = new Set<RequestStatus>(["IN_PROGRESS", "COMPLETED"]);
-const REQUEST_ROOM_TYPE = "PROVIDER_PATIENT";
+const SOCKET_IO_CDN = "https://cdn.socket.io/4.7.5/socket.io.min.js";
+const DEFAULT_API_BASE_URL = "http://localhost:5000/api/v1";
+
+type SocketLike = {
+  connected?: boolean;
+  emit: (event: string, payload?: unknown) => void;
+  on: (event: string, handler: (...args: unknown[]) => void) => void;
+  disconnect: () => void;
+};
+
+type SocketFactory = (url: string, opts?: unknown) => SocketLike;
+
+let socketIoFactoryPromise: Promise<SocketFactory | null> | null = null;
 
 type InboxThread = { kind: "admin"; id: string } | { kind: "request"; id: string };
 type RequestRoomEntry = {
@@ -31,6 +45,30 @@ type RequestRoomEntry = {
   preview: string;
   subtitle: string;
 };
+
+function getSocketUrl() {
+  return (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_BASE_URL)
+    .trim()
+    .replace(/\/api\/v1\/?$/, "")
+    .replace(/\/$/, "");
+}
+
+function loadSocketFactory() {
+  if (typeof window === "undefined") return Promise.resolve<SocketFactory | null>(null);
+  const w = window as Window & { io?: SocketFactory };
+  if (w.io) return Promise.resolve(w.io);
+  if (!socketIoFactoryPromise) {
+    socketIoFactoryPromise = new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = SOCKET_IO_CDN;
+      script.async = true;
+      script.onload = () => resolve((window as Window & { io?: SocketFactory }).io || null);
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    });
+  }
+  return socketIoFactoryPromise;
+}
 
 function shouldRetryChatQuery(failureCount: number, error: unknown) {
   if (isAxiosError(error) && error.response?.status === 429) return false;
@@ -95,13 +133,16 @@ export default function ChatPage() {
   const tChatPage = useTranslations("chatPage");
   const tCommon = useTranslations("common");
   const tEnums = useTranslations("enums");
+  const accessToken = useAuthStore((s) => s.accessToken);
   const queryClient = useQueryClient();
 
   const [activeThread, setActiveThread] = useState<InboxThread | null>(null);
   const [messageText, setMessageText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [requestRoomSeenMap, setRequestRoomSeenMap] = useState<Record<string, string>>({});
+  const [currentRoomId, setCurrentRoomId] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const socketRef = useRef<SocketLike | null>(null);
 
   useEffect(() => {
     setRequestRoomSeenMap(readRequestChatLastSeenMap());
@@ -110,6 +151,8 @@ export default function ChatPage() {
   const conversationsQuery = useQuery({
     queryKey: ["chat", "conversations"],
     queryFn: async () => (await chatApi.getConversations()).data.data,
+    enabled: false,
+    initialData: [],
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
     retry: shouldRetryChatQuery,
@@ -117,7 +160,33 @@ export default function ChatPage() {
 
   const requestRoomsQuery = useQuery({
     queryKey: ["patient-chat", "request-rooms"],
-    queryFn: async () => normalizeListResponse<RequestItem>((await requestsApi.list({ page: 1, limit: 100 })).data).data,
+    queryFn: async () => {
+      const result = await casesApi.list({ limit: 100 });
+      const cases = result.data?.data ?? [];
+      return cases.map((c: {
+        id: string;
+        status: string;
+        created_at: string;
+        updated_at?: string;
+        closed_at?: string;
+        patient_name?: string;
+        lead_provider_name?: string;
+        lead_provider_id?: string;
+        services?: Array<{ service_name: string }>;
+      }) => ({
+        id: c.id,
+        status: c.status,
+        service_type: "MEDICAL" as const,
+        service_name: c.services?.[0]?.service_name ?? "",
+        provider_name: c.lead_provider_name ?? null,
+        assigned_provider_id: c.lead_provider_id ?? null,
+        created_at: c.created_at,
+        updated_at: c.updated_at ?? c.created_at,
+        closed_at: c.closed_at ?? null,
+        completed_at: null,
+        in_progress_at: null,
+      } as RequestItem));
+    },
     refetchInterval: 45_000,
     refetchIntervalInBackground: false,
     retry: shouldRetryChatQuery,
@@ -151,14 +220,42 @@ export default function ChatPage() {
     queryFn: async () => {
       const entries = await Promise.all(requestRooms.map(async (request) => {
         try {
-          const response = await requestsApi.listChatMessages(request.id, REQUEST_ROOM_TYPE, { page: 1, limit: 20 });
-          const rawMessages = response.data.data;
-          const messages: RequestChatMessage[] = Array.isArray(rawMessages) ? rawMessages : [];
+          const rooms = await casesApi.getChatRooms(request.id);
+          const roomList = rooms.data?.data ?? [];
+          if (!roomList.length) {
+            return [request.id, { requestId: request.id, latestMessage: null, lastActivityAt: getRequestRoomTimestamp(request), lastExternalMessageAt: null }] as const;
+          }
+
+          const firstRoom = roomList[0];
+          const msgResult = await casesApi.getChatMessages(firstRoom.id, { limit: 20 });
+          const rawMessages = msgResult.data?.data ?? [];
+          const messages: RequestChatMessage[] = rawMessages.map((m: {
+            id: string;
+            sender_role?: string;
+            sender_id?: string;
+            sender_name?: string | null;
+            content?: string | null;
+            created_at: string;
+            room_id?: string;
+          }) => ({
+            id: m.id,
+            room_id: m.room_id ?? firstRoom.id,
+            sender_id: m.sender_id ?? "",
+            sender_role: (m.sender_role ?? "PROVIDER") as "PATIENT" | "PROVIDER" | "ADMIN",
+            sender_name: m.sender_name ?? null,
+            message_type: "TEXT",
+            content: m.content ?? null,
+            file_url: null,
+            file_name: null,
+            file_size: null,
+            is_read: false,
+            created_at: m.created_at,
+          }));
           const latestMessage = messages[messages.length - 1] || null;
           const lastExternalMessage = [...messages].reverse().find((message) => message.sender_role !== "PATIENT") || null;
-          return [request.id, { latestMessage, lastActivityAt: latestMessage?.created_at || getRequestRoomTimestamp(request), lastExternalMessageAt: lastExternalMessage?.created_at || null }] as const;
+          return [request.id, { requestId: request.id, latestMessage, lastActivityAt: latestMessage?.created_at || getRequestRoomTimestamp(request), lastExternalMessageAt: lastExternalMessage?.created_at || null }] as const;
         } catch {
-          return [request.id, { latestMessage: null, lastActivityAt: getRequestRoomTimestamp(request), lastExternalMessageAt: null }] as const;
+          return [request.id, { requestId: request.id, latestMessage: null, lastActivityAt: getRequestRoomTimestamp(request), lastExternalMessageAt: null }] as const;
         }
       }));
       return Object.fromEntries(entries);
@@ -193,6 +290,7 @@ export default function ChatPage() {
 
   const openConversationThread = useCallback(async (conversationId: string) => {
     setActiveThread({ kind: "admin", id: conversationId });
+    setCurrentRoomId("");
     setMessageText("");
     setFile(null);
     try {
@@ -207,8 +305,15 @@ export default function ChatPage() {
     markRequestChatSeen(requestId, resolvedSeenAt);
     setRequestRoomSeenMap((current) => ({ ...current, [requestId]: resolvedSeenAt }));
     setActiveThread({ kind: "request", id: requestId });
+    setCurrentRoomId("");
     setMessageText("");
     setFile(null);
+    void casesApi.getChatRooms(requestId).then((result) => {
+      const rooms = result.data?.data ?? [];
+      setCurrentRoomId(rooms.length > 0 ? rooms[0].id : "");
+    }).catch(() => {
+      setCurrentRoomId("");
+    });
   }, []);
 
   useEffect(() => {
@@ -237,14 +342,80 @@ export default function ChatPage() {
   const requestMessagesQuery = useQuery({
     queryKey: ["patient-chat", activeRequestRoomEntry?.request.id, "messages"],
     queryFn: async () => {
-      const response = await requestsApi.listChatMessages(activeRequestRoomEntry!.request.id, REQUEST_ROOM_TYPE, { page: 1, limit: 50 });
-      return Array.isArray(response.data.data) ? response.data.data : [];
+      if (!activeRequestRoomEntry) return [];
+      const rooms = await casesApi.getChatRooms(activeRequestRoomEntry.request.id);
+      const roomList = rooms.data?.data ?? [];
+      if (!roomList.length) return [];
+      const firstRoom = roomList[0];
+      const result = await casesApi.getChatMessages(firstRoom.id, { limit: 50 });
+      const raw = result.data?.data ?? [];
+      return raw.map((m: {
+        id: string;
+        sender_role?: string;
+        sender_id?: string;
+        sender_name?: string | null;
+        content?: string | null;
+        created_at: string;
+        room_id?: string;
+      }) => ({
+        id: m.id,
+        room_id: m.room_id ?? firstRoom.id,
+        sender_id: m.sender_id ?? "",
+        sender_role: (m.sender_role ?? "PROVIDER") as "PATIENT" | "PROVIDER" | "ADMIN",
+        sender_name: m.sender_name ?? null,
+        message_type: "TEXT" as const,
+        content: m.content ?? null,
+        file_url: null,
+        file_name: null,
+        file_size: null,
+        is_read: false,
+        created_at: m.created_at,
+      }));
     },
     enabled: Boolean(activeRequestRoomEntry?.request.id),
     refetchInterval: 5_000,
     refetchIntervalInBackground: false,
     retry: shouldRetryChatQuery,
   });
+
+  useEffect(() => {
+    if (activeThread?.kind !== "request" || !currentRoomId || !accessToken) return;
+
+    let cancelled = false;
+    let sock: SocketLike | null = null;
+
+    void loadSocketFactory().then((factory) => {
+      if (cancelled || !factory) return;
+
+      const s = factory(getSocketUrl(), {
+        auth: { token: accessToken },
+        transports: ["websocket", "polling"],
+      });
+
+      sock = s;
+      socketRef.current = s;
+
+      s.on("connect", () => {
+        s.emit("join_room", { room_id: currentRoomId });
+      });
+
+      s.on("new_message", () => {
+        void queryClient.invalidateQueries({
+          queryKey: ["patient-chat", activeThread.id, "messages"],
+        });
+      });
+
+      if (s.connected) {
+        s.emit("join_room", { room_id: currentRoomId });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      sock?.disconnect();
+      socketRef.current = null;
+    };
+  }, [accessToken, activeThread, currentRoomId, queryClient]);
 
   useEffect(() => {
     const latestExternalMessage = [...(requestMessagesQuery.data || [])].reverse().find((message) => message.sender_role !== "PATIENT");
@@ -265,7 +436,15 @@ export default function ChatPage() {
         return;
       }
       if (!activeRequestRoomEntry?.isOpen) throw new Error(tChatPage("requestClosedNotice"));
-      await requestsApi.sendChatMessage(activeThread.id, REQUEST_ROOM_TYPE, { body: messageText.trim() || undefined, file: file || undefined });
+      if (file) throw new Error("File sending is not supported in case chat");
+      if (socketRef.current && currentRoomId) {
+        socketRef.current.emit("send_message", {
+          room_id: currentRoomId,
+          content: messageText.trim(),
+        });
+        return;
+      }
+      throw new Error("Not connected to chat");
     },
     onSuccess: async () => {
       setMessageText("");
