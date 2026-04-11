@@ -27,7 +27,6 @@ export default function DashboardPage() {
     queryKey: ["dashboard", "cases-stats"],
     queryFn: async () => {
       const result = await casesApi.list({ limit: 100 });
-      console.log("DASHBOARD DEBUG:", JSON.stringify(result?.data));
       const cases = result.data?.data ?? [];
       return {
         total: cases.length,
