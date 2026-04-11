@@ -284,12 +284,7 @@ export function GuestServiceRequestDialog({
           <div className="grid gap-4 px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <div className="rounded-[1.5rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)] sm:rounded-[1.7rem]">
-                  <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#9c9fa2]">
-                    {t("guestRequest.guestInfo")}
-                  </div>
-
-                  <div className="mt-4 grid gap-4">
+                <div className="grid gap-4">
                     <FormField
                       control={form.control}
                       name="full_name"
@@ -408,7 +403,6 @@ export function GuestServiceRequestDialog({
                         <p className="text-xs font-medium text-[#a15b18]">{t("maxSelectionHint")}</p>
                       ) : null}
                     </div>
-                  </div>
                 </div>
 
                 <DialogFooter className="sticky bottom-0 flex-col-reverse gap-3 border-t border-[#e2ece7] bg-[#f7faf8]/95 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3 backdrop-blur sm:flex-row sm:justify-between sm:pb-0">
