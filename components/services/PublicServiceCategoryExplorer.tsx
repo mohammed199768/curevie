@@ -63,6 +63,7 @@ const SELECT_CARD_LABEL = "\u0627\u062E\u062A\u0631";
 const SELECTED_CARD_LABEL = "\u0645\u062D\u062F\u062F";
 const SELECTED_SERVICES_LABEL = "\u062E\u062F\u0645\u0629 \u0645\u062D\u062F\u062F\u0629";
 const REQUEST_SELECTED_LABEL = "\u0625\u062A\u0645\u0627\u0645 \u0627\u0644\u0637\u0644\u0628";
+const STORAGE_KEY = "curevie_selected_services";
 const MEDICAL_GROUP_SLUGS = [
   "medical-visits",
   "home-nursing",
@@ -93,7 +94,16 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState("");
   const [guestRequestOpen, setGuestRequestOpen] = useState(false);
-  const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
+  const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return new Set();
+      return new Set(JSON.parse(saved) as string[]);
+    } catch {
+      return new Set();
+    }
+  });
   const isMedicalGroup = MEDICAL_GROUP_SLUGS.includes(slug as any);
 
   const dataQuery = useQuery({
@@ -165,8 +175,20 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         if (next.size >= 5) return prev;
         next.add(entryId);
       }
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
+      }
       return next;
     });
+  };
+
+  const handleGuestRequestOpenChange = (open: boolean) => {
+    setGuestRequestOpen(open);
+
+    if (!open && typeof window !== "undefined") {
+      localStorage.removeItem(STORAGE_KEY);
+      setSelectedEntryIds(new Set());
+    }
   };
 
   useLayoutEffect(() => {
@@ -568,7 +590,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
 
       <GuestServiceRequestDialog
         open={guestRequestOpen}
-        onOpenChange={setGuestRequestOpen}
+        onOpenChange={handleGuestRequestOpenChange}
         entries={allMedicalEntries}
         serviceSlug={slug}
         categoryTitle={categoryTitle}
