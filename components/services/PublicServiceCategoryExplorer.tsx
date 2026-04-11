@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { gsap } from "gsap";
@@ -92,6 +92,10 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const category = getPublicServiceCategory(slug);
   const analyticsServiceKind = getPublicServiceCategoryAnalyticsKind(slug);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const navTrackRef = useRef<HTMLDivElement>(null);
+  const animFrameRef = useRef<number>(0);
+  const isPausedRef = useRef(false);
+  const posRef = useRef(0);
   const [search, setSearch] = useState("");
   const [guestRequestOpen, setGuestRequestOpen] = useState(false);
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(() => {
@@ -245,6 +249,32 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
     });
   }, [analyticsServiceKind, locale, slug]);
 
+  useEffect(() => {
+    const track = navTrackRef.current;
+    if (!track) return;
+
+    posRef.current = 0;
+    track.style.transform = "translateX(0px)";
+
+    const step = () => {
+      if (!isPausedRef.current) {
+        posRef.current += 0.5;
+        const halfWidth = track.scrollWidth / 2;
+        if (posRef.current >= halfWidth) {
+          posRef.current = 0;
+        }
+        track.style.transform = `translateX(-${posRef.current}px)`;
+      }
+      animFrameRef.current = requestAnimationFrame(step);
+    };
+
+    animFrameRef.current = requestAnimationFrame(step);
+
+    return () => {
+      cancelAnimationFrame(animFrameRef.current);
+    };
+  }, []);
+
   if (!category) {
     return null;
   }
@@ -341,23 +371,34 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   </Button>
                 </div>
 
-                <div className="mt-6 w-full overflow-x-auto pb-1 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div
+                  className="relative mt-6 w-full overflow-hidden"
+                  style={{ "--nav-bg": category.theme.secondary } as CSSProperties}
+                  onMouseEnter={() => { isPausedRef.current = true; }}
+                  onMouseLeave={() => { isPausedRef.current = false; }}
+                  onTouchStart={() => { isPausedRef.current = true; }}
+                  onTouchEnd={() => { isPausedRef.current = false; }}
+                >
+                  <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-12 bg-gradient-to-r from-[var(--nav-bg,transparent)] to-transparent" />
+                  <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-12 bg-gradient-to-l from-[var(--nav-bg,transparent)] to-transparent" />
+
                   <div
+                    ref={navTrackRef}
                     data-explorer-hero-nav
-                    dir={isArabic ? "rtl" : "ltr"}
-                    className="flex min-w-max flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5 backdrop-blur-sm sm:rounded-full"
+                    className="flex gap-2 will-change-transform py-1.5"
+                    style={{ width: "max-content" }}
                   >
-                    {PUBLIC_SERVICE_CATEGORIES.map((navCat) => {
+                    {[...PUBLIC_SERVICE_CATEGORIES, ...PUBLIC_SERVICE_CATEGORIES].map((navCat, index) => {
                       const NavIcon = categoryIcons[navCat.translationKey];
                       const isActive = navCat.slug === slug;
 
                       return (
                         <Button
-                          key={navCat.slug}
+                          key={`${navCat.slug}-${index}`}
                           asChild
                           variant="ghost"
                           className={cn(
-                            "min-h-10 shrink-0 rounded-xl px-2.5 py-2 transition-all sm:rounded-full sm:px-3",
+                            "min-h-10 shrink-0 rounded-full px-3 py-2 transition-all",
                             navButtonLabelClass,
                             isActive
                               ? "bg-white text-slate-950 shadow-sm hover:bg-white/90"
