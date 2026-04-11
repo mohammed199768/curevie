@@ -130,12 +130,8 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   };
 
   const entries = useMemo(() => {
-    const data = dataQuery.data?.entries || [];
-    if (slug === "lab-diagnostics") {
-      return data.filter((entry) => entry.type === "panel" || (entry.type === "package" && entry.packageScope === "LAB_ONLY"));
-    }
-    return data;
-  }, [dataQuery.data?.entries, slug]);
+    return dataQuery.data?.entries || [];
+  }, [dataQuery.data?.entries]);
 
   const filteredEntries = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
