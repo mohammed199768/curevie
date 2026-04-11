@@ -427,22 +427,16 @@ export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCateg
   if (category.source === "services-by-category") {
     const serviceKind =
       category.defaultRequestPreset.serviceType === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL";
-    const rawResponse = await servicesApi.listPublic({
-      limit: 100,
-      category_id: category.categoryId,
-    });
-
-    console.log('CAT_DEBUG raw:', JSON.stringify(rawResponse.data).slice(0, 300));
-
-    const response = normalizeListResponse(rawResponse.data);
-
-    console.log('CAT_DEBUG normalized:', JSON.stringify(response).slice(0, 300));
+    const response = normalizeListResponse(
+      (await servicesApi.listPublic({
+        limit: 100,
+        category_id: category.categoryId,
+      })).data,
+    );
 
     const entries = sortEntries(
       response.data.map((item) => mapServiceEntry(item, serviceKind)),
     );
-
-    console.log('CAT_DEBUG entries count:', entries.length);
 
     return {
       entries,
