@@ -59,10 +59,6 @@ const categoryTitleFallbacks: Record<PublicServiceCategoryTranslationKey, string
   labDiagnostics: "Lab Diagnostics",
   carePrograms: "Care Programs",
 };
-const SELECT_CARD_LABEL = "\u0627\u062E\u062A\u0631";
-const SELECTED_CARD_LABEL = "\u0645\u062D\u062F\u062F";
-const SELECTED_SERVICES_LABEL = "\u062E\u062F\u0645\u0629 \u0645\u062D\u062F\u062F\u0629";
-const REQUEST_SELECTED_LABEL = "\u0625\u062A\u0645\u0627\u0645 \u0627\u0644\u0637\u0644\u0628";
 const STORAGE_KEY = "curevie_selected_services";
 const MEDICAL_GROUP_SLUGS = [
   "medical-visits",
@@ -74,6 +70,7 @@ const MEDICAL_GROUP_SLUGS = [
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
   const locale = useLocale();
   const t = useTranslations("serviceExplorer");
+  const tExplorer = useTranslations("serviceExplorer");
   const tNewRequest = useTranslations("newRequestPage");
   const tEnums = useTranslations("enums");
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -531,12 +528,12 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                         {isSelected ? (
                           <>
                             <Check className="h-3 w-3" />
-                            {SELECTED_CARD_LABEL}
+                            {tExplorer("selectedCard")}
                           </>
                         ) : (
                           <>
                             <Plus className="h-3 w-3" />
-                            {SELECT_CARD_LABEL}
+                            {tExplorer("selectCard")}
                           </>
                         )}
                       </button>
@@ -592,7 +589,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <span className="shrink-0 text-sm font-medium text-gray-700">
-            {selectedEntryIds.size} {SELECTED_SERVICES_LABEL}
+            {selectedEntryIds.size} {tExplorer("selectedCount")}
           </span>
           <Button
             onClick={() => {
@@ -601,7 +598,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
             className="shrink-0 rounded-full px-6 py-2.5 text-sm font-semibold text-white"
             style={{ backgroundColor: category.theme.base }}
           >
-            {REQUEST_SELECTED_LABEL}
+            {tExplorer("completeRequest")}
           </Button>
         </div>
       </div>

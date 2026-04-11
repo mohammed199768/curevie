@@ -33,9 +33,6 @@ import {
 } from "@/lib/public-service-categories";
 
 const phonePattern = /^[0-9+\-\s()]{7,20}$/;
-const MIN_SELECTION_ERROR = "\u064A\u0631\u062C\u0649 \u0627\u062E\u062A\u064A\u0627\u0631 \u062E\u062F\u0645\u0629 \u0648\u0627\u062D\u062F\u0629 \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644";
-const MAX_SELECTION_HINT = "\u064A\u0645\u0643\u0646 \u0627\u062E\u062A\u064A\u0627\u0631 5 \u062E\u062F\u0645\u0627\u062A \u0643\u062D\u062F \u0623\u0642\u0635\u0649";
-const SELECTED_COUNT_LABEL = "\u062E\u062F\u0645\u0629 \u0645\u062D\u062F\u062F\u0629";
 
 type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
 
@@ -99,6 +96,7 @@ export function GuestServiceRequestDialog({
 }: GuestServiceRequestDialogProps) {
   const locale = useLocale();
   const t = useTranslations("serviceExplorer");
+  const tExplorer = useTranslations("serviceExplorer");
   const tBooking = useTranslations("booking");
   const tNewRequest = useTranslations("newRequestPage");
   const tEnums = useTranslations("enums");
@@ -161,13 +159,13 @@ export function GuestServiceRequestDialog({
     const groups: Record<string, typeof entries> = {};
 
     for (const entry of entries) {
-      const key = entry.categoryName || "\u0623\u062E\u0631\u0649";
+      const key = entry.categoryName || tExplorer("otherCategory");
       if (!groups[key]) groups[key] = [];
       groups[key].push(entry);
     }
 
     return groups;
-  }, [entries]);
+  }, [entries, tExplorer]);
   const shouldShowGroupHeaders = Object.keys(groupedEntries).length > 1;
   const selectionLimitReached = selectedEntryIds.length >= 5;
 
@@ -234,7 +232,7 @@ export function GuestServiceRequestDialog({
 
   const handleSubmit = (values: GuestRequestValues) => {
     if (selectedEntryIds.length === 0) {
-      toast.error(MIN_SELECTION_ERROR);
+      toast.error(tExplorer("minSelectionError"));
       return;
     }
 
@@ -411,7 +409,7 @@ export function GuestServiceRequestDialog({
                         </div>
                       </div>
                       {selectionLimitReached ? (
-                        <p className="text-xs font-medium text-[#a15b18]">{MAX_SELECTION_HINT}</p>
+                        <p className="text-xs font-medium text-[#a15b18]">{tExplorer("maxSelectionHint")}</p>
                       ) : null}
                     </div>
                   </div>
@@ -457,7 +455,7 @@ export function GuestServiceRequestDialog({
                       {categoryTitle}
                     </div>
                     <Badge className="rounded-full bg-[#12312d] px-3 py-1 text-xs font-semibold text-white hover:bg-[#12312d]">
-                      {selectedEntries.length} {SELECTED_COUNT_LABEL}
+                      {selectedEntries.length} {tExplorer("selectedCount")}
                     </Badge>
                   </div>
                   <div className="mt-3 break-words text-xl font-semibold text-[#12312d] sm:text-2xl">

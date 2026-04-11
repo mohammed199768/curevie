@@ -759,6 +759,13 @@
     }
   },
   "serviceExplorer": {
+    "selectCard": "Select",
+    "selectedCard": "Selected",
+    "selectedCount": "selected",
+    "completeRequest": "Complete Request",
+    "minSelectionError": "Please select at least one service",
+    "maxSelectionHint": "Maximum 5 services can be selected",
+    "otherCategory": "Other",
     "actions": {
       "startRequest": "Start a request",
       "signInToRequest": "Sign in to request",

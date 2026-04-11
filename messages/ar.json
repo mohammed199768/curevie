@@ -759,6 +759,13 @@
     }
   },
   "serviceExplorer": {
+    "selectCard": "اختر",
+    "selectedCard": "محدد",
+    "selectedCount": "خدمة محددة",
+    "completeRequest": "إتمام الطلب",
+    "minSelectionError": "يرجى اختيار خدمة واحدة على الأقل",
+    "maxSelectionHint": "يمكن اختيار 5 خدمات كحد أقصى",
+    "otherCategory": "أخرى",
     "actions": {
       "startRequest": "ابدأ الطلب",
       "signInToRequest": "سجل الدخول للطلب",
