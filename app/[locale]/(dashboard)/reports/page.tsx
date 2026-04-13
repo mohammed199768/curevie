@@ -1,33 +1,47 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
   ChevronDown,
   ChevronUp,
   Download,
+  FileText,
   FlaskConical,
   ScanLine,
+  Search,
   Stethoscope,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { requestsApi } from "@/lib/api/requests";
-import type { LabResult, RequestDetails, RequestItem, RequestProviderReport } from "@/lib/api/types";
-import { translateEnumValue } from "@/lib/i18n";
-import { resolveMediaUrl } from "@/lib/utils/media-url";
-import { cn, formatDateTime, normalizeListResponse, triggerBlobDownload } from "@/lib/utils";
+import {
+  casesApi,
+  type PatientCase,
+  type PatientCaseProviderFile,
+  type PatientCaseReport,
+  type PatientCaseService,
+} from "@/lib/api/cases";
+import { cn, formatDateTime, triggerBlobDownload } from "@/lib/utils";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 type ReportFilter = "ALL" | "DOCTOR" | "LAB" | "IMAGING";
 
-type RequestDetailsWithMeta = RequestDetails & {
-  service_name?: string | null;
-  package_tests?: Array<{ lab_test_id: string; name?: string | null }>;
+type ReportsArchiveItem = {
+  id: string;
+  caseId: string;
+  caseDetail: PatientCase;
+  report: PatientCaseReport;
+  services: PatientCaseService[];
+  categories: Array<Exclude<ReportFilter, "ALL">>;
+  occurredAt: string;
+  serviceSummary: string;
+  searchableText: string;
+  providersLabel: string;
 };
 
 type ReportsCopy = {
@@ -38,155 +52,143 @@ type ReportsCopy = {
   empty: string;
   emptyFiltered: string;
   loadError: string;
-  requestLabel: string;
+  caseLabel: string;
   providedBy: string;
-  updatedAt: string;
+  publishedAt: string;
   viewDetails: string;
   hideDetails: string;
   downloadPdf: string;
-  doctorSection: string;
-  labSection: string;
-  imagingSection: string;
-  noDoctorData: string;
-  noLabData: string;
-  noImagingData: string;
-  findings: string;
-  diagnosis: string;
-  treatmentPlan: string;
-  recommendations: string;
-  procedures: string;
-  allergies: string;
-  summary: string;
-  notes: string;
-  labResult: string;
-  labUnit: string;
-  referenceRange: string;
-  testNotes: string;
-  imagePreview: string;
-  openImage: string;
+  includedServices: string;
+  includedServicesDescription: string;
+  serviceReference: string;
+  serviceCategory: string;
+  serviceStatus: string;
+  completedAt: string;
+  createdAt: string;
+  sourceFiles: string;
+  sourceFilesDescription: string;
+  noSourceFiles: string;
+  noFilesForService: string;
+  viewFile: string;
+  uploadedAt: string;
+  sickLeave: string;
+  servicesCount: string;
   filters: Record<ReportFilter, string>;
 };
 
-type ReportsHistoryItem = {
-  id: string;
-  requestId: string;
-  request: RequestDetailsWithMeta;
-  providerReports: RequestProviderReport[];
-  doctorReports: RequestProviderReport[];
-  imagingReports: RequestProviderReport[];
-  labResults: LabResult[];
-  categories: ReportFilter[];
-  serviceName: string;
-  occurredAt: string;
-  searchableText: string;
-};
-
 const REPORT_FILTERS: ReportFilter[] = ["ALL", "DOCTOR", "LAB", "IMAGING"];
+const IMAGING_MATCHER = /(xray|x-ray|radiology|scan|mri|ct|ultrasound|sonar|اشعة|أشعة|تصوير)/i;
+const LAB_MATCHER = /(lab|laboratory|تحاليل|تحليل|مختبر|فحص|test)/i;
 
-function mapServiceType(serviceType: string | null | undefined, tEnums: (key: string) => string) {
-  return translateEnumValue(serviceType, tEnums);
-}
+function getServiceFilter(service: PatientCaseService): Exclude<ReportFilter, "ALL"> {
+  const serviceKind = String(service.service_kind || "").toUpperCase();
+  const haystack = `${service.service_name || ""} ${service.service_category_name || ""}`;
 
-function resolveOccurredAt(request: RequestDetailsWithMeta) {
-  return request.closed_at || request.completed_at || request.updated_at || request.created_at;
-}
-
-function isImagingReport(report: RequestProviderReport) {
-  const reportText = `${report.service_type || ""} ${report.provider_type || ""}`.toUpperCase();
-  return ["RADIOLOGY", "RADIOLOGY_TECH"].some((value) => reportText.includes(value));
-}
-
-function isLabReport(report: RequestProviderReport) {
-  const reportText = `${report.service_type || ""} ${report.provider_type || ""}`.toUpperCase();
-  return reportText.includes("LAB");
-}
-
-function isDoctorReport(report: RequestProviderReport) {
-  if (isImagingReport(report) || isLabReport(report)) {
-    return false;
+  if (serviceKind === "LAB" || LAB_MATCHER.test(haystack)) {
+    return "LAB";
   }
 
+  if (serviceKind === "RADIOLOGY" || IMAGING_MATCHER.test(haystack)) {
+    return "IMAGING";
+  }
+
+  return "DOCTOR";
+}
+
+function getServiceCategories(services: PatientCaseService[]) {
+  const uniqueCategories = new Set<Exclude<ReportFilter, "ALL">>();
+  services.forEach((service) => uniqueCategories.add(getServiceFilter(service)));
+  return Array.from(uniqueCategories);
+}
+
+function buildServiceSummary(services: PatientCaseService[]) {
+  if (!services.length) {
+    return "Clinical report";
+  }
+
+  if (services.length === 1) {
+    return services[0].service_name;
+  }
+
+  if (services.length === 2) {
+    return `${services[0].service_name} + ${services[1].service_name}`;
+  }
+
+  return `${services[0].service_name} + ${services.length - 1} more`;
+}
+
+function buildProvidersLabel(services: PatientCaseService[]) {
+  const providerNames = Array.from(
+    new Set(services.map((service) => service.provider_name).filter((value): value is string => Boolean(value))),
+  );
+
+  if (!providerNames.length) {
+    return "-";
+  }
+
+  if (providerNames.length <= 2) {
+    return providerNames.join(" • ");
+  }
+
+  return `${providerNames.slice(0, 2).join(" • ")} +${providerNames.length - 2}`;
+}
+
+function buildSearchableText(caseDetail: PatientCase, services: PatientCaseService[]) {
   return [
-    report.symptoms_summary,
-    report.findings,
-    report.diagnosis,
-    report.treatment_plan,
-    report.recommendations,
-    report.procedures_done,
-    report.procedures_performed,
-  ].some(Boolean);
-}
-
-function normalizeReports(reports: RequestProviderReport[]) {
-  return [...reports].sort((a, b) => {
-    const aTime = new Date(a.updated_at || a.created_at).getTime();
-    const bTime = new Date(b.updated_at || b.created_at).getTime();
-    return bTime - aTime;
-  });
-}
-
-function resolveServiceName(
-  request: RequestDetailsWithMeta,
-  providerReports: RequestProviderReport[],
-  tEnums: (key: string) => string,
-) {
-  if (request.service_name) {
-    return request.service_name;
-  }
-
-  if (request.lab_results?.length === 1 && request.lab_results[0]?.test_name) {
-    return request.lab_results[0].test_name;
-  }
-
-  const detailedService = providerReports.find((report) => report.service_type)?.service_type;
-  return mapServiceType(detailedService || request.service_type, tEnums);
-}
-
-function buildSearchableText(
-  request: RequestDetailsWithMeta,
-  providerReports: RequestProviderReport[],
-  labResults: LabResult[],
-  serviceName: string,
-) {
-  return [
-    request.id,
-    request.provider_name,
-    request.service_name,
-    serviceName,
-    request.service_type,
-    ...(request.package_tests || []).flatMap((test) => [test.name]),
-    ...(request.package_services || []).flatMap((service) => [service.name, service.category_name, service.service_kind]),
-    ...providerReports.flatMap((report) => [
-      report.provider_name,
-      report.provider_type,
-      report.findings,
-      report.diagnosis,
-      report.recommendations,
-      report.imaging_notes,
-      report.lab_notes,
-      report.notes,
+    caseDetail.id,
+    caseDetail.patient_name,
+    caseDetail.lead_provider_name,
+    caseDetail.notes,
+    ...services.flatMap((service) => [
+      service.service_name,
+      service.service_category_name,
+      service.provider_name,
+      service.provider_type,
+      service.notes,
+      service.status,
+      ...service.provider_files.flatMap((file) => [file.service_name, file.provider_name, getFileName(file.file_url)]),
     ]),
-    ...labResults.flatMap((result) => [result.test_name, result.result, result.notes, result.reference_range, result.flag]),
   ]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
 }
 
-function isImageUrl(url?: string | null) {
-  if (!url) return false;
-  return !url.toLowerCase().includes(".pdf");
+function getFileName(fileUrl?: string | null) {
+  if (!fileUrl) return "";
+  const normalizedUrl = fileUrl.split("?")[0] || "";
+  return normalizedUrl.split("/").pop() || normalizedUrl;
 }
 
-function ReportField({ label, value }: { label: string; value?: string | null }) {
-  if (!value) return null;
+function getServiceReference(serviceId: string) {
+  return `#${serviceId.slice(0, 8)}`;
+}
 
-  return (
-    <div className="space-y-1 rounded-xl border border-slate-200/70 bg-white/80 p-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{value}</p>
-    </div>
+function sortFiles(files: PatientCaseProviderFile[]) {
+  return [...files].sort((left, right) => {
+    const leftTime = new Date(left.created_at || 0).getTime();
+    const rightTime = new Date(right.created_at || 0).getTime();
+    return rightTime - leftTime;
+  });
+}
+
+async function fetchAllCases() {
+  const firstPageResponse = await casesApi.list({ page: 1, limit: 100 });
+  const firstPage = firstPageResponse.data;
+  const totalPages = firstPage.pagination.pages || firstPage.pagination.total_pages || 1;
+
+  if (totalPages <= 1) {
+    return firstPage.data;
+  }
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) => casesApi.list({ page: index + 2, limit: 100 })),
   );
+
+  return [
+    ...firstPage.data,
+    ...remainingPages.flatMap((response) => response.data.data),
+  ];
 }
 
 function FilterButton({
@@ -227,32 +229,9 @@ function FilterButton({
   );
 }
 
-async function fetchAllClosedRequests() {
-  const firstPage = normalizeListResponse<RequestItem>(
-    (await requestsApi.list({ page: 1, limit: 100, status: "CLOSED" })).data,
-  );
-  const totalPages = firstPage.pagination.pages || firstPage.pagination.total_pages || 1;
-
-  if (totalPages <= 1) {
-    return firstPage.data;
-  }
-
-  const remainingPages = await Promise.all(
-    Array.from({ length: totalPages - 1 }, (_, index) =>
-      requestsApi.list({ page: index + 2, limit: 100, status: "CLOSED" }),
-    ),
-  );
-
-  return [
-    ...firstPage.data,
-    ...remainingPages.flatMap((response) => normalizeListResponse<RequestItem>(response.data).data),
-  ];
-}
-
 export default function ReportsPage() {
   const locale = useLocale();
   const tPage = useTranslations("reportsPage");
-  const tEnums = useTranslations("enums");
   const copy: ReportsCopy = {
     title: tPage("title"),
     description: tPage("description"),
@@ -261,32 +240,27 @@ export default function ReportsPage() {
     empty: tPage("empty"),
     emptyFiltered: tPage("emptyFiltered"),
     loadError: tPage("loadError"),
-    requestLabel: tPage("requestLabel"),
+    caseLabel: tPage("caseLabel"),
     providedBy: tPage("providedBy"),
-    updatedAt: tPage("updatedAt"),
+    publishedAt: tPage("publishedAt"),
     viewDetails: tPage("viewDetails"),
     hideDetails: tPage("hideDetails"),
     downloadPdf: tPage("downloadPdf"),
-    doctorSection: tPage("doctorSection"),
-    labSection: tPage("labSection"),
-    imagingSection: tPage("imagingSection"),
-    noDoctorData: tPage("noDoctorData"),
-    noLabData: tPage("noLabData"),
-    noImagingData: tPage("noImagingData"),
-    findings: tPage("findings"),
-    diagnosis: tPage("diagnosis"),
-    treatmentPlan: tPage("treatmentPlan"),
-    recommendations: tPage("recommendations"),
-    procedures: tPage("procedures"),
-    allergies: tPage("allergies"),
-    summary: tPage("summary"),
-    notes: tPage("notes"),
-    labResult: tPage("labResult"),
-    labUnit: tPage("labUnit"),
-    referenceRange: tPage("referenceRange"),
-    testNotes: tPage("testNotes"),
-    imagePreview: tPage("imagePreview"),
-    openImage: tPage("openImage"),
+    includedServices: tPage("includedServices"),
+    includedServicesDescription: tPage("includedServicesDescription"),
+    serviceReference: tPage("serviceReference"),
+    serviceCategory: tPage("serviceCategory"),
+    serviceStatus: tPage("serviceStatus"),
+    completedAt: tPage("completedAt"),
+    createdAt: tPage("createdAt"),
+    sourceFiles: tPage("sourceFiles"),
+    sourceFilesDescription: tPage("sourceFilesDescription"),
+    noSourceFiles: tPage("noSourceFiles"),
+    noFilesForService: tPage("noFilesForService"),
+    viewFile: tPage("viewFile"),
+    uploadedAt: tPage("uploadedAt"),
+    sickLeave: tPage("sickLeave"),
+    servicesCount: tPage("servicesCount"),
     filters: {
       ALL: tPage("filters.ALL"),
       DOCTOR: tPage("filters.DOCTOR"),
@@ -294,74 +268,59 @@ export default function ReportsPage() {
       IMAGING: tPage("filters.IMAGING"),
     },
   };
+
   const [activeFilter, setActiveFilter] = useState<ReportFilter>("ALL");
-  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+  const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
+  const [searchValue, setSearchValue] = useState("");
+  const deferredSearch = useDeferredValue(searchValue.trim().toLowerCase());
 
   const historyQuery = useQuery({
-    queryKey: ["reports", "history", locale],
-    queryFn: async (): Promise<ReportsHistoryItem[]> => {
-      const requests = await fetchAllClosedRequests();
+    queryKey: ["patient", "reports", "history", locale],
+    queryFn: async (): Promise<ReportsArchiveItem[]> => {
+      const cases = await fetchAllCases();
+      const closedCases = cases.filter((caseItem) => caseItem.status === "CLOSED");
 
       const entries = await Promise.all(
-        requests.map(async (request) => {
-          const [requestResult, providerReportsResult] = await Promise.allSettled([
-            requestsApi.getById(request.id),
-            requestsApi.listProviderReports(request.id),
+        closedCases.map(async (caseItem) => {
+          const [detailResult, reportResult] = await Promise.allSettled([
+            casesApi.getById(caseItem.id),
+            casesApi.getReport(caseItem.id),
           ]);
 
-          if (requestResult.status !== "fulfilled") {
+          if (detailResult.status !== "fulfilled" || reportResult.status !== "fulfilled") {
             return null;
           }
 
-          const detailedRequest = requestResult.value.data as RequestDetailsWithMeta;
-          const providerReports =
-            providerReportsResult.status === "fulfilled" ? normalizeReports(providerReportsResult.value.data.data || []) : [];
-          const doctorReports = providerReports.filter(isDoctorReport);
-          const imagingReports = providerReports.filter(isImagingReport);
-          const labResults = [...(detailedRequest.lab_results || [])].sort((a, b) => {
-            const aTime = new Date(a.created_at).getTime();
-            const bTime = new Date(b.created_at).getTime();
-            return bTime - aTime;
-          });
+          const caseDetail = detailResult.value.data;
+          const report = reportResult.value.data;
 
-          const categories: ReportFilter[] = [];
-          if (doctorReports.length || detailedRequest.service_type === "MEDICAL") {
-            categories.push("DOCTOR");
-          }
-          if (labResults.length || detailedRequest.service_type === "LAB" || detailedRequest.service_type === "PACKAGE") {
-            categories.push("LAB");
-          }
-          if (imagingReports.length || String(detailedRequest.service_type || "").toUpperCase() === "RADIOLOGY") {
-            categories.push("IMAGING");
-          }
-
-          if (!categories.length) {
+          if (!report || report.status !== "PUBLISHED") {
             return null;
           }
 
-          const serviceName = resolveServiceName(detailedRequest, providerReports, tEnums);
+          const services = caseDetail.services || [];
+          const categories = getServiceCategories(services);
 
           return {
-            id: detailedRequest.id,
-            requestId: detailedRequest.id,
-            request: detailedRequest,
-            providerReports,
-            doctorReports,
-            imagingReports,
-            labResults,
+            id: caseDetail.id,
+            caseId: caseDetail.id,
+            caseDetail,
+            report,
+            services,
             categories,
-            serviceName,
-            occurredAt: resolveOccurredAt(detailedRequest),
-            searchableText: buildSearchableText(detailedRequest, providerReports, labResults, serviceName),
-          } satisfies ReportsHistoryItem;
+            occurredAt: report.published_at || caseDetail.closed_at || caseDetail.updated_at || caseDetail.created_at,
+            serviceSummary: buildServiceSummary(services),
+            searchableText: buildSearchableText(caseDetail, services),
+            providersLabel: buildProvidersLabel(services),
+          } satisfies ReportsArchiveItem;
         }),
       );
 
       return entries
-        .filter((entry): entry is ReportsHistoryItem => Boolean(entry))
-        .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+        .filter((entry): entry is ReportsArchiveItem => entry !== null)
+        .sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime());
     },
-    enabled: false,
+    staleTime: 60_000,
   });
 
   const filterCounts = useMemo(() => {
@@ -376,9 +335,11 @@ export default function ReportsPage() {
 
   const filteredItems = useMemo(() => {
     return (historyQuery.data || []).filter((item) => {
-      return activeFilter === "ALL" || item.categories.includes(activeFilter);
+      const matchesFilter = activeFilter === "ALL" || item.categories.includes(activeFilter);
+      const matchesSearch = !deferredSearch || item.searchableText.includes(deferredSearch);
+      return matchesFilter && matchesSearch;
     });
-  }, [activeFilter, historyQuery.data]);
+  }, [activeFilter, deferredSearch, historyQuery.data]);
 
   const filterOptions = [
     { key: "ALL" as const, icon: CalendarDays, label: copy.filters.ALL, count: filterCounts.ALL },
@@ -390,13 +351,23 @@ export default function ReportsPage() {
   return (
     <div className="space-y-5">
       <Card className="overflow-hidden rounded-[28px] border-slate-200/80 bg-gradient-to-br from-sky-50 via-white to-emerald-50 shadow-sm">
-        <CardHeader className="space-y-3">
+        <CardHeader className="space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-semibold text-slate-900">{copy.title}</CardTitle>
-              <CardDescription className="max-w-2xl text-sm text-slate-600">{copy.description}</CardDescription>
+              <CardDescription className="max-w-3xl text-sm text-slate-600">{copy.description}</CardDescription>
             </div>
-            <p className="text-sm text-slate-500">{copy.searchHint}</p>
+            <p className="max-w-xl text-sm text-slate-500">{copy.searchHint}</p>
+          </div>
+
+          <div className="relative max-w-xl">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 rtl:left-auto rtl:right-3" />
+            <Input
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              placeholder={copy.searchPlaceholder}
+              className="h-11 rounded-2xl border-slate-200 bg-white/90 px-10 text-sm shadow-sm"
+            />
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -423,16 +394,17 @@ export default function ReportsPage() {
       ) : filteredItems.length ? (
         <div className="space-y-4">
           {filteredItems.map((item) => {
-            const isExpanded = expandedRequestId === item.requestId;
+            const isExpanded = expandedCaseId === item.caseId;
             const categoryBadges =
               activeFilter === "ALL" ? item.categories : item.categories.filter((category) => category === activeFilter);
+            const hasAnyFiles = item.services.some((service) => service.provider_files.length > 0);
 
             return (
-              <Card key={item.requestId} className="rounded-[26px] border-slate-200/80 shadow-sm">
+              <Card key={item.caseId} className="rounded-[26px] border-slate-200/80 shadow-sm">
                 <CardContent className="p-0">
                   <button
                     type="button"
-                    onClick={() => setExpandedRequestId(isExpanded ? null : item.requestId)}
+                    onClick={() => setExpandedCaseId(isExpanded ? null : item.caseId)}
                     className="w-full text-start"
                   >
                     <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
@@ -440,23 +412,29 @@ export default function ReportsPage() {
                         <div className="flex flex-wrap gap-2">
                           {categoryBadges.map((category) => (
                             <Badge
-                              key={`${item.requestId}-${category}`}
+                              key={`${item.caseId}-${category}`}
                               variant="outline"
                               className="rounded-full border-slate-300 bg-slate-50 px-3 py-1 text-[11px] uppercase tracking-wide text-slate-600"
                             >
                               {copy.filters[category]}
                             </Badge>
                           ))}
+                          <Badge
+                            variant="outline"
+                            className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] tracking-wide text-emerald-700"
+                          >
+                            {copy.servicesCount.replace("{count}", String(item.services.length))}
+                          </Badge>
                         </div>
 
                         <div>
-                          <h2 className="text-lg font-semibold text-slate-900">{item.serviceName}</h2>
+                          <h2 className="text-lg font-semibold text-slate-900">{item.serviceSummary}</h2>
                           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                             <span>
-                              {copy.requestLabel} #{item.requestId.slice(0, 8)}
+                              {copy.caseLabel} #{item.caseId.slice(0, 8)}
                             </span>
                             <span>
-                              {copy.providedBy}: {item.request.provider_name || item.doctorReports[0]?.provider_name || "-"}
+                              {copy.providedBy}: {item.providersLabel}
                             </span>
                           </div>
                         </div>
@@ -464,135 +442,173 @@ export default function ReportsPage() {
 
                       <div className="flex items-center gap-3 text-sm text-slate-500 md:text-end">
                         <div className="space-y-1">
-                          <p className="font-medium text-slate-800">{formatDateTime(item.occurredAt, "dd/MM/yyyy, HH:mm", locale)}</p>
+                          <p className="font-medium text-slate-800">
+                            {formatDateTime(item.occurredAt, "dd/MM/yyyy, HH:mm", locale)}
+                          </p>
                           <p>
-                            {copy.updatedAt}: {formatDateTime(item.request.updated_at, "dd/MM/yyyy, HH:mm", locale)}
+                            {copy.publishedAt}: {formatDateTime(item.report.published_at || item.occurredAt, "dd/MM/yyyy, HH:mm", locale)}
                           </p>
                         </div>
                         {isExpanded ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
                       </div>
                     </div>
                   </button>
+
                   {isExpanded ? (
                     <div className="border-t border-slate-200/80 bg-slate-50/70 p-5">
                       <div className="mb-4 flex flex-wrap gap-2">
                         <Button
                           variant="outline"
                           onClick={async () => {
-                            const response = await requestsApi.downloadMedicalPdf(item.requestId);
-                            triggerBlobDownload(response.data, `medical-report-${item.requestId.slice(0, 8)}.pdf`);
+                            const response = await casesApi.downloadReportPdf(item.caseId);
+                            triggerBlobDownload(response.data, `case-report-${item.caseId.slice(0, 8)}.pdf`);
                           }}
                         >
                           <Download className="h-4 w-4" />
                           {copy.downloadPdf}
                         </Button>
-                        <Button variant="ghost" onClick={() => setExpandedRequestId(null)}>
+                        <Button variant="ghost" onClick={() => setExpandedCaseId(null)}>
                           {copy.hideDetails}
                         </Button>
                       </div>
 
                       <div className="space-y-5">
-                        {(activeFilter === "ALL" || activeFilter === "DOCTOR") && (
-                          <section className="space-y-3 rounded-[22px] border border-slate-200 bg-white p-4">
-                            <div className="flex items-center gap-2 text-slate-900">
-                              <Stethoscope className="h-4 w-4 text-sky-600" />
-                              <h3 className="font-semibold">{copy.doctorSection}</h3>
-                            </div>
+                        <section className="space-y-3 rounded-[22px] border border-slate-200 bg-white p-4">
+                          <div className="flex items-center gap-2 text-slate-900">
+                            <Stethoscope className="h-4 w-4 text-sky-600" />
+                            <h3 className="font-semibold">{copy.includedServices}</h3>
+                          </div>
+                          <p className="text-sm text-slate-500">{copy.includedServicesDescription}</p>
 
-                            {item.doctorReports.length ? (
-                              <div className="space-y-4">
-                                {item.doctorReports.map((report) => (
-                                  <div key={report.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
-                                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                      <div>
-                                        <p className="font-medium text-slate-900">{report.provider_name || item.request.provider_name || "-"}</p>
-                                        <p className="text-xs text-slate-500">{formatDateTime(report.updated_at, "dd/MM/yyyy, HH:mm", locale)}</p>
-                                      </div>
-                                      <StatusBadge value={report.report_type} />
-                                    </div>
-
-                                    <div className="grid gap-3 md:grid-cols-2">
-                                      <ReportField label={copy.summary} value={report.symptoms_summary} />
-                                      <ReportField label={copy.findings} value={report.findings} />
-                                      <ReportField label={copy.diagnosis} value={report.diagnosis} />
-                                      <ReportField label={copy.treatmentPlan} value={report.treatment_plan} />
-                                      <ReportField label={copy.recommendations} value={report.recommendations} />
-                                      <ReportField label={copy.procedures} value={report.procedures_done || report.procedures_performed} />
-                                      <ReportField label={copy.allergies} value={report.patient_allergies || report.allergies_noted} />
-                                      <ReportField label={copy.notes} value={report.notes || report.nurse_notes} />
-                                    </div>
+                          <div className="grid gap-3 lg:grid-cols-2">
+                            {item.services.map((service) => (
+                              <div key={service.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div>
+                                    <p className="font-medium text-slate-900">{service.service_name}</p>
+                                    <p className="text-xs text-slate-500">
+                                      {copy.serviceReference}: {getServiceReference(service.id)}
+                                    </p>
                                   </div>
-                                ))}
+                                  <StatusBadge value={service.status} />
+                                </div>
+
+                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                  <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{copy.serviceCategory}</p>
+                                    <p className="mt-1 text-sm text-slate-700">{copy.filters[getServiceFilter(service)]}</p>
+                                  </div>
+                                  <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{copy.providedBy}</p>
+                                    <p className="mt-1 text-sm text-slate-700">{service.provider_name || "-"}</p>
+                                  </div>
+                                  <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{copy.createdAt}</p>
+                                    <p className="mt-1 text-sm text-slate-700">
+                                      {formatDateTime(service.created_at, "dd/MM/yyyy, HH:mm", locale)}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{copy.completedAt}</p>
+                                    <p className="mt-1 text-sm text-slate-700">
+                                      {service.completed_at
+                                        ? formatDateTime(service.completed_at, "dd/MM/yyyy, HH:mm", locale)
+                                        : "-"}
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
-                            ) : (
-                              <p className="text-sm text-slate-500">{copy.noDoctorData}</p>
-                            )}
-                          </section>
-                        )}
+                            ))}
+                          </div>
+                        </section>
 
-                        {(activeFilter === "ALL" || activeFilter === "IMAGING") && (
-                          <section className="space-y-3 rounded-[22px] border border-slate-200 bg-white p-4">
-                            <div className="flex items-center gap-2 text-slate-900">
-                              <ScanLine className="h-4 w-4 text-amber-600" />
-                              <h3 className="font-semibold">{copy.imagingSection}</h3>
-                            </div>
+                        <section className="space-y-3 rounded-[22px] border border-slate-200 bg-white p-4">
+                          <div className="flex items-center gap-2 text-slate-900">
+                            <FileText className="h-4 w-4 text-emerald-600" />
+                            <h3 className="font-semibold">{copy.sourceFiles}</h3>
+                          </div>
+                          <p className="text-sm text-slate-500">{copy.sourceFilesDescription}</p>
 
-                            {item.imagingReports.length ? (
-                              <div className="space-y-4">
-                                {item.imagingReports.map((report) => (
-                                  <div key={report.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+                          {hasAnyFiles ? (
+                            <div className="space-y-4">
+                              {item.services.map((service) => {
+                                const files = sortFiles(service.provider_files);
+
+                                return (
+                                  <div key={`${service.id}-files`} className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
                                     <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                                       <div>
-                                        <p className="font-medium text-slate-900">{report.provider_name || item.request.provider_name || "-"}</p>
-                                        <p className="text-xs text-slate-500">{formatDateTime(report.updated_at, "dd/MM/yyyy, HH:mm", locale)}</p>
+                                        <p className="font-medium text-slate-900">{service.service_name}</p>
+                                        <p className="text-xs text-slate-500">
+                                          {copy.serviceReference}: {getServiceReference(service.id)}
+                                        </p>
                                       </div>
-                                      <StatusBadge value={item.request.service_type} />
+                                      <Badge
+                                        variant="outline"
+                                        className="rounded-full border-slate-300 bg-white px-3 py-1 text-[11px] tracking-wide text-slate-600"
+                                      >
+                                        {copy.filters[getServiceFilter(service)]}
+                                      </Badge>
                                     </div>
 
-                                    <div className="grid gap-3 md:grid-cols-2">
-                                      <ReportField label={copy.findings} value={report.findings} />
-                                      <ReportField label={copy.diagnosis} value={report.diagnosis} />
-                                      <ReportField label={copy.recommendations} value={report.recommendations} />
-                                      <ReportField label={copy.notes} value={report.imaging_notes || report.notes} />
-                                    </div>
+                                    {files.length ? (
+                                      <div className="space-y-3">
+                                        {files.map((file) => {
+                                          const fileUrl = casesApi.resolveMediaUrl(file.file_url);
 
-                                    {(() => {
-                                      const previewImageUrl = resolveMediaUrl(report.image_url);
+                                          return (
+                                            <div
+                                              key={file.id}
+                                              className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white/85 p-3 sm:flex-row sm:items-center sm:justify-between"
+                                            >
+                                              <div className="space-y-1">
+                                                <div className="flex flex-wrap gap-2">
+                                                  <Badge
+                                                    variant="outline"
+                                                    className="rounded-full border-slate-300 bg-slate-50 px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-slate-600"
+                                                  >
+                                                    {file.file_type}
+                                                  </Badge>
+                                                  {file.is_sick_leave ? (
+                                                    <Badge
+                                                      variant="outline"
+                                                      className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] tracking-wide text-amber-700"
+                                                    >
+                                                      {copy.sickLeave}
+                                                    </Badge>
+                                                  ) : null}
+                                                </div>
+                                                <p className="text-sm font-medium text-slate-900">{getFileName(file.file_url)}</p>
+                                                <p className="text-xs text-slate-500">
+                                                  {copy.uploadedAt}: {formatDateTime(file.created_at, "dd/MM/yyyy, HH:mm", locale)}
+                                                </p>
+                                              </div>
 
-                                      if (!previewImageUrl || !isImageUrl(report.image_url)) {
-                                        return null;
-                                      }
-
-                                      return (
-                                        <div className="mt-4 space-y-2">
-                                          <p className="text-sm font-medium text-slate-700">{copy.imagePreview}</p>
-                                          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                              src={previewImageUrl}
-                                              alt={copy.imagePreview}
-                                              className="max-h-[420px] w-full object-contain"
-                                            />
-                                          </div>
-                                          <a
-                                            href={previewImageUrl}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex text-sm font-medium text-sky-700 hover:text-sky-800"
-                                          >
-                                            {copy.openImage}
-                                          </a>
-                                        </div>
-                                      );
-                                    })()}
+                                              {fileUrl ? (
+                                                <a
+                                                  href={fileUrl}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                                >
+                                                  {copy.viewFile}
+                                                </a>
+                                              ) : null}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <p className="text-sm text-slate-500">{copy.noFilesForService}</p>
+                                    )}
                                   </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-slate-500">{copy.noImagingData}</p>
-                            )}
-                          </section>
-                        )}
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-slate-500">{copy.noSourceFiles}</p>
+                          )}
+                        </section>
                       </div>
                     </div>
                   ) : (
@@ -619,4 +635,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-

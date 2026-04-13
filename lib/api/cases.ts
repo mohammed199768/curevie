@@ -16,6 +16,7 @@ export interface PatientCase {
   updated_at?: string;
   services: PatientCaseService[];
   appointments: PatientCaseAppointment[];
+  provider_files: PatientCaseProviderFile[];
 }
 
 export interface PatientCaseService {
@@ -24,8 +25,11 @@ export interface PatientCaseService {
   service_id: string;
   service_name: string;
   service_description?: string;
+  service_category_name?: string;
+  service_kind?: "MEDICAL" | "RADIOLOGY" | "LAB";
   provider_id?: string;
   provider_name?: string;
+  provider_type?: string;
   original_price: number;
   bundle_price: number;
   status: string;
@@ -33,6 +37,20 @@ export interface PatientCaseService {
   completed_at?: string;
   created_at: string;
   updated_at?: string;
+  provider_files: PatientCaseProviderFile[];
+}
+
+export interface PatientCaseProviderFile {
+  id: string;
+  case_service_id: string;
+  file_url: string;
+  file_type: string;
+  is_sick_leave: boolean;
+  uploaded_by?: string;
+  created_at: string;
+  updated_at?: string;
+  service_name?: string;
+  provider_name?: string;
 }
 
 export interface PatientCaseAppointment {
@@ -161,6 +179,8 @@ function buildPagination(total: number, page: number, limit: number): ApiPaginat
 
 function normalizeCaseService(service: unknown): PatientCaseService {
   const row = service && typeof service === "object" ? (service as Record<string, unknown>) : {};
+  const providerFilesSource = Array.isArray(row.provider_files) ? row.provider_files : [];
+  const serviceKind = toStringValue(row.service_kind, "MEDICAL");
 
   return {
     id: toStringValue(row.id),
@@ -168,8 +188,14 @@ function normalizeCaseService(service: unknown): PatientCaseService {
     service_id: toStringValue(row.service_id),
     service_name: toStringValue(row.service_name),
     service_description: toOptionalString(row.service_description),
+    service_category_name: toOptionalString(row.service_category_name),
+    service_kind:
+      serviceKind === "LAB" || serviceKind === "RADIOLOGY"
+        ? serviceKind
+        : "MEDICAL",
     provider_id: toOptionalString(row.provider_id),
     provider_name: toOptionalString(row.provider_name),
+    provider_type: toOptionalString(row.provider_type),
     original_price: toNumberValue(row.original_price),
     bundle_price: toNumberValue(row.bundle_price),
     status: toStringValue(row.status, "PENDING"),
@@ -177,6 +203,24 @@ function normalizeCaseService(service: unknown): PatientCaseService {
     completed_at: toOptionalString(row.completed_at),
     created_at: toStringValue(row.created_at),
     updated_at: toOptionalString(row.updated_at),
+    provider_files: providerFilesSource.map(normalizeCaseProviderFile),
+  };
+}
+
+function normalizeCaseProviderFile(file: unknown): PatientCaseProviderFile {
+  const row = file && typeof file === "object" ? (file as Record<string, unknown>) : {};
+
+  return {
+    id: toStringValue(row.id),
+    case_service_id: toStringValue(row.case_service_id),
+    file_url: toStringValue(row.file_url),
+    file_type: toStringValue(row.file_type, "FILE"),
+    is_sick_leave: Boolean(row.is_sick_leave),
+    uploaded_by: toOptionalString(row.uploaded_by),
+    created_at: toStringValue(row.created_at),
+    updated_at: toOptionalString(row.updated_at),
+    service_name: toOptionalString(row.service_name),
+    provider_name: toOptionalString(row.provider_name),
   };
 }
 
@@ -211,6 +255,11 @@ function normalizePatientCase(payload: unknown): PatientCase {
     : Array.isArray(embeddedCase.appointments)
       ? (embeddedCase.appointments as unknown[])
       : [];
+  const providerFilesSource = Array.isArray(row.provider_files)
+    ? row.provider_files
+    : Array.isArray(embeddedCase.provider_files)
+      ? (embeddedCase.provider_files as unknown[])
+      : [];
 
   return {
     id: toStringValue(embeddedCase.id),
@@ -227,6 +276,7 @@ function normalizePatientCase(payload: unknown): PatientCase {
     updated_at: toOptionalString(embeddedCase.updated_at),
     services: servicesSource.map(normalizeCaseService),
     appointments: appointmentsSource.map(normalizeCaseAppointment),
+    provider_files: providerFilesSource.map(normalizeCaseProviderFile),
   };
 }
 
