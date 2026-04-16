@@ -348,9 +348,9 @@
   },
   "chatPage": {
     "adminOnlyBadge": "Inbox",
-    "adminOnlyDescription": "Follow both admin conversations and request rooms with providers in one place.",
+    "adminOnlyDescription": "Follow admin coordination and all provider conversations for your care cases in one place.",
     "inboxTitle": "All conversations",
-    "inboxDescription": "The admin conversation stays first, followed by open request rooms and then closed ones by latest activity.",
+    "inboxDescription": "The admin conversation stays first, followed by active care cases and then archived ones by latest activity.",
     "adminConversations": "Admin conversations",
     "startWithAdmin": "Start conversation with admin...",
     "startChat": "Start chat",
@@ -358,27 +358,28 @@
     "adminThreadSubtitle": "General admin conversation",
     "systemChip": "System",
     "noAdminConversations": "No admin conversations yet",
-    "generalChatDescription": "This inbox is separate from request-based provider chats.",
+    "generalChatDescription": "This inbox is separate from case-based provider chats.",
     "selectAdminHint": "Choose or start an admin conversation to continue.",
-    "requestRoomsTitle": "Request rooms",
-    "requestRoomsDescription": "Past and active provider conversations stay linked to their own requests.",
-    "requestRoomLabel": "Request room",
+    "requestRoomsTitle": "Care case conversations",
+    "requestRoomsDescription": "Each provider conversation stays grouped under its own care case.",
+    "requestRoomLabel": "Case room",
     "roomOpen": "Open",
     "roomClosed": "Closed",
     "unreadBadge": "Unread",
     "attachmentPreview": "Attachment",
-    "activeRequestRooms": "Active request rooms",
-    "archivedRequestRooms": "Archived request rooms",
-    "openRoom": "Open request room",
+    "activeRequestRooms": "Active care cases",
+    "archivedRequestRooms": "Archived care cases",
+    "openRoom": "Open case room",
     "providerFallback": "Assigned provider",
-    "requestNumber": "Request #{id}",
-    "noRequestRooms": "No request rooms available yet",
+    "requestNumber": "Case #{id}",
+    "noRequestRooms": "No care case conversations available yet",
     "noInboxThreads": "No conversations available yet",
     "selectAdmin": "Select an admin first",
-    "selectThreadHint": "Choose an admin conversation or a request room to continue.",
+    "selectThreadHint": "Choose an admin conversation or a care case to continue.",
     "adminThreadDescription": "Direct chat with administration.",
-    "requestThreadDescription": "Provider conversation linked to this request.",
-    "requestClosedNotice": "This room is closed because the request has been completed.",
+    "requestThreadDescription": "Provider conversation linked to this care case.",
+    "requestClosedNotice": "This case conversation is closed because the care case has been completed.",
+    "chatConnecting": "Connecting to the live case room...",
     "emptyMessage": "Message body or attachment is required",
     "noMessages": "No messages yet",
     "openAttachment": "Open attachment",
@@ -526,43 +527,68 @@
     "markAllAsRead": "Mark all as read",
     "all": "All",
     "unread": "Unread",
-    "empty": "No notifications",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "earlier": "Earlier",
+    "viewAll": "View all notifications",
+    "empty": "No notifications yet",
+    "emptyUnread": "No unread notifications",
     "content": {
       "REQUEST_CREATED": {
-        "title": "Request received",
-        "body": "Your {service} request was received successfully. Our team will contact you soon."
+        "title": "Case received",
+        "body": "Your {service} care case was received successfully. Our team will coordinate the next step soon."
       },
       "REQUEST_ACCEPTED": {
-        "title": "Request accepted",
-        "body": "Your request was accepted and scheduling is underway."
+        "title": "Case accepted",
+        "body": "Your care case was accepted and coordination is now underway."
       },
       "REQUEST_ASSIGNED": {
         "title": "Provider assigned",
-        "body": "A provider has been assigned to your request and will contact you if needed."
+        "body": "A provider has been assigned to your care case and will contact you if needed."
       },
       "REQUEST_COMPLETED": {
-        "title": "Request completed",
-        "body": "Your request has been completed successfully."
+        "title": "Case completed",
+        "body": "Your care case has been completed successfully."
       },
       "REQUEST_CANCELLED": {
-        "title": "Request cancelled",
-        "body": "This request has been cancelled."
+        "title": "Case cancelled",
+        "body": "This care case has been cancelled."
+      },
+      "CASE_CREATED": {
+        "title": "Case received",
+        "body": "Your {service} care case was received successfully. Our team will coordinate the next step soon."
+      },
+      "CASE_ASSIGNED": {
+        "title": "Provider assigned",
+        "body": "A provider has been assigned to your care case."
+      },
+      "CASE_COMPLETED": {
+        "title": "Case completed",
+        "body": "Your care case has been completed successfully."
+      },
+      "CASE_CANCELLED": {
+        "title": "Case cancelled",
+        "body": "This care case has been cancelled."
+      },
+      "CASE_CLOSED": {
+        "title": "Case closed",
+        "body": "Your care case has been closed and the final report is ready."
       },
       "PAYMENT_PARTIAL": {
         "title": "Payment received",
-        "body": "A payment of {amount} was received. Remaining amount: {remaining}."
+        "body": "A payment of {amount} was received for this case. Remaining amount: {remaining}."
       },
       "INVOICE_PAID": {
         "title": "Invoice paid in full",
-        "body": "Your invoice has been paid in full."
+        "body": "Your case invoice has been paid in full."
       },
       "POINTS_EARNED": {
         "title": "Points earned",
         "body": "You earned {points} points. Current balance: {totalPoints} points."
       },
       "REPORT_PUBLISHED": {
-        "title": "Medical report ready",
-        "body": "Your medical report has been reviewed and is now available."
+        "title": "Final report ready",
+        "body": "The final medical report for your care case has been reviewed and is now available."
       }
     }
   },

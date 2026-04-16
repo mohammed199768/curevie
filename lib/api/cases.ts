@@ -103,6 +103,10 @@ export interface PatientCaseChatRoom {
   service_name?: string;
   provider_name?: string;
   patient_name?: string;
+  unread_count?: number;
+  last_message_at?: string | null;
+  last_message_preview?: string | null;
+  last_message_sender_role?: string | null;
   created_at: string;
 }
 
@@ -307,6 +311,10 @@ function normalizeChatRoom(room: unknown): PatientCaseChatRoom {
     service_name: toOptionalString(row.service_name),
     provider_name: toOptionalString(row.provider_name),
     patient_name: toOptionalString(row.patient_name),
+    unread_count: Number(row.unread_count || 0),
+    last_message_at: toOptionalString(row.last_message_at) || null,
+    last_message_preview: toOptionalString(row.last_message_preview) || null,
+    last_message_sender_role: toOptionalString(row.last_message_sender_role) || null,
     created_at: toStringValue(row.created_at),
   };
 }
@@ -457,6 +465,10 @@ async function getCaseChatMessages(roomId: string, params?: { limit?: number }) 
   };
 }
 
+async function getUnreadChatCount() {
+  return apiClient.get<{ unread_count?: number }>("/cases/chat/unread-count");
+}
+
 function resolveMediaUrl(filePath: string | null | undefined) {
   if (!filePath) return null;
   if (filePath.startsWith("http") || filePath.startsWith("/uploads/")) return filePath;
@@ -476,6 +488,7 @@ export const casesApi = {
   getReport: getCaseReport,
   getChatRooms: getCaseChatRooms,
   getChatMessages: getCaseChatMessages,
+  getUnreadChatCount,
   resolveMediaUrl,
   downloadReportPdf,
 };

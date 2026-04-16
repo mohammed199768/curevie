@@ -3,13 +3,15 @@
 import { Bell, CheckCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { notificationsApi } from "@/lib/api/notifications";
-import type { NotificationItem } from "@/lib/api/types";
+import type { ApiListResponse, NotificationItem } from "@/lib/api/types";
 import { translateNotificationContent } from "@/lib/i18n";
+import { getPatientNotificationHref } from "@/lib/notification-routing";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -33,14 +35,12 @@ function groupByDate(items: NotificationItem[]) {
   for (const item of items) {
     const d = new Date(item.created_at);
     d.setHours(0, 0, 0, 0);
-    let label: string;
+    let label = "__older__";
 
     if (d.getTime() === today.getTime()) {
       label = "__today__";
     } else if (d.getTime() === yesterday.getTime()) {
       label = "__yesterday__";
-    } else {
-      label = "__older__";
     }
 
     if (!groups[label]) groups[label] = [];
@@ -57,14 +57,17 @@ export function NotificationDropdown({
   const t = useTranslations("notificationsPage");
   const tCommon = useTranslations("common");
   const tEnums = useTranslations("enums");
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const dateFnsLocale = locale === "ar" ? ar : enUS;
   const isRtl = locale === "ar";
+  const unreadCountQueryKey = ["notifications", "unread-count"] as const;
 
   const { data, isLoading } = useQuery({
     queryKey: ["notifications", "dropdown"],
-    queryFn: async () => (await notificationsApi.list({ page: 1, limit: 8 })).data,
+    queryFn: async () =>
+      (await notificationsApi.list({ page: 1, limit: 8 })).data,
     enabled: open,
     staleTime: 30_000,
   });
@@ -72,13 +75,75 @@ export function NotificationDropdown({
   const markAllMutation = useMutation({
     mutationFn: () => notificationsApi.markAllRead(),
     onSuccess: () => {
+      queryClient.setQueryData(unreadCountQueryKey, 0);
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => notificationsApi.markRead(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+
+      const previousDropdown = queryClient.getQueryData<
+        ApiListResponse<NotificationItem>
+      >(["notifications", "dropdown"]);
+      const previousUnreadCount =
+        queryClient.getQueryData<number>(unreadCountQueryKey) ?? unreadCount;
+
+      queryClient.setQueryData<ApiListResponse<NotificationItem> | undefined>(
+        ["notifications", "dropdown"],
+        (current) => {
+          if (!current?.data) return current;
+
+          const changed = current.data.some(
+            (notification) => notification.id === id && !notification.is_read
+          );
+
+          return {
+            ...current,
+            unread_count: changed
+              ? Math.max(0, Number(current.unread_count || 0) - 1)
+              : Number(current.unread_count || 0),
+            data: current.data.map((notification) =>
+              notification.id === id
+                ? { ...notification, is_read: true }
+                : notification
+            ),
+          };
+        }
+      );
+
+      const targetNotification = previousDropdown?.data?.find(
+        (notification) => notification.id === id
+      );
+
+      if (targetNotification && !targetNotification.is_read) {
+        queryClient.setQueryData(
+          unreadCountQueryKey,
+          Math.max(0, Number(previousUnreadCount || 0) - 1)
+        );
+      }
+
+      return { previousDropdown, previousUnreadCount };
+    },
+    onError: (_error, _id, context) => {
+      if (context?.previousDropdown) {
+        queryClient.setQueryData(
+          ["notifications", "dropdown"],
+          context.previousDropdown
+        );
+      }
+
+      queryClient.setQueryData(
+        unreadCountQueryKey,
+        Number(context?.previousUnreadCount || 0)
+      );
+    },
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
@@ -87,9 +152,26 @@ export function NotificationDropdown({
   const groups = groupByDate(notifications);
 
   const groupLabel = (key: string) => {
-    if (key === "__today__") return locale === "ar" ? "اليوم" : "Today";
-    if (key === "__yesterday__") return locale === "ar" ? "أمس" : "Yesterday";
-    return locale === "ar" ? "سابقاً" : "Earlier";
+    if (key === "__today__") return t("today");
+    if (key === "__yesterday__") return t("yesterday");
+    return t("earlier");
+  };
+
+  const handleNotificationClick = async (notification: NotificationItem) => {
+    if (!notification.is_read) {
+      try {
+        await markReadMutation.mutateAsync(notification.id);
+      } catch {
+        // Keep navigation available even if the read-state sync fails.
+      }
+    }
+
+    setOpen(false);
+
+    const href = getPatientNotificationHref(notification, locale);
+    if (href) {
+      router.push(href);
+    }
   };
 
   return (
@@ -106,7 +188,7 @@ export function NotificationDropdown({
             <span
               className={cn(
                 "absolute -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white",
-                isRtl ? "-left-0.5" : "-right-0.5",
+                isRtl ? "-left-0.5" : "-right-0.5"
               )}
             >
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -121,7 +203,7 @@ export function NotificationDropdown({
       >
         <div dir={isRtl ? "rtl" : "ltr"}>
           <div className="flex items-center justify-between border-b px-4 py-3">
-            <h3 className="font-semibold text-sm">{t("title")}</h3>
+            <h3 className="text-sm font-semibold">{t("title")}</h3>
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
@@ -130,7 +212,9 @@ export function NotificationDropdown({
                 onClick={() => markAllMutation.mutate()}
                 disabled={markAllMutation.isPending}
               >
-                <CheckCheck className={cn("h-3.5 w-3.5", isRtl ? "ml-1" : "mr-1")} />
+                <CheckCheck
+                  className={cn("h-3.5 w-3.5", isRtl ? "ml-1" : "mr-1")}
+                />
                 {t("markAllAsRead")}
               </Button>
             )}
@@ -152,25 +236,31 @@ export function NotificationDropdown({
                   <div className="sticky top-0 bg-muted/40 px-4 py-1.5 text-[11px] font-medium text-muted-foreground">
                     {groupLabel(groupKey)}
                   </div>
-                  {items.map((n) => {
-                    const localized = translateNotificationContent(n, t, tEnums);
+                  {items.map((notification) => {
+                    const localized = translateNotificationContent(
+                      notification,
+                      t,
+                      tEnums
+                    );
+                    const title =
+                      localized.title
+                      || localized.body
+                      || notification.title
+                      || notification.body;
 
                     return (
                       <button
-                        key={n.id}
+                        key={notification.id}
                         className={cn(
                           "flex min-h-12 w-full gap-3 border-b px-4 py-3 text-start transition-colors hover:bg-accent last:border-0",
-                          !n.is_read && "bg-primary/5",
+                          !notification.is_read && "bg-primary/5"
                         )}
                         onClick={() => {
-                          if (!n.is_read) {
-                            markReadMutation.mutate(n.id);
-                          }
-                          setOpen(false);
+                          void handleNotificationClick(notification);
                         }}
                       >
                         <div className="mt-1.5 shrink-0">
-                          {!n.is_read ? (
+                          {!notification.is_read ? (
                             <span className="block h-2 w-2 rounded-full bg-primary" />
                           ) : (
                             <span className="block h-2 w-2 rounded-full bg-transparent" />
@@ -181,13 +271,15 @@ export function NotificationDropdown({
                           <p
                             className={cn(
                               "line-clamp-2 text-sm leading-snug",
-                              !n.is_read ? "font-medium" : "text-muted-foreground",
+                              !notification.is_read
+                                ? "font-medium"
+                                : "text-muted-foreground"
                             )}
                           >
-                            {localized.title || localized.body || n.title || n.body}
+                            {title}
                           </p>
                           <p className="mt-1 text-[11px] text-muted-foreground">
-                            {formatDistanceToNow(new Date(n.created_at), {
+                            {formatDistanceToNow(new Date(notification.created_at), {
                               addSuffix: true,
                               locale: dateFnsLocale,
                             })}
@@ -207,7 +299,7 @@ export function NotificationDropdown({
               onClick={() => setOpen(false)}
               className="flex items-center justify-center py-3 text-sm font-medium text-primary transition-colors hover:bg-accent"
             >
-              {locale === "ar" ? "عرض كل الإشعارات" : "View all notifications"}
+              {t("viewAll")}
             </Link>
           </div>
         </div>

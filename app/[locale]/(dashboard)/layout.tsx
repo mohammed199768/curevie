@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
@@ -12,19 +12,21 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { ChatFloatingButton } from "@/components/shared/ChatFloatingButton";
-import { chatApi } from "@/lib/api/chat";
+import { casesApi } from "@/lib/api/cases";
 import { notificationsApi } from "@/lib/api/notifications";
-import { requestsApi } from "@/lib/api/requests";
-import type { RequestChatMessage, RequestItem } from "@/lib/api/types";
-import { readRequestChatLastSeenMap } from "@/lib/request-chat-read-state";
+import { connectAppSocket, type AppSocket } from "@/lib/socket-client";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useUiStore } from "@/lib/stores/ui.store";
-import { cn, normalizeListResponse } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const NOTIFICATIONS_REFETCH_INTERVAL_MS = 60_000;
 const UNREAD_CHAT_REFETCH_INTERVAL_MS = 60_000;
 
-type NotificationUnreadResponse = {
+type NotificationUnreadPayload = {
+  unread_count?: number;
+};
+
+type ChatUnreadPayload = {
   unread_count?: number;
 };
 
@@ -42,6 +44,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const isChatRoute = pathname.endsWith("/chat");
+  const queryClient = useQueryClient();
+  const socketRef = useRef<AppSocket | null>(null);
 
   const patient = useAuthStore((state) => state.patient);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -55,10 +59,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const notificationsQuery = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: async () => {
-      const response = await notificationsApi.list({ page: 1, limit: 1, unread_only: true });
-      const data = response.data as NotificationUnreadResponse | null | undefined;
-      const count = typeof data?.unread_count === "number" ? data.unread_count : 0;
-      return Number(count);
+      const response = await notificationsApi.list({
+        page: 1,
+        limit: 1,
+        unread_only: true,
+      });
+      return Number(response.data?.unread_count || 0);
     },
     refetchInterval: NOTIFICATIONS_REFETCH_INTERVAL_MS,
     refetchIntervalInBackground: false,
@@ -69,52 +75,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const unreadChatQuery = useQuery({
     queryKey: ["chat", "unread-chat-total"],
     queryFn: async () => {
-      const adminResp = await chatApi.getConversations();
-      const adminUnread = (adminResp.data.data || []).reduce(
-        (sum, row) => sum + Number(row.unread_count || 0),
-        0,
-      );
-
-      const seenMap = readRequestChatLastSeenMap();
-      let requestUnread = 0;
-
-      try {
-        const requestsResp = await requestsApi.list({ page: 1, limit: 100 });
-        const allRequests = normalizeListResponse<RequestItem>(requestsResp.data).data;
-        const roomStatuses = new Set(["IN_PROGRESS", "COMPLETED", "CLOSED"]);
-        const rooms = allRequests.filter(
-          (request) => roomStatuses.has(request.status) && (request.provider_name || request.assigned_provider_id),
-        );
-
-        await Promise.all(
-          rooms.map(async (request) => {
-            try {
-              const msgResp = await requestsApi.listChatMessages(request.id, "PROVIDER_PATIENT", { page: 1, limit: 5 });
-              const rawMessages = msgResp.data.data;
-              const messages: RequestChatMessage[] = Array.isArray(rawMessages) ? rawMessages : [];
-              const lastExternal = [...messages].reverse().find((message) => message.sender_role !== "PATIENT");
-
-              if (lastExternal?.created_at) {
-                const seenAt = seenMap[request.id];
-                if (!seenAt || new Date(lastExternal.created_at) > new Date(seenAt)) {
-                  requestUnread += 1;
-                }
-              }
-            } catch {
-              // Skip this room on error.
-            }
-          }),
-        );
-      } catch {
-        // Skip request rooms on error.
-      }
-
-      return adminUnread + requestUnread;
+      const response = await casesApi.getUnreadChatCount();
+      return Number(response.data?.unread_count || 0);
     },
     refetchInterval: isChatRoute ? false : UNREAD_CHAT_REFETCH_INTERVAL_MS,
     refetchIntervalInBackground: false,
     retry: shouldRetryDashboardQuery,
-    enabled: false,
+    enabled: hydrated && isAuthenticated && Boolean(accessToken),
   });
 
   useEffect(() => {
@@ -122,9 +89,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [notificationsQuery.data, setUnreadNotifications]);
 
   useEffect(() => {
-    if (!unreadChatQuery.data) return;
-    const count = Number(unreadChatQuery.data || 0);
-    setUnreadChat(count);
+    setUnreadChat(Number(unreadChatQuery.data || 0));
   }, [setUnreadChat, unreadChatQuery.data]);
 
   useEffect(() => {
@@ -140,7 +105,67 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       logoutStore();
       router.replace(`/${locale}/login?redirect=${encodeURIComponent(pathname)}`);
     }
-  }, [accessToken, hydrated, isAuthenticated, locale, logoutStore, pathname, patient?.role, router]);
+  }, [
+    accessToken,
+    hydrated,
+    isAuthenticated,
+    locale,
+    logoutStore,
+    pathname,
+    patient?.role,
+    router,
+  ]);
+
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated || !accessToken || patient?.role !== "PATIENT") {
+      return undefined;
+    }
+
+    let disposed = false;
+    let currentSocket: AppSocket | null = null;
+
+    void connectAppSocket(accessToken).then((socket) => {
+      if (disposed || !socket) return;
+
+      currentSocket = socket;
+      socketRef.current = socket;
+
+      socket.on("notification_unread_updated", (payload: unknown) => {
+        const typedPayload = payload as NotificationUnreadPayload | undefined;
+        const unreadCount = Number(typedPayload?.unread_count || 0);
+
+        queryClient.setQueryData(["notifications", "unread-count"], unreadCount);
+        setUnreadNotifications(unreadCount);
+        void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      });
+
+      socket.on("chat_unread_updated", (payload: unknown) => {
+        const typedPayload = payload as ChatUnreadPayload | undefined;
+        const unreadCount = Number(typedPayload?.unread_count || 0);
+
+        queryClient.setQueryData(["chat", "unread-chat-total"], unreadCount);
+        setUnreadChat(unreadCount);
+        void queryClient.invalidateQueries({ queryKey: ["chat", "unread-chat-total"] });
+        void queryClient.invalidateQueries({
+          queryKey: ["patient-chat", "case-room-metadata"],
+        });
+      });
+    });
+
+    return () => {
+      disposed = true;
+      currentSocket?.disconnect();
+      socketRef.current = null;
+    };
+  }, [
+    accessToken,
+    hydrated,
+    isAuthenticated,
+    patient?.role,
+    queryClient,
+    setUnreadChat,
+    setUnreadNotifications,
+  ]);
 
   if (!hydrated || !isAuthenticated || !accessToken || patient?.role !== "PATIENT") {
     return (
@@ -157,11 +182,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950/30">
-      <div className={cn("fixed inset-y-0 z-40 hidden md:block", locale === "ar" ? "right-0" : "left-0")}>
+      <div
+        className={cn(
+          "fixed inset-y-0 z-40 hidden md:block",
+          locale === "ar" ? "right-0" : "left-0"
+        )}
+      >
         <DashboardSidebar locale={locale} />
       </div>
 
-      <div className={cn("min-h-screen pb-16 md:pb-0", locale === "ar" ? "md:pr-[240px]" : "md:pl-[240px]")}>
+      <div
+        className={cn(
+          "min-h-screen pb-16 md:pb-0",
+          locale === "ar" ? "md:pr-[240px]" : "md:pl-[240px]"
+        )}
+      >
         <DashboardHeader />
         <main className="p-4 md:p-6">{children}</main>
       </div>
@@ -170,4 +205,3 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
-

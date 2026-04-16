@@ -1,15 +1,15 @@
 "use client";
 
 import {
+  Activity,
   Bell,
   CheckCheck,
   ChevronLeft,
   ChevronRight,
-  Megaphone,
-  FileText,
   CreditCard,
+  FileText,
+  Megaphone,
   Star,
-  Activity,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -17,63 +17,63 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { notificationsApi } from "@/lib/api/notifications";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { notificationsApi } from "@/lib/api/notifications";
+import type { ApiListResponse, NotificationItem } from "@/lib/api/types";
+import { translateNotificationContent } from "@/lib/i18n";
+import { getPatientNotificationHref } from "@/lib/notification-routing";
 import { cn } from "@/lib/utils";
 
 const LIMIT = 20;
 
-type NotificationItem = {
-  id: string;
-  type: string;
-  title: string;
-  body: string;
-  is_read: boolean;
-  created_at: string;
-  data?: { request_id?: string; requestId?: string } | null;
-};
-
-type NotificationsResponse = {
-  data: NotificationItem[];
-  pagination?: { total_pages?: number; pages?: number };
-  unread_count?: number;
-};
+type NotificationsResponse = ApiListResponse<NotificationItem>;
 
 function getIcon(type: string) {
-  if (type.startsWith("REQUEST")) return <Activity className="h-5 w-5 text-blue-500" />;
-  if (type.startsWith("PAYMENT") || type.startsWith("INVOICE")) return <CreditCard className="h-5 w-5 text-green-500" />;
-  if (type.startsWith("REPORT")) return <FileText className="h-5 w-5 text-purple-500" />;
-  if (type.startsWith("POINTS")) return <Star className="h-5 w-5 text-yellow-500" />;
+  if (type.startsWith("REQUEST") || type.startsWith("CASE")) {
+    return <Activity className="h-5 w-5 text-blue-500" />;
+  }
+  if (type.startsWith("PAYMENT") || type.startsWith("INVOICE")) {
+    return <CreditCard className="h-5 w-5 text-green-500" />;
+  }
+  if (type.startsWith("REPORT")) {
+    return <FileText className="h-5 w-5 text-purple-500" />;
+  }
+  if (type.startsWith("POINTS")) {
+    return <Star className="h-5 w-5 text-yellow-500" />;
+  }
   return <Megaphone className="h-5 w-5 text-muted-foreground" />;
 }
 
-function groupByDate(items: NotificationItem[], locale: string) {
+function groupByDate(
+  items: NotificationItem[],
+  labels: { today: string; yesterday: string; earlier: string }
+) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  const todayLabel = locale === "ar" ? "اليوم" : "Today";
-  const yesterdayLabel = locale === "ar" ? "أمس" : "Yesterday";
-  const earlierLabel = locale === "ar" ? "سابقاً" : "Earlier";
-
   const groups: { label: string; items: NotificationItem[] }[] = [];
-  const map: Record<string, NotificationItem[]> = {};
+  const groupedItems: Record<string, NotificationItem[]> = {};
 
   for (const item of items) {
-    const d = new Date(item.created_at);
-    d.setHours(0, 0, 0, 0);
-    let label: string;
-    if (d.getTime() === today.getTime()) label = todayLabel;
-    else if (d.getTime() === yesterday.getTime()) label = yesterdayLabel;
-    else label = earlierLabel;
+    const itemDate = new Date(item.created_at);
+    itemDate.setHours(0, 0, 0, 0);
 
-    if (!map[label]) {
-      map[label] = [];
-      groups.push({ label, items: map[label] });
+    let label = labels.earlier;
+    if (itemDate.getTime() === today.getTime()) {
+      label = labels.today;
+    } else if (itemDate.getTime() === yesterday.getTime()) {
+      label = labels.yesterday;
     }
-    map[label].push(item);
+
+    if (!groupedItems[label]) {
+      groupedItems[label] = [];
+      groups.push({ label, items: groupedItems[label] });
+    }
+
+    groupedItems[label].push(item);
   }
 
   return groups;
@@ -94,6 +94,7 @@ function NotificationSkeleton() {
 export default function NotificationsPage() {
   const locale = useLocale();
   const t = useTranslations("notificationsPage");
+  const tEnums = useTranslations("enums");
   const router = useRouter();
   const queryClient = useQueryClient();
   const isRtl = locale === "ar";
@@ -118,6 +119,7 @@ export default function NotificationsPage() {
   const markAllMutation = useMutation({
     mutationFn: () => notificationsApi.markAllRead(),
     onSuccess: () => {
+      queryClient.setQueryData(["notifications", "unread-count"], 0);
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
@@ -127,24 +129,45 @@ export default function NotificationsPage() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<NotificationsResponse>(queryKey);
+      const previousUnreadCount =
+        queryClient.getQueryData<number>(["notifications", "unread-count"]) ?? unreadCount;
 
-      queryClient.setQueryData<NotificationsResponse | undefined>(queryKey, (old) => {
-        if (!old?.data) return old;
+      queryClient.setQueryData<NotificationsResponse | undefined>(queryKey, (current) => {
+        if (!current?.data) return current;
+
         return {
-          ...old,
-          unread_count: Math.max(0, Number(old.unread_count || 0) - 1),
-          data: old.data.map((n) =>
-            n.id === id ? { ...n, is_read: true } : n
+          ...current,
+          unread_count: Math.max(0, Number(current.unread_count || 0) - 1),
+          data: current.data.map((notification) =>
+            notification.id === id
+              ? { ...notification, is_read: true }
+              : notification
           ),
         };
       });
 
-      return { previous };
+      const targetNotification = previous?.data?.find(
+        (notification) => notification.id === id
+      );
+
+      if (targetNotification && !targetNotification.is_read) {
+        queryClient.setQueryData(
+          ["notifications", "unread-count"],
+          Math.max(0, Number(previousUnreadCount || 0) - 1)
+        );
+      }
+
+      return { previous, previousUnreadCount };
     },
-    onError: (_err, _id, context) => {
+    onError: (_error, _id, context) => {
       if (context?.previous) {
         queryClient.setQueryData(queryKey, context.previous);
       }
+
+      queryClient.setQueryData(
+        ["notifications", "unread-count"],
+        Number(context?.previousUnreadCount || 0)
+      );
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -154,13 +177,24 @@ export default function NotificationsPage() {
   const notifications = data?.data ?? [];
   const totalPages = data?.pagination?.total_pages ?? data?.pagination?.pages ?? 1;
   const unreadCount = data?.unread_count ?? 0;
-  const groups = groupByDate(notifications, locale);
+  const groups = groupByDate(notifications, {
+    today: t("today"),
+    yesterday: t("yesterday"),
+    earlier: t("earlier"),
+  });
 
-  const handleClick = (n: NotificationItem) => {
-    if (!n.is_read) markReadMutation.mutate(n.id);
-    const requestId = n.data?.request_id ?? n.data?.requestId;
-    if (requestId) {
-      router.push(`/${locale}/requests/${requestId}`);
+  const handleClick = async (notification: NotificationItem) => {
+    if (!notification.is_read) {
+      try {
+        await markReadMutation.mutateAsync(notification.id);
+      } catch {
+        // Allow navigation to the target case even if read-state sync fails.
+      }
+    }
+
+    const href = getPatientNotificationHref(notification, locale);
+    if (href) {
+      router.push(href);
     }
   };
 
@@ -170,13 +204,14 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-primary" />
           <h1 className="text-xl font-bold">{t("title")}</h1>
-          {unreadCount > 0 && (
+          {unreadCount > 0 ? (
             <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
               {unreadCount}
             </span>
-          )}
+          ) : null}
         </div>
-        {unreadCount > 0 && (
+
+        {unreadCount > 0 ? (
           <Button
             variant="ghost"
             size="sm"
@@ -187,7 +222,7 @@ export default function NotificationsPage() {
             <CheckCheck className="me-1 h-3.5 w-3.5" />
             {t("markAllAsRead")}
           </Button>
-        )}
+        ) : null}
       </div>
 
       <div className="mb-4 w-fit rounded-lg bg-muted p-1">
@@ -203,12 +238,10 @@ export default function NotificationsPage() {
                 "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
                 tab === tabKey
                   ? "bg-background text-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground",
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {tabKey === "all"
-                ? (locale === "ar" ? "الكل" : "All")
-                : (locale === "ar" ? "غير مقروء" : "Unread")}
+              {t(tabKey)}
             </button>
           ))}
         </div>
@@ -216,16 +249,16 @@ export default function NotificationsPage() {
 
       <div className="overflow-hidden rounded-xl border bg-background">
         {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => <NotificationSkeleton key={i} />)
+          Array.from({ length: 5 }).map((_, index) => (
+            <NotificationSkeleton key={index} />
+          ))
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
               <Bell className="h-8 w-8 text-muted-foreground/50" />
             </div>
             <p className="text-sm font-medium text-muted-foreground">
-              {tab === "unread"
-                ? (locale === "ar" ? "لا توجد إشعارات غير مقروءة" : "No unread notifications")
-                : (locale === "ar" ? "لا توجد إشعارات" : "No notifications yet")}
+              {tab === "unread" ? t("emptyUnread") : t("empty")}
             </p>
           </div>
         ) : (
@@ -235,84 +268,100 @@ export default function NotificationsPage() {
                 {label}
               </div>
 
-              {items.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => handleClick(n)}
-                  className={cn(
-                    "w-full border-b px-4 py-3.5 text-start transition-colors last:border-0 hover:bg-accent",
-                    !n.is_read && "bg-primary/5",
-                  )}
-                >
-                  <div className="flex gap-3">
-                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                      {getIcon(n.type)}
-                    </div>
+              {items.map((notification) => {
+                const localized = translateNotificationContent(notification, t, tEnums);
+                const title = localized.title || notification.title;
+                const body = localized.body || notification.body;
 
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={cn(
-                          "text-sm leading-snug",
-                          !n.is_read ? "font-semibold" : "text-muted-foreground",
-                        )}
-                      >
-                        {n.title}
-                      </p>
-                      {n.body && n.body !== n.title && (
-                        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                          {n.body}
-                        </p>
-                      )}
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        {formatDistanceToNow(new Date(n.created_at), {
-                          addSuffix: true,
-                          locale: dateFnsLocale,
-                        })}
-                      </p>
-                    </div>
-
-                    {!n.is_read && (
-                      <div className="mt-2 shrink-0">
-                        <span className="block h-2 w-2 rounded-full bg-primary" />
-                      </div>
+                return (
+                  <button
+                    key={notification.id}
+                    onClick={() => {
+                      void handleClick(notification);
+                    }}
+                    className={cn(
+                      "w-full border-b px-4 py-3.5 text-start transition-colors last:border-0 hover:bg-accent",
+                      !notification.is_read && "bg-primary/5"
                     )}
-                  </div>
-                </button>
-              ))}
+                  >
+                    <div className="flex gap-3">
+                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                        {getIcon(notification.type)}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            "text-sm leading-snug",
+                            !notification.is_read
+                              ? "font-semibold"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {title}
+                        </p>
+                        {body && body !== title ? (
+                          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                            {body}
+                          </p>
+                        ) : null}
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(notification.created_at), {
+                            addSuffix: true,
+                            locale: dateFnsLocale,
+                          })}
+                        </p>
+                      </div>
+
+                      {!notification.is_read ? (
+                        <div className="mt-2 shrink-0">
+                          <span className="block h-2 w-2 rounded-full bg-primary" />
+                        </div>
+                      ) : null}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           ))
         )}
       </div>
 
-      {totalPages > 1 && (
+      {totalPages > 1 ? (
         <div className="mt-4 flex items-center justify-between gap-3">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
             disabled={page === 1}
           >
-            {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            {locale === "ar" ? "السابق" : "Previous"}
+            {isRtl ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+            {t("previous")}
           </Button>
 
           <span className="text-sm text-muted-foreground">
-            {locale === "ar"
-              ? `${page} من ${totalPages}`
-              : `${page} of ${totalPages}`}
+            {page} / {totalPages}
           </span>
 
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
             disabled={page >= totalPages}
           >
-            {locale === "ar" ? "التالي" : "Next"}
-            {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {t("next")}
+            {isRtl ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
