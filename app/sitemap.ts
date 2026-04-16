@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
 import { buildAbsoluteUrl, buildLocaleAlternates } from "@/lib/seo";
+import { PUBLIC_SERVICE_CATEGORIES } from "@/lib/public-service-categories";
 
 const locales = ["en", "ar"] as const;
-const serviceSlugs = ["medical-visits", "imaging", "lab-diagnostics", "care-programs"] as const;
+const serviceSlugs = PUBLIC_SERVICE_CATEGORIES.map((category) => category.slug);
 const lastModified = new Date();
 
 const staticPublicRoutes = [

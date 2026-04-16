@@ -13,8 +13,11 @@ export function generateMetadata({ params }: CookiePolicyPageProps): Metadata {
   return buildPublicPageMetadata({
     locale: params.locale,
     pathname: "/cookies",
-    title: "Cookie Policy | سياسة ملفات الارتباط | Curevie",
-    description: "Review how Curevie uses cookies and consent preferences across the patient home healthcare experience.",
+    title: params.locale === "ar" ? "سياسة ملفات الارتباط | كيورفي" : "Cookie Policy | Curevie",
+    description:
+      params.locale === "ar"
+        ? "راجع كيفية استخدام كيورفي لملفات الارتباط وتفضيلات الموافقة ضمن تجربة المريض في خدمات الرعاية المنزلية."
+        : "Review how Curevie uses cookies and consent preferences across the patient home healthcare experience.",
     keywords: [...BASE_SEO_KEYWORDS, "cookie policy", "سياسة ملفات الارتباط", "curevie cookies"],
   });
 }

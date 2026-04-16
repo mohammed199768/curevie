@@ -29,7 +29,7 @@ export function generateMetadata({ params }: PublicServiceCategoryPageProps): Me
     return {};
   }
 
-  const seo = getServicePageSeo(category.slug);
+  const seo = getServicePageSeo(category.slug, params.locale);
 
   return buildPublicPageMetadata({
     locale: params.locale,
@@ -47,7 +47,5 @@ export default function PublicServiceCategoryPage({ params }: PublicServiceCateg
     notFound();
   }
 
-  return (
-    <PublicServiceCategoryExplorer slug={category.slug} />
-  );
+  return <PublicServiceCategoryExplorer slug={category.slug} />;
 }

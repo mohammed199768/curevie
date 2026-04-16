@@ -13,8 +13,11 @@ export function generateMetadata({ params }: PrivacyPolicyPageProps): Metadata {
   return buildPublicPageMetadata({
     locale: params.locale,
     pathname: "/privacy",
-    title: "Privacy Policy | سياسة الخصوصية | Curevie",
-    description: "Read Curevie's privacy policy, data handling terms, and patient information commitments for home healthcare services in Jordan.",
+    title: params.locale === "ar" ? "سياسة الخصوصية | كيورفي" : "Privacy Policy | Curevie",
+    description:
+      params.locale === "ar"
+        ? "اقرأ سياسة الخصوصية في كيورفي وكيفية التعامل مع بيانات المرضى ومعلومات خدمات الرعاية الطبية المنزلية في الأردن."
+        : "Read Curevie's privacy policy, data handling terms, and patient information commitments for home healthcare services in Jordan.",
     keywords: [...BASE_SEO_KEYWORDS, "privacy policy", "سياسة الخصوصية", "curevie privacy"],
   });
 }

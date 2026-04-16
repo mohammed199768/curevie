@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { hasLocale } from "next-intl";
+import { getLocale } from "next-intl/server";
+import { defaultLocale, locales } from "@/i18n";
 import { cairo, cormorantGaramond, inter } from "@/lib/fonts";
 import {
   BASE_SEO_KEYWORDS,
@@ -25,13 +28,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const requestedLocale = await getLocale().catch(() => defaultLocale);
+  const locale = hasLocale(locales, requestedLocale) ? requestedLocale : defaultLocale;
+  const isArabic = locale === "ar";
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} dir={isArabic ? "rtl" : "ltr"} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0d4440" />
