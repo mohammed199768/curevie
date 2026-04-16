@@ -3,7 +3,7 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import { MessageSquareText, Paperclip, Send, ShieldCheck } from "lucide-react";
+import { MessageSquareText, Send, ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { AppPreloader } from "@/components/shared/AppPreloader";
@@ -16,12 +16,11 @@ import {
   type PatientCase,
   type PatientCaseChatRoom,
 } from "@/lib/api/cases";
-import { chatApi } from "@/lib/api/chat";
-import type { Conversation, Message, RequestChatMessage, RequestStatus } from "@/lib/api/types";
+import type { RequestChatMessage, RequestStatus } from "@/lib/api/types";
+import { translateEnumValue } from "@/lib/i18n";
 import { connectAppSocket, type AppSocket } from "@/lib/socket-client";
 import { useAuthStore } from "@/lib/stores/auth.store";
-import { translateEnumValue } from "@/lib/i18n";
-import { cn, formatRelativeTime, normalizeListResponse } from "@/lib/utils";
+import { cn, formatRelativeTime } from "@/lib/utils";
 
 const CASE_CHAT_STATUSES = new Set<RequestStatus>([
   "IN_PROGRESS",
@@ -33,10 +32,6 @@ const CASE_ACTIVE_STATUSES = new Set<RequestStatus>([
   "COMPLETED",
 ]);
 const CASE_ROOM_METADATA_QUERY_KEY = "case-room-metadata";
-
-type InboxThread =
-  | { kind: "admin"; id: string }
-  | { kind: "case"; id: string };
 
 type CaseInboxEntry = {
   caseItem: PatientCase;
@@ -75,17 +70,6 @@ function isAttachmentPreview(value?: string | null) {
     /^(https?:\/\/|\/?uploads\/)/i.test(value)
     || /\.(jpg|jpeg|png|gif|webp|pdf|docx?|xlsx?|zip)(\?|$)/i.test(value)
   );
-}
-
-function getConversationPreview(
-  conversation: Conversation,
-  attachmentLabel: string,
-  emptyLabel: string
-) {
-  const body = conversation.last_message?.body?.trim();
-  if (body) return body;
-  if (conversation.last_message?.media_url) return attachmentLabel;
-  return emptyLabel;
 }
 
 function getCaseRoomPreview(
@@ -146,22 +130,12 @@ export default function ChatPage() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const queryClient = useQueryClient();
 
-  const [activeThread, setActiveThread] = useState<InboxThread | null>(null);
+  const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [caseSocketReady, setCaseSocketReady] = useState(false);
   const [currentRoomId, setCurrentRoomId] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [messageText, setMessageText] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<AppSocket | null>(null);
-
-  const conversationsQuery = useQuery({
-    queryKey: ["chat", "conversations"],
-    queryFn: async () => (await chatApi.getConversations()).data.data,
-    enabled: Boolean(accessToken),
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
-    retry: shouldRetryChatQuery,
-  });
 
   const casesQuery = useQuery({
     queryKey: ["patient-chat", "cases"],
@@ -171,29 +145,6 @@ export default function ChatPage() {
     refetchIntervalInBackground: false,
     retry: shouldRetryChatQuery,
   });
-
-  const conversations = useMemo(
-    () =>
-      (conversationsQuery.data || []).filter(
-        (conversation) => conversation.participant_role === "ADMIN"
-      ),
-    [conversationsQuery.data]
-  );
-
-  const sortedAdminConversations = useMemo(
-    () =>
-      [...conversations].sort((a, b) => {
-        const unreadDelta =
-          Number(b.unread_count || 0) - Number(a.unread_count || 0);
-        if (unreadDelta !== 0) return unreadDelta;
-
-        return (
-          toTimeValue(b.last_message_at || b.created_at)
-          - toTimeValue(a.last_message_at || a.created_at)
-        );
-      }),
-    [conversations]
-  );
 
   const visibleCases = useMemo(
     () =>
@@ -281,22 +232,12 @@ export default function ChatPage() {
     [caseRoomMetadataQuery.data, tChatPage, tEnums, visibleCases]
   );
 
-  const activeConversation = useMemo(
-    () =>
-      activeThread?.kind === "admin"
-        ? sortedAdminConversations.find(
-            (conversation) => conversation.id === activeThread.id
-          ) || null
-        : null,
-    [activeThread, sortedAdminConversations]
-  );
-
   const activeCaseEntry = useMemo(
     () =>
-      activeThread?.kind === "case"
-        ? caseInboxEntries.find((entry) => entry.caseItem.id === activeThread.id) || null
+      activeCaseId
+        ? caseInboxEntries.find((entry) => entry.caseItem.id === activeCaseId) || null
         : null,
-    [activeThread, caseInboxEntries]
+    [activeCaseId, caseInboxEntries]
   );
 
   const activeCaseRoom = useMemo(() => {
@@ -309,33 +250,34 @@ export default function ChatPage() {
     );
   }, [activeCaseEntry, currentRoomId]);
 
-  const openConversationThread = useCallback(
-    async (conversationId: string) => {
-      setActiveThread({ kind: "admin", id: conversationId });
-      setCaseSocketReady(false);
-      setCurrentRoomId("");
-      setFile(null);
-      setMessageText("");
-
-      try {
-        await chatApi.markRead(conversationId);
-        await queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
-        await queryClient.invalidateQueries({ queryKey: ["chat", "unread-count"] });
-      } catch {}
-    },
-    [queryClient]
-  );
-
   const openCaseThread = useCallback((caseId: string, roomId?: string | null) => {
-    setActiveThread({ kind: "case", id: caseId });
+    setActiveCaseId(caseId);
     setCaseSocketReady(false);
     setCurrentRoomId(roomId || "");
-    setFile(null);
     setMessageText("");
   }, []);
 
   useEffect(() => {
-    if (activeThread?.kind !== "case") return;
+    if (!caseInboxEntries.length) {
+      setActiveCaseId(null);
+      setCurrentRoomId("");
+      setCaseSocketReady(false);
+      return;
+    }
+
+    const activeEntryExists = activeCaseId
+      ? caseInboxEntries.some((entry) => entry.caseItem.id === activeCaseId)
+      : false;
+
+    if (!activeEntryExists) {
+      const firstEntry = caseInboxEntries[0];
+      setActiveCaseId(firstEntry.caseItem.id);
+      setCurrentRoomId(firstEntry.preferredRoomId || "");
+      setCaseSocketReady(false);
+    }
+  }, [activeCaseId, caseInboxEntries]);
+
+  useEffect(() => {
     if (!activeCaseEntry?.rooms.length) {
       setCurrentRoomId("");
       setCaseSocketReady(false);
@@ -347,58 +289,19 @@ export default function ChatPage() {
       setCurrentRoomId(activeCaseEntry.preferredRoomId || activeCaseEntry.rooms[0].id);
       setCaseSocketReady(false);
     }
-  }, [activeCaseEntry, activeThread, currentRoomId]);
+  }, [activeCaseEntry, currentRoomId]);
 
-  useEffect(() => {
-    if (activeThread?.kind === "admin" && activeConversation) return;
-    if (activeThread?.kind === "case" && activeCaseEntry) return;
-
-    if (sortedAdminConversations.length) {
-      void openConversationThread(sortedAdminConversations[0].id);
-      return;
-    }
-
-    if (caseInboxEntries.length) {
-      openCaseThread(
-        caseInboxEntries[0].caseItem.id,
-        caseInboxEntries[0].preferredRoomId
-      );
-      return;
-    }
-
-    if (activeThread) {
-      setActiveThread(null);
-    }
-  }, [
-    activeCaseEntry,
-    activeConversation,
-    activeThread,
-    caseInboxEntries,
-    openCaseThread,
-    openConversationThread,
-    sortedAdminConversations,
-  ]);
-
-  const adminMessagesQuery = useQuery({
-    queryKey: ["chat", activeConversation?.id, "messages"],
-    queryFn: async () =>
-      normalizeListResponse<Message>(
-        (await chatApi.getMessages(activeConversation!.id, { page: 1, limit: 50 }))
-          .data
-      ).data,
-    enabled: Boolean(activeConversation?.id),
-    refetchInterval: 5_000,
-    refetchIntervalInBackground: false,
-    retry: shouldRetryChatQuery,
-  });
-
-  const activeCaseId = activeCaseEntry?.caseItem.id || null;
-  const activeCaseMessagesQueryKey = [
-    "patient-chat",
-    activeCaseId,
-    currentRoomId,
-    "messages",
-  ] as const;
+  const activeCaseMessagesQueryKey = useMemo(
+    () =>
+      [
+        "patient-chat",
+        "case",
+        activeCaseId || "none",
+        currentRoomId || "none",
+        "messages",
+      ] as const,
+    [activeCaseId, currentRoomId]
+  );
 
   const caseMessagesQuery = useQuery({
     queryKey: activeCaseMessagesQueryKey,
@@ -410,7 +313,7 @@ export default function ChatPage() {
   });
 
   useEffect(() => {
-    if (activeThread?.kind !== "case" || !currentRoomId || !accessToken) {
+    if (!accessToken || !activeCaseId || !currentRoomId) {
       setCaseSocketReady(false);
       return undefined;
     }
@@ -421,7 +324,12 @@ export default function ChatPage() {
     setCaseSocketReady(false);
 
     void connectAppSocket(accessToken).then((socket) => {
-      if (disposed || !socket) return;
+      if (!socket) return;
+
+      if (disposed) {
+        socket.disconnect();
+        return;
+      }
 
       currentSocket = socket;
       socketRef.current = socket;
@@ -461,6 +369,9 @@ export default function ChatPage() {
         void queryClient.invalidateQueries({
           queryKey: ["patient-chat", CASE_ROOM_METADATA_QUERY_KEY],
         });
+        void queryClient.invalidateQueries({
+          queryKey: ["chat", "unread-chat-total"],
+        });
       });
 
       if (socket.connected) {
@@ -472,32 +383,20 @@ export default function ChatPage() {
       disposed = true;
       setCaseSocketReady(false);
       currentSocket?.disconnect();
-      socketRef.current = null;
+      if (socketRef.current === currentSocket) {
+        socketRef.current = null;
+      }
     };
-  }, [
-    accessToken,
-    activeCaseMessagesQueryKey,
-    activeThread,
-    currentRoomId,
-    queryClient,
-  ]);
+  }, [accessToken, activeCaseId, activeCaseMessagesQueryKey, currentRoomId, queryClient]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeThread, adminMessagesQuery.data, caseMessagesQuery.data]);
+  }, [caseMessagesQuery.data]);
 
   const sendMutation = useMutation({
     mutationFn: async () => {
-      if ((!messageText.trim() && !file) || !activeThread) {
+      if (!messageText.trim()) {
         throw new Error(tChatPage("emptyMessage"));
-      }
-
-      if (activeThread.kind === "admin") {
-        await chatApi.sendMessage(activeThread.id, {
-          body: messageText.trim() || undefined,
-          file: file || undefined,
-        });
-        return;
       }
 
       if (!activeCaseEntry?.isOpen) {
@@ -515,63 +414,31 @@ export default function ChatPage() {
     },
     onSuccess: async () => {
       setMessageText("");
-      setFile(null);
-
-      if (activeThread?.kind === "admin") {
-        await queryClient.invalidateQueries({
-          queryKey: ["chat", activeThread.id, "messages"],
-        });
-        await queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
-        return;
-      }
-
-      if (activeThread?.kind === "case") {
-        await queryClient.invalidateQueries({
-          queryKey: ["patient-chat", CASE_ROOM_METADATA_QUERY_KEY],
-        });
-      }
+      await queryClient.invalidateQueries({
+        queryKey: ["patient-chat", CASE_ROOM_METADATA_QUERY_KEY],
+      });
     },
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : tCommon("error")),
   });
 
-  const adminMessages = adminMessagesQuery.data || [];
   const caseMessages = caseMessagesQuery.data || [];
-  const caseThreadActive =
-    activeThread?.kind === "case" && Boolean(activeCaseEntry);
-  const adminThreadActive =
-    activeThread?.kind === "admin" && Boolean(activeConversation);
-  const activeThreadLoading = caseThreadActive
-    ? caseMessagesQuery.isLoading && !caseMessages.length
-    : adminThreadActive
-      ? adminMessagesQuery.isLoading && !adminMessages.length
-      : false;
-  const activeThreadError = caseThreadActive
-    ? caseMessagesQuery.error
-    : adminThreadActive
-      ? adminMessagesQuery.error
-      : null;
+  const hasInboxEntries = caseInboxEntries.length > 0;
+  const isInitialLoading = casesQuery.isLoading && !casesQuery.data;
+  const activeThreadLoading =
+    Boolean(activeCaseId) && caseMessagesQuery.isLoading && !caseMessages.length;
+  const activeThreadError = activeCaseId ? caseMessagesQuery.error : null;
   const canSendMessage =
-    (activeThread?.kind === "admin" && Boolean(activeConversation))
-    || (
-      activeThread?.kind === "case"
-      && Boolean(activeCaseEntry?.isOpen)
-      && Boolean(currentRoomId)
-      && caseSocketReady
-    );
-  const hasInboxEntries = Boolean(
-    sortedAdminConversations.length || caseInboxEntries.length
-  );
-  const isInitialLoading =
-    (conversationsQuery.isLoading && !conversationsQuery.data)
-    || (casesQuery.isLoading && !casesQuery.data);
+    Boolean(activeCaseEntry?.isOpen)
+    && Boolean(currentRoomId)
+    && caseSocketReady;
 
   if (isInitialLoading) {
     return (
       <AppPreloader
         variant="page"
         title={tNav("chat")}
-        description={tChatPage("adminOnlyDescription")}
+        description={tChatPage("requestRoomsDescription")}
         blockCount={4}
       />
     );
@@ -587,12 +454,12 @@ export default function ChatPage() {
               className="border-primary/15 bg-primary/10 text-primary"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              {tChatPage("adminOnlyBadge")}
+              {tNav("chat")}
             </Badge>
           </div>
           <div className={cn(isRtl && "text-right")}>
             <CardTitle>{tNav("chat")}</CardTitle>
-            <CardDescription>{tChatPage("adminOnlyDescription")}</CardDescription>
+            <CardDescription>{tChatPage("requestRoomsDescription")}</CardDescription>
           </div>
         </CardHeader>
       </Card>
@@ -604,68 +471,8 @@ export default function ChatPage() {
             <CardDescription>{tChatPage("inboxDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto">
-            {sortedAdminConversations.map((conversation) => {
-              const unreadCount = Number(conversation.unread_count || 0);
-              const isActive =
-                activeThread?.kind === "admin" && activeThread.id === conversation.id;
-
-              return (
-                <button
-                  key={conversation.id}
-                  type="button"
-                  onClick={() => void openConversationThread(conversation.id)}
-                  className={cn(
-                    "w-full rounded-xl border px-4 py-3 text-left",
-                    isActive
-                      ? "border-primary bg-primary/5"
-                      : "border-border/70 bg-background",
-                    unreadCount > 0 && !isActive && "border-emerald-200/80"
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="line-clamp-1 font-semibold">
-                          {conversation.participant_name || tChatPage("adminLabel")}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className="border-primary/15 bg-primary/10 text-primary"
-                        >
-                          {tChatPage("systemChip")}
-                        </Badge>
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {tChatPage("adminThreadSubtitle")}
-                      </p>
-                      <p
-                        className={cn(
-                          "mt-2 line-clamp-1 text-sm",
-                          unreadCount > 0
-                            ? "font-semibold text-foreground"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {getConversationPreview(
-                          conversation,
-                          tChatPage("attachmentPreview"),
-                          tChatPage("noMessages")
-                        )}
-                      </p>
-                    </div>
-                    <div className="text-right text-[11px] text-muted-foreground">
-                      {conversation.last_message_at
-                        ? formatRelativeTime(conversation.last_message_at, locale)
-                        : "-"}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-
             {caseInboxEntries.map((entry) => {
-              const isActive =
-                activeThread?.kind === "case" && activeThread.id === entry.caseItem.id;
+              const isActive = activeCaseId === entry.caseItem.id;
 
               return (
                 <button
@@ -747,20 +554,14 @@ export default function ChatPage() {
         <Card className="flex min-h-[38rem] flex-col overflow-hidden rounded-2xl shadow-lg">
           <CardHeader>
             <CardTitle>
-              {caseThreadActive
-                ? activeCaseRoom?.provider_name
-                  || activeCaseEntry?.title
-                  || tChatPage("providerFallback")
-                : activeConversation?.participant_name || tChatPage("adminLabel")}
+              {activeCaseRoom?.provider_name
+                || activeCaseEntry?.title
+                || tChatPage("providerFallback")}
             </CardTitle>
-            <CardDescription>
-              {caseThreadActive
-                ? tChatPage("requestThreadDescription")
-                : tChatPage("adminThreadDescription")}
-            </CardDescription>
+            <CardDescription>{tChatPage("requestThreadDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col">
-            {caseThreadActive && activeCaseEntry ? (
+            {activeCaseEntry ? (
               <div className="mb-3 space-y-3">
                 <div className="rounded-xl border border-border/70 bg-background px-4 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -839,7 +640,7 @@ export default function ChatPage() {
             ) : null}
 
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-xl border p-3">
-              {!activeThread ? (
+              {!activeCaseId ? (
                 <p className="text-sm text-muted-foreground">
                   {tChatPage("selectThreadHint")}
                 </p>
@@ -857,63 +658,13 @@ export default function ChatPage() {
                     <p className="text-sm text-destructive">{tCommon("error")}</p>
                   </div>
                 </div>
-              ) : caseThreadActive ? (
-                caseMessages.length ? (
-                  caseMessages.map((message) => {
-                    const mine = message.sender_role === "PATIENT";
-                    const fileUrl =
-                      casesApi.resolveMediaUrl(message.file_url || null)
-                      || message.file_url
-                      || null;
-
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn("flex", mine ? "justify-end" : "justify-start")}
-                      >
-                        <div
-                          className={cn(
-                            "max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm",
-                            mine ? "bg-primary text-primary-foreground" : "bg-muted"
-                          )}
-                        >
-                          {message.sender_role !== "PATIENT" && message.sender_name ? (
-                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                              {message.sender_name}
-                            </p>
-                          ) : null}
-                          {message.content ? <p>{message.content}</p> : null}
-                          {fileUrl ? (
-                            <ChatMediaLink
-                              filePath={fileUrl}
-                              fileName={message.file_name}
-                              openLabel={tChatPage("openAttachment")}
-                            />
-                          ) : null}
-                          <p
-                            className={cn(
-                              "mt-1 text-[10px]",
-                              mine
-                                ? "text-primary-foreground/80"
-                                : "text-muted-foreground"
-                            )}
-                          >
-                            {formatRelativeTime(message.created_at, locale)}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="flex min-h-[18rem] items-center justify-center">
-                    <p className="text-sm text-muted-foreground">
-                      {tChatPage("noMessages")}
-                    </p>
-                  </div>
-                )
-              ) : adminMessages.length ? (
-                adminMessages.map((message) => {
+              ) : caseMessages.length ? (
+                caseMessages.map((message) => {
                   const mine = message.sender_role === "PATIENT";
+                  const fileUrl =
+                    casesApi.resolveMediaUrl(message.file_url || null)
+                    || message.file_url
+                    || null;
 
                   return (
                     <div
@@ -926,10 +677,16 @@ export default function ChatPage() {
                           mine ? "bg-primary text-primary-foreground" : "bg-muted"
                         )}
                       >
-                        {message.body ? <p>{message.body}</p> : null}
-                        {message.media_url ? (
+                        {message.sender_role !== "PATIENT" && message.sender_name ? (
+                          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                            {message.sender_name}
+                          </p>
+                        ) : null}
+                        {message.content ? <p>{message.content}</p> : null}
+                        {fileUrl ? (
                           <ChatMediaLink
-                            filePath={message.media_url}
+                            filePath={fileUrl}
+                            fileName={message.file_name}
                             openLabel={tChatPage("openAttachment")}
                           />
                         ) : null}
@@ -957,45 +714,29 @@ export default function ChatPage() {
               <div ref={bottomRef} />
             </div>
 
-            {caseThreadActive && activeCaseEntry && !activeCaseEntry.isOpen ? (
+            {activeCaseEntry && !activeCaseEntry.isOpen ? (
               <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 {tChatPage("requestClosedNotice")}
               </div>
-            ) : activeThread ? (
-              <>
-                <form
-                  className="mt-3 flex flex-wrap items-center gap-2"
-                  onSubmit={(event: FormEvent<HTMLFormElement>) => {
-                    event.preventDefault();
-                    sendMutation.mutate();
-                  }}
-                >
-                  <Input
-                    value={messageText}
-                    onChange={(event) => setMessageText(event.target.value)}
-                    placeholder={tChatPage("typeMessage")}
-                    className="min-w-[12rem] flex-1"
-                  />
-                  {activeThread.kind === "admin" ? (
-                    <label className="inline-flex cursor-pointer items-center rounded-md border px-3 py-2 text-sm">
-                      <Paperclip className="h-4 w-4" />
-                      {tChatPage("file")}
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(event) => setFile(event.target.files?.[0] || null)}
-                      />
-                    </label>
-                  ) : null}
-                  <Button type="submit" disabled={sendMutation.isPending || !canSendMessage}>
-                    <Send className="h-4 w-4" />
-                    {tChatPage("send")}
-                  </Button>
-                </form>
-                {file ? (
-                  <p className="mt-1 text-xs text-muted-foreground">{file.name}</p>
-                ) : null}
-              </>
+            ) : activeCaseId ? (
+              <form
+                className="mt-3 flex flex-wrap items-center gap-2"
+                onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                  event.preventDefault();
+                  sendMutation.mutate();
+                }}
+              >
+                <Input
+                  value={messageText}
+                  onChange={(event) => setMessageText(event.target.value)}
+                  placeholder={tChatPage("typeMessage")}
+                  className="min-w-[12rem] flex-1"
+                />
+                <Button type="submit" disabled={sendMutation.isPending || !canSendMessage}>
+                  <Send className="h-4 w-4" />
+                  {tChatPage("send")}
+                </Button>
+              </form>
             ) : null}
           </CardContent>
         </Card>

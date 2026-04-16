@@ -125,7 +125,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     let currentSocket: AppSocket | null = null;
 
     void connectAppSocket(accessToken).then((socket) => {
-      if (disposed || !socket) return;
+      if (!socket) return;
+
+      if (disposed) {
+        socket.disconnect();
+        return;
+      }
 
       currentSocket = socket;
       socketRef.current = socket;
