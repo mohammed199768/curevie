@@ -12,7 +12,6 @@ import {
   LogOut,
   Menu,
   Phone,
-  Stethoscope,
   User,
   UserPlus,
 } from "lucide-react";
@@ -30,7 +29,6 @@ type MobileBottomNavProps = {
 
 const dashboardNavItems = [
   { href: "/", labelKey: "home", iconType: "logo" as const },
-  { href: "/services", labelKey: "services", icon: Stethoscope },
   { href: "/requests", labelKey: "requests", icon: ClipboardList },
   { href: "/profile", labelKey: "profile", icon: User },
 ] as const;

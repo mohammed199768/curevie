@@ -79,10 +79,6 @@ export default function PublicServiceCategoryPage({ params }: PublicServiceCateg
               url: buildAbsoluteUrl(`/${params.locale}`),
             },
             {
-              name: params.locale === "ar" ? "الخدمات" : "Services",
-              url: buildAbsoluteUrl(`/${params.locale}/services`),
-            },
-            {
               name: seoContent.shortName,
               url: buildAbsoluteUrl(`/${params.locale}/services/${category.slug}`),
             },

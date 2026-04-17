@@ -388,20 +388,17 @@ export function PublicHomeExperience() {
             key: "line-1",
             segments: [{ text: t("hero.titleLineOne"), className: "" }],
             colorClass: "text-[#104d49]",
+            fontClass: "",
             sizeClass:
               "text-[clamp(1.95rem,12vw,4.05rem)] leading-[1.02] sm:text-[clamp(2.18rem,9.4vw,4.05rem)]",
           },
           {
             key: "line-2",
-            segments: [{ text: t("hero.titleLineTwo"), className: "" }],
+            segments: [
+              { text: `${t("hero.titleLineTwo")} `, className: "text-[#104d49]" },
+              { text: t("hero.titleAccent"), className: "text-[#86ab62]" },
+            ],
             colorClass: "text-[#104d49]",
-            sizeClass:
-              "text-[clamp(2rem,12.2vw,4.12rem)] leading-[1.02] sm:text-[clamp(2.22rem,9.6vw,4.12rem)]",
-          },
-          {
-            key: "line-3",
-            segments: [{ text: t("hero.titleAccent"), className: "" }],
-            colorClass: "text-[#86ab62]",
             fontClass: "",
             sizeClass:
               "text-[clamp(2.05rem,12.6vw,4.18rem)] leading-[1.02] sm:text-[clamp(2.28rem,9.8vw,4.18rem)]",
@@ -412,6 +409,7 @@ export function PublicHomeExperience() {
             key: "line-1",
             segments: [{ text: t("hero.titleLineOne"), className: "" }],
             colorClass: "text-[#104d49]",
+            fontClass: "",
             sizeClass:
               "text-[clamp(2rem,8.8vw,4.85rem)] leading-[0.94] sm:text-[clamp(2.65rem,7.2vw,5.15rem)]",
           },
@@ -422,6 +420,7 @@ export function PublicHomeExperience() {
               { text: t("hero.titleAccent"), className: "text-[#86ab62] italic" },
             ],
             colorClass: "text-[#104d49]",
+            fontClass: "",
             sizeClass:
               "text-[clamp(2rem,8.8vw,4.85rem)] leading-[0.94] sm:text-[clamp(2.65rem,7.2vw,5.15rem)]",
           },
@@ -591,14 +590,9 @@ export function PublicHomeExperience() {
                       <div className={cn("text-[0.72rem] font-semibold text-[#a9cfc8]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.28em]")}>
                         {t("hero.board.eyebrow")}
                       </div>
-                      <Link
-                        href={`/${locale}/services`}
-                        className="group/title mt-3 inline-flex items-center gap-2 text-xl font-semibold text-white transition hover:text-[#d8ebe2] sm:text-[2rem]"
-                      >
-                        <h2 className="underline decoration-white/18 underline-offset-8 transition group-hover/title:decoration-white/60">
-                          {t("hero.board.title")}
-                        </h2>
-                      </Link>
+                      <h2 className="mt-3 text-xl font-semibold text-white sm:text-[2rem]">
+                        {t("hero.board.title")}
+                      </h2>
                     </div>
                     <div className={cn("self-start rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.24em]")}>
                       {t("hero.board.badge")}

@@ -8,7 +8,6 @@ const lastModified = new Date();
 
 const staticPublicRoutes = [
   { pathname: "", changeFrequency: "weekly" as const, priority: 1 },
-  { pathname: "/services", changeFrequency: "weekly" as const, priority: 0.95 },
   { pathname: "/about", changeFrequency: "monthly" as const, priority: 0.8 },
   { pathname: "/contact", changeFrequency: "monthly" as const, priority: 0.8 },
   { pathname: "/privacy", changeFrequency: "yearly" as const, priority: 0.5 },
