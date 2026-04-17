@@ -185,7 +185,7 @@ export function PublicContactExperience() {
       return activeRingKey === channel.key ? 1.18 : 1;
     }
 
-    const radius = Math.min(ringPointer.width, ringPointer.height) * 0.44;
+    const radius = Math.min(ringPointer.width, ringPointer.height) * 0.38;
     const centerX = ringPointer.width / 2;
     const centerY = ringPointer.height / 2;
     const angleInRadians = (channel.angle * Math.PI) / 180;
@@ -407,18 +407,21 @@ export function PublicContactExperience() {
                   <div className="absolute inset-[32%] rounded-full border border-[#edf4f0]" />
 
                   {ringDetails.map(({ channel, meta }) => {
+                    const ORBIT_RADIUS_PERCENT = 38; // % of half the ring container; tune between 34 and 42
                     const scale = getRingScale(channel);
                     const opacity = getRingOpacity(channel);
                     const angleInRadians = (channel.angle * Math.PI) / 180;
-                    const orbitOffsetX = `${Math.cos(angleInRadians) * 49}%`;
-                    const orbitOffsetY = `${Math.sin(angleInRadians) * 49}%`;
+                    const leftPercent = 50 + Math.cos(angleInRadians) * ORBIT_RADIUS_PERCENT;
+                    const topPercent = 50 + Math.sin(angleInRadians) * ORBIT_RADIUS_PERCENT;
 
                     return (
                       <div
                         key={channel.key}
-                        className="absolute left-1/2 top-1/2"
+                        className="absolute"
                         style={{
-                          transform: `translate(calc(-50% + ${orbitOffsetX}), calc(-50% + ${orbitOffsetY}))`,
+                          left: `${leftPercent}%`,
+                          top: `${topPercent}%`,
+                          transform: "translate(-50%, -50%)",
                           zIndex: activeRingKey === channel.key ? 20 : 10,
                         }}
                       >
