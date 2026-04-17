@@ -17,7 +17,6 @@ import {
   Heart,
   Package2,
   Plus,
-  Search,
   Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,7 +89,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const category = getPublicServiceCategory(slug);
   const analyticsServiceKind = getPublicServiceCategoryAnalyticsKind(slug);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [search, setSearch] = useState("");
   const [guestRequestOpen, setGuestRequestOpen] = useState(false);
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
@@ -133,17 +131,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
     return dataQuery.data?.entries || [];
   }, [dataQuery.data?.entries]);
 
-  const filteredEntries = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-    if (!normalizedSearch) return entries;
-
-    return entries.filter((entry) =>
-      [entry.name, entry.description || "", entry.categoryName || ""]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch),
-    );
-  }, [entries, search]);
+  const filteredEntries = entries;
   const allMedicalEntries = useMemo(() => {
     if (!isMedicalGroup) return entries;
 
@@ -389,28 +377,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
             </div>
           </div>
         </div>
-
-        <section className="mt-8 overflow-hidden rounded-[2rem] border border-[#dae5df] bg-white/85 p-4 shadow-[0_28px_80px_-58px_rgba(15,79,72,0.26)] backdrop-blur sm:p-5">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
-            <div>
-              <div className={cn(eyebrowClass)} style={{ color: category.theme.muted }}>
-                {t("catalog.eyebrow")}
-              </div>
-              <h2 className="mt-3 text-2xl font-semibold text-[#12312d]">{t("catalog.title")}</h2>
-              <p className="mt-3 max-w-xl text-sm leading-7 text-[#617672]">{t("catalog.copy")}</p>
-            </div>
-
-            <label className="relative block">
-              <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("catalog.searchPlaceholder")}
-                className="h-14 w-full rounded-full border border-[#dde7e2] bg-[#f7faf8] ps-11 pe-5 text-sm text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-200"
-              />
-            </label>
-          </div>
-        </section>
 
         {dataQuery.isLoading ? (
           <section data-catalog-grid className="mt-8">

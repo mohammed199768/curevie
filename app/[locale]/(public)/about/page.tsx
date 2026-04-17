@@ -6,7 +6,9 @@ import { ABOUT_PAGE_KEYWORDS, buildPublicPageMetadata } from "@/lib/seo";
 import {
   buildAboutPageSchema,
   buildBreadcrumbSchema,
+  buildFaqSchema,
   buildOrganizationSchema,
+  getHomeSeoContent,
 } from "@/lib/seo-content";
 import { buildAbsoluteUrl } from "@/lib/seo";
 
@@ -33,12 +35,15 @@ export function generateMetadata({ params }: AboutPageProps): Metadata {
 }
 
 export default function AboutPage({ params }: AboutPageProps) {
+  const homeSeoContent = getHomeSeoContent(params.locale);
+
   return (
     <>
       <StructuredData
         data={[
           buildOrganizationSchema(params.locale),
           buildAboutPageSchema(params.locale),
+          buildFaqSchema(homeSeoContent.faqItems),
           buildBreadcrumbSchema([
             {
               name: params.locale === "ar" ? "الرئيسية" : "Home",
@@ -51,7 +56,7 @@ export default function AboutPage({ params }: AboutPageProps) {
           ]),
         ]}
       />
-      <PublicAboutExperience />
+      <PublicAboutExperience seoContent={homeSeoContent} />
     </>
   );
 }

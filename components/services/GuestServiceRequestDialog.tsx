@@ -250,8 +250,8 @@ export function GuestServiceRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bottom-2 top-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] translate-y-0 overflow-hidden rounded-[1.75rem] border-white/80 bg-[#f7faf8] p-0 shadow-[0_40px_120px_-44px_rgba(15,79,72,0.36)] sm:bottom-auto sm:top-[50%] sm:w-[min(46rem,calc(100vw-2rem))] sm:max-w-[46rem] sm:translate-y-[-50%]">
-        <div className="relative max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain">
+      <DialogContent className="bottom-2 top-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] translate-y-0 overflow-hidden rounded-[1.75rem] border-white/80 bg-[#f7faf8] p-0 shadow-[0_40px_120px_-44px_rgba(15,79,72,0.36)] sm:bottom-auto sm:top-[50%] sm:w-[min(46rem,calc(100vw-2rem))] sm:max-w-[46rem] sm:translate-y-[-50%]">
+        <div className="relative max-h-[calc(100dvh-1rem)] overflow-x-hidden overflow-y-auto overscroll-contain">
           <div
             className="absolute inset-x-0 top-0 h-1"
             style={{ backgroundColor: categoryTheme.accent }}
@@ -281,9 +281,9 @@ export function GuestServiceRequestDialog({
             </DialogHeader>
           </div>
 
-          <div className="grid gap-4 px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-6">
+          <div className="grid gap-4 px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] xl:gap-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="min-w-0 space-y-4">
                 <div className="grid gap-4">
                     <FormField
                       control={form.control}
@@ -348,7 +348,7 @@ export function GuestServiceRequestDialog({
                       <p className="text-sm font-medium text-foreground">
                         {t("guestRequest.serviceFieldLabel")}
                       </p>
-                      <div className="max-h-[200px] overflow-y-auto rounded-2xl border border-[#dbe7e2] bg-[#f9fbfa] p-2.5">
+                      <div className="max-h-[200px] overflow-x-hidden overflow-y-auto rounded-2xl border border-[#dbe7e2] bg-[#f9fbfa] p-2.5">
                         <div className="space-y-2">
                           {Object.entries(groupedEntries).map(([groupName, groupEntries]) => (
                             <div key={groupName} className="space-y-2">
@@ -368,7 +368,7 @@ export function GuestServiceRequestDialog({
                                       isChecked
                                         ? "border-[#bcd2ca] shadow-[0_14px_34px_-28px_rgba(15,79,72,0.35)]"
                                         : "border-[#e4eeea]"
-                                    } ${isDisabled ? "cursor-not-allowed opacity-55" : "hover:border-[#c8d9d2]"}`}
+                                    } ${isDisabled ? "cursor-not-allowed opacity-55" : "hover:border-[#c8d9d2]"} overflow-hidden`}
                                   >
                                     <input
                                       type="checkbox"
@@ -433,15 +433,15 @@ export function GuestServiceRequestDialog({
               </form>
             </Form>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <div className="rounded-[1.5rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)] sm:rounded-[1.7rem]">
                 <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#9c9fa2]">
                   {t("guestRequest.serviceCardTitle")}
                 </div>
 
                 <div className="mt-4 rounded-[1.5rem] border border-white/70 p-4 shadow-[0_20px_56px_-50px_rgba(15,79,72,0.2)]" style={{ background: `linear-gradient(180deg, ${categoryTheme.soft} 0%, #ffffff 100%)` }}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-xs font-semibold uppercase tracking-[0.18em] sm:text-sm sm:tracking-[0.22em]" style={{ color: categoryTheme.muted }}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0 text-xs font-semibold uppercase tracking-[0.18em] sm:text-sm sm:tracking-[0.22em]" style={{ color: categoryTheme.muted }}>
                       {categoryTitle}
                     </div>
                     <Badge className="rounded-full bg-[#12312d] px-3 py-1 text-xs font-semibold text-white hover:bg-[#12312d]">

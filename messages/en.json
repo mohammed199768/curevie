@@ -709,10 +709,10 @@
       "cardCta": "Book this",
       "medicalVisits": {
         "eyebrow": "Doctor at home",
-        "title": "Doctor Visits",
-        "short": "Doctor & nurse visits",
+        "title": "Doctor visit",
+        "short": "Doctor visit",
         "summary": "A licensed doctor or nurse comes to your home, checks on you, and gives you a diagnosis or prescription — no hospital trip needed.",
-        "routeLabel": "Doctor and nurse visits, one booking"
+        "routeLabel": "Doctor visit, one booking"
       },
       "nursingCare": {
         "eyebrow": "Nursing at home",
@@ -875,10 +875,10 @@
     "categories": {
       "medicalVisits": {
         "eyebrow": "Doctor at home",
-        "title": "Doctor Visits",
+        "title": "Doctor visit",
         "subtitle": "A licensed doctor or nurse comes to you — no clinic, no waiting.",
         "story": "Get a full check-up, diagnosis, and prescription without leaving home.",
-        "description": "Doctor and nurse visits at home"
+        "description": "Doctor visit at home"
       },
       "nursingCare": {
         "eyebrow": "Nursing at home",
@@ -1256,7 +1256,7 @@
     "servicesCount": "{count} services",
     "filters": {
       "ALL": "All Reports",
-      "DOCTOR": "Doctor Visits",
+      "DOCTOR": "Doctor visit",
       "LAB": "Lab Tests",
       "IMAGING": "Radiology"
     }

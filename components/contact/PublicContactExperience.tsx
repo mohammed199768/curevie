@@ -185,7 +185,7 @@ export function PublicContactExperience() {
       return activeRingKey === channel.key ? 1.18 : 1;
     }
 
-    const radius = Math.min(ringPointer.width, ringPointer.height) * 0.37;
+    const radius = Math.min(ringPointer.width, ringPointer.height) * 0.44;
     const centerX = ringPointer.width / 2;
     const centerY = ringPointer.height / 2;
     const angleInRadians = (channel.angle * Math.PI) / 180;
@@ -410,8 +410,8 @@ export function PublicContactExperience() {
                     const scale = getRingScale(channel);
                     const opacity = getRingOpacity(channel);
                     const angleInRadians = (channel.angle * Math.PI) / 180;
-                    const orbitOffsetX = `${Math.cos(angleInRadians) * 43}%`;
-                    const orbitOffsetY = `${Math.sin(angleInRadians) * 43}%`;
+                    const orbitOffsetX = `${Math.cos(angleInRadians) * 49}%`;
+                    const orbitOffsetY = `${Math.sin(angleInRadians) * 49}%`;
 
                     return (
                       <div
@@ -425,7 +425,7 @@ export function PublicContactExperience() {
                         <span
                           className="pointer-events-none absolute left-1/2 top-1/2 h-px origin-left bg-[linear-gradient(90deg,rgba(16,77,73,0.22),rgba(16,77,73,0.03))]"
                           style={{
-                            width: "5.4rem",
+                            width: "6.4rem",
                             transform: `translate(-100%, -50%) rotate(${channel.angle + 180}deg)`,
                           }}
                         />

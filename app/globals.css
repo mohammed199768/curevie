@@ -243,7 +243,7 @@
   }
 
   .perf-marquee {
-    animation: marquee-shift 14s linear infinite;
+    animation: marquee-shift 17s linear infinite;
     will-change: transform;
     transform: translateZ(0);
   }
@@ -262,11 +262,11 @@
   }
 
   .perf-marquee-rtl-lane {
-    animation: marquee-lane-rtl-primary 18s linear infinite;
+    animation: marquee-lane-rtl-primary 21s linear infinite;
   }
 
   .perf-marquee-rtl-lane-alt {
-    animation: marquee-lane-rtl-secondary 18s linear infinite;
+    animation: marquee-lane-rtl-secondary 21s linear infinite;
   }
 
   .perf-sheen {

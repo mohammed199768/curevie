@@ -27,7 +27,6 @@ import {
   fetchPublicServiceCounts,
   PUBLIC_SERVICE_CATEGORIES,
 } from "@/lib/public-service-categories";
-import type { HomeSeoContent } from "@/lib/seo-content";
 
 const categoryIcons = {
   medicalVisits: Stethoscope,
@@ -39,11 +38,7 @@ const categoryIcons = {
   occupationalTherapy: Brain,
 } as const;
 
-type PublicHomeExperienceProps = {
-  seoContent: HomeSeoContent;
-};
-
-export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) {
+export function PublicHomeExperience() {
   const locale = useLocale();
   const t = useTranslations("homeExperience");
   const prefersReducedMotion = useReducedMotion();
@@ -387,31 +382,50 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
   const isHomeRequestLoading = homeCategoryQueries.some((query) => query.isLoading);
   const canOpenHomeRequest = homeDialogEntries.length > 0;
   const heroTitleLines = [
-    {
-      key: "line-1",
-      text: t("hero.titleLineOne"),
-      colorClass: "text-[#104d49]",
-      sizeClass: isArabic
-        ? "text-[clamp(1.95rem,12vw,4.05rem)] leading-[1.02] sm:text-[clamp(2.18rem,9.4vw,4.05rem)]"
-        : "text-[clamp(2.45rem,10.8vw,5.4rem)] leading-[0.9] sm:text-[clamp(2.9rem,8vw,5.4rem)]",
-    },
-    {
-      key: "line-2",
-      text: t("hero.titleLineTwo"),
-      colorClass: "text-[#104d49]",
-      sizeClass: isArabic
-        ? "text-[clamp(2rem,12.2vw,4.12rem)] leading-[1.02] sm:text-[clamp(2.22rem,9.6vw,4.12rem)]"
-        : "text-[clamp(2.45rem,10.8vw,5.4rem)] leading-[0.9] sm:text-[clamp(2.9rem,8vw,5.4rem)]",
-    },
-    {
-      key: "line-3",
-      text: t("hero.titleAccent"),
-      colorClass: "text-[#86ab62]",
-      fontClass: isArabic ? "" : "italic",
-      sizeClass: isArabic
-        ? "text-[clamp(2.05rem,12.6vw,4.18rem)] leading-[1.02] sm:text-[clamp(2.28rem,9.8vw,4.18rem)]"
-        : "text-[clamp(2.45rem,10.8vw,5.4rem)] leading-[0.9] sm:text-[clamp(2.9rem,8vw,5.4rem)]",
-    },
+    ...(isArabic
+      ? [
+          {
+            key: "line-1",
+            segments: [{ text: t("hero.titleLineOne"), className: "" }],
+            colorClass: "text-[#104d49]",
+            sizeClass:
+              "text-[clamp(1.95rem,12vw,4.05rem)] leading-[1.02] sm:text-[clamp(2.18rem,9.4vw,4.05rem)]",
+          },
+          {
+            key: "line-2",
+            segments: [{ text: t("hero.titleLineTwo"), className: "" }],
+            colorClass: "text-[#104d49]",
+            sizeClass:
+              "text-[clamp(2rem,12.2vw,4.12rem)] leading-[1.02] sm:text-[clamp(2.22rem,9.6vw,4.12rem)]",
+          },
+          {
+            key: "line-3",
+            segments: [{ text: t("hero.titleAccent"), className: "" }],
+            colorClass: "text-[#86ab62]",
+            fontClass: "",
+            sizeClass:
+              "text-[clamp(2.05rem,12.6vw,4.18rem)] leading-[1.02] sm:text-[clamp(2.28rem,9.8vw,4.18rem)]",
+          },
+        ]
+      : [
+          {
+            key: "line-1",
+            segments: [{ text: t("hero.titleLineOne"), className: "" }],
+            colorClass: "text-[#104d49]",
+            sizeClass:
+              "text-[clamp(2rem,8.8vw,4.85rem)] leading-[0.94] sm:text-[clamp(2.65rem,7.2vw,5.15rem)]",
+          },
+          {
+            key: "line-2",
+            segments: [
+              { text: `${t("hero.titleLineTwo")} `, className: "text-[#104d49]" },
+              { text: t("hero.titleAccent"), className: "text-[#86ab62] italic" },
+            ],
+            colorClass: "text-[#104d49]",
+            sizeClass:
+              "text-[clamp(2rem,8.8vw,4.85rem)] leading-[0.94] sm:text-[clamp(2.65rem,7.2vw,5.15rem)]",
+          },
+        ]),
   ];
 
   const openHomeRequestDialog = () => {
@@ -480,7 +494,11 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
                         line.fontClass,
                       )}
                     >
-                      {line.text}
+                      {line.segments.map((segment, index) => (
+                        <span key={`${line.key}-${index}`} className={segment.className}>
+                          {segment.text}
+                        </span>
+                      ))}
                     </span>
                   </span>
                 ))}
@@ -585,32 +603,32 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
                     </div>
                   </div>
 
-                  <div className="mt-6 space-y-3 sm:mt-8">
+                  <div className="mt-4 space-y-2.5 sm:mt-8 sm:space-y-3">
                     {categoryCards.map((card) => (
                       <Link
                         key={card.slug}
                         href={card.href}
                         className={cn(
-                          "group/row flex flex-col gap-3 rounded-[1.35rem] border border-white/10 bg-white/5 px-4 py-4 transition-all duration-300 hover:bg-white/10 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+                          "group/row flex items-center gap-3 rounded-[1.1rem] border border-white/10 bg-white/5 px-3 py-3 transition-all duration-300 hover:bg-white/10 sm:rounded-[1.35rem] sm:px-4 sm:py-4",
                           isArabic ? "hover:-translate-x-2" : "hover:translate-x-2",
                         )}
                       >
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-white">
-                            {t(`categories.${card.translationKey}.title`)}
+                        <div className="min-w-0 flex-1">
+                          <div className={cn("flex items-center gap-2.5", isArabic ? "flex-row-reverse justify-between" : "justify-between")}>
+                            <div className="min-w-0 text-[0.9rem] font-semibold leading-5 text-white sm:text-sm">
+                              {t(`categories.${card.translationKey}.title`)}
+                            </div>
+                            <div
+                              className={cn(
+                                "shrink-0 rounded-full border border-white/10 bg-white/10 px-2 py-1 text-[0.62rem] font-semibold leading-none text-[#d8ebe2] sm:px-2.5 sm:text-[0.68rem]",
+                                isArabic ? "tracking-[0.03em]" : "uppercase tracking-[0.16em]",
+                              )}
+                            >
+                              {card.countLabel}
+                            </div>
                           </div>
-                          <div className="mt-1 text-sm text-[#a9cfc8]">
+                          <div className="mt-1 text-[0.76rem] leading-[1.15rem] text-[#a9cfc8] sm:text-sm sm:leading-5">
                             {t(`categories.${card.translationKey}.short`)}
-                          </div>
-                        </div>
-                        <div className={cn("w-full sm:w-auto", isArabic ? "text-right" : "text-left sm:text-right")}>
-                          <div className="text-xl font-semibold text-white">
-                            {typeof countsQuery.data?.[card.translationKey] === "number"
-                              ? countsQuery.data[card.translationKey].toLocaleString(locale)
-                              : "--"}
-                          </div>
-                          <div className={cn("text-[0.72rem] text-[#a9cfc8]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.18em]")}>
-                            {t("hero.board.countLabel")}
                           </div>
                         </div>
                       </Link>
@@ -755,71 +773,6 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
         </div>
       </section>
 
-      <section
-        id="services"
-        className="border-t border-[#dce8e2] bg-[linear-gradient(180deg,#f7fbf8_0%,#ffffff_100%)]"
-      >
-        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:items-start">
-            <div>
-              <div className={cn("text-sm font-semibold text-[#5a7a50]", isArabic ? "tracking-[0.04em]" : "uppercase tracking-[0.22em]")}>
-                {seoContent.eyebrow}
-              </div>
-              <h2 className="mt-4 text-3xl font-semibold leading-tight text-[#104d49] sm:text-4xl">
-                {seoContent.title}
-              </h2>
-            </div>
-            <div className="space-y-4 text-base leading-8 text-[#304a43]">
-              {seoContent.paragraphs.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {categoryCards.map((card) => (
-              <Link
-                key={card.slug}
-                href={card.href}
-                className="rounded-[1.7rem] border border-[#dbe6e0] bg-white p-6 shadow-[0_28px_70px_-58px_rgba(16,77,73,0.18)] transition hover:-translate-y-1 hover:shadow-[0_34px_90px_-56px_rgba(16,77,73,0.28)]"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[#104d49] text-white">
-                    <card.Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold text-[#104d49]">
-                      {t(`categories.${card.translationKey}.title`)}
-                    </div>
-                    <div className="text-sm text-[#5a7a50]">{card.countLabel}</div>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm leading-7 text-[#304a43]">
-                  {t(`categories.${card.translationKey}.summary`)}
-                </p>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-12 rounded-[2rem] border border-[#dbe6e0] bg-[#104d49] p-6 text-white sm:p-8">
-            <h2 className="text-2xl font-semibold sm:text-3xl">{seoContent.faqTitle}</h2>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-white/82 sm:text-base">
-              {seoContent.faqIntro}
-            </p>
-            <div className="mt-8 grid gap-5 lg:grid-cols-3">
-              {seoContent.faqItems.map((item) => (
-                <article
-                  key={item.question}
-                  className="rounded-[1.5rem] border border-white/10 bg-white/8 p-5"
-                >
-                  <h3 className="text-lg font-semibold text-white">{item.question}</h3>
-                  <p className="mt-3 text-sm leading-7 text-white/78">{item.answer}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
       </div>
 
       <GuestServiceRequestDialog
