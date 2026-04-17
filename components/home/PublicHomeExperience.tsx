@@ -1,7 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -19,8 +19,11 @@ import {
   Shield,
   Stethoscope,
 } from "lucide-react";
+import { GuestServiceRequestDialog } from "@/components/services/GuestServiceRequestDialog";
+import { onGuestRequestDialogOpen } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import {
+  fetchPublicServiceCategoryCatalog,
   fetchPublicServiceCounts,
   PUBLIC_SERVICE_CATEGORIES,
 } from "@/lib/public-service-categories";
@@ -50,11 +53,19 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const workflowRef = useRef<HTMLElement | null>(null);
+  const [guestRequestOpen, setGuestRequestOpen] = useState(false);
 
   const countsQuery = useQuery({
     queryKey: ["public-home", "service-counts"],
     queryFn: fetchPublicServiceCounts,
     staleTime: 10 * 60 * 1000,
+  });
+  const homeCategoryQueries = useQueries({
+    queries: PUBLIC_SERVICE_CATEGORIES.map((category) => ({
+      queryKey: ["home-guest-request", locale, category.slug],
+      queryFn: () => fetchPublicServiceCategoryCatalog(category.slug, locale),
+      staleTime: 10 * 60 * 1000,
+    })),
   });
 
 
@@ -352,6 +363,29 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
     },
   ];
   const boardTickerItems = [...heroTickerCards, ...heroTickerCards];
+  const homeDialogEntries = useMemo(
+    () =>
+      homeCategoryQueries.flatMap((query, index) => {
+        const category = PUBLIC_SERVICE_CATEGORIES[index];
+        const localizedCategoryTitle = t(`categories.${category.translationKey}.title`);
+
+        return (query.data?.entries || []).map((entry) => ({
+          ...entry,
+          categoryName: localizedCategoryTitle,
+        }));
+      }),
+    [homeCategoryQueries, t],
+  );
+  const homeRequestTheme = {
+    base: "#104d49",
+    secondary: "#304a43",
+    accent: "#86ab62",
+    soft: "rgba(16, 77, 73, 0.08)",
+    muted: "#9c9fa2",
+    shadow: "rgba(16, 77, 73, 0.24)",
+  } as const;
+  const isHomeRequestLoading = homeCategoryQueries.some((query) => query.isLoading);
+  const canOpenHomeRequest = homeDialogEntries.length > 0;
   const heroTitleLines = [
     {
       key: "line-1",
@@ -380,9 +414,21 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
     },
   ];
 
+  const openHomeRequestDialog = () => {
+    if (!guestRequestOpen) {
+      onGuestRequestDialogOpen({
+        service_slug: "medical-visits",
+        locale,
+      });
+    }
+
+    setGuestRequestOpen(true);
+  };
+
 
   return (
-    <div ref={rootRef} className="overflow-hidden bg-[#f5f8f6] text-slate-950">
+    <>
+      <div ref={rootRef} className="overflow-hidden bg-[#f5f8f6] text-slate-950">
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(134,171,98,0.18),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(16,77,73,0.26),transparent_24%),linear-gradient(180deg,#f5f8f6_0%,#f2f6f4_42%,#fbfcfa_100%)]" />
         <div className="absolute inset-x-0 top-0 h-px bg-white/70" />
@@ -489,9 +535,17 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
               </div>
 
               <div data-hero-actions className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <button
+                  type="button"
+                  onClick={openHomeRequestDialog}
+                  disabled={isHomeRequestLoading && !canOpenHomeRequest}
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#104d49] px-6 text-sm font-semibold text-white transition hover:bg-[#304a43] hover:shadow-[0_8px_32px_-8px_rgba(16,77,73,0.4)] disabled:cursor-wait disabled:opacity-70 sm:w-auto"
+                >
+                  {t("hero.requestCta")}
+                </button>
                 <Link
                   href={`/${locale}/register`}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#104d49] px-6 text-sm font-semibold text-white transition hover:bg-[#304a43] hover:shadow-[0_8px_32px_-8px_rgba(16,77,73,0.4)] sm:w-auto"
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full border border-[#104d49]/12 bg-white/88 px-6 text-center text-sm font-semibold text-[#104d49] transition hover:bg-white sm:w-auto"
                 >
                   {t("hero.secondaryCta")}
                 </Link>
@@ -517,9 +571,14 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
                       <div className={cn("text-[0.72rem] font-semibold text-[#a9cfc8]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.28em]")}>
                         {t("hero.board.eyebrow")}
                       </div>
-                      <h2 className="mt-3 text-xl font-semibold text-white sm:text-[2rem]">
-                        {t("hero.board.title")}
-                      </h2>
+                      <Link
+                        href={`/${locale}/services`}
+                        className="group/title mt-3 inline-flex items-center gap-2 text-xl font-semibold text-white transition hover:text-[#d8ebe2] sm:text-[2rem]"
+                      >
+                        <h2 className="underline decoration-white/18 underline-offset-8 transition group-hover/title:decoration-white/60">
+                          {t("hero.board.title")}
+                        </h2>
+                      </Link>
                     </div>
                     <div className={cn("self-start rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.24em]")}>
                       {t("hero.board.badge")}
@@ -761,6 +820,16 @@ export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) 
           </div>
         </div>
       </section>
-    </div>
+      </div>
+
+      <GuestServiceRequestDialog
+        open={guestRequestOpen}
+        onOpenChange={setGuestRequestOpen}
+        entries={homeDialogEntries}
+        serviceSlug="medical-visits"
+        categoryTitle={t("hero.requestDialogTitle")}
+        categoryTheme={homeRequestTheme}
+      />
+    </>
   );
 }

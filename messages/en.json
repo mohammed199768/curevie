@@ -666,7 +666,9 @@
       "titleAccent": "to you.",
       "copy": "When you or someone you love needs care, we send a certified doctor, nurse, or lab technician to your home. No hospital trip. No waiting room.",
       "primaryCta": "Book a Home Visit",
-      "secondaryCta": "See All Services",
+      "requestCta": "Start Your Request",
+      "secondaryCta": "Be Part of Curevie and We'll Handle the Rest",
+      "requestDialogTitle": "Choose the right care service for you",
       "readyLink": "Know what you need? Book now",
       "features": {
         "speedTitle": "Doctor in hours, not days",
@@ -680,7 +682,7 @@
       },
       "board": {
         "eyebrow": "Our services",
-        "title": "All home care services, one place to book.",
+        "title": "Choose Your Care Path",
         "badge": "Active",
         "countLabel": "services"
       },
