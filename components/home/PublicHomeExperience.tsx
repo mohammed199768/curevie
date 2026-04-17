@@ -462,14 +462,16 @@ export function PublicHomeExperience() {
               <div
                 data-hero-badge
                 className={cn(
-                  "mb-5 inline-flex max-w-full min-h-11 flex-wrap items-center gap-3 rounded-full border border-[#104d49]/10 bg-white/88 px-4 py-2 text-xs font-semibold text-[#104d49] shadow-[0_20px_60px_-36px_rgba(16,77,73,0.35)] sm:mb-6",
-                  isArabic ? "flex-row-reverse tracking-[0.04em]" : "uppercase tracking-[0.32em]",
+                  "mb-5 inline-grid max-w-full min-h-11 items-center gap-3 rounded-full border border-[#104d49]/10 bg-white/88 px-4 py-2 text-xs font-semibold text-[#104d49] shadow-[0_20px_60px_-36px_rgba(16,77,73,0.35)] sm:mb-6",
+                  isArabic
+                    ? "grid-cols-[minmax(0,1fr)_auto] text-right tracking-[0.04em]"
+                    : "grid-cols-[auto_minmax(0,1fr)] uppercase tracking-[0.32em]",
                 )}
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#104d49] text-white">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#104d49] text-white">
                   <Home className="h-4 w-4" />
                 </span>
-                {t("hero.eyebrow")}
+                <span className="min-w-0 leading-5">{t("hero.eyebrow")}</span>
               </div>
 
               <h1
