@@ -4,14 +4,16 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
   ArrowUpRight,
-  Clock3,
+  Instagram,
   Mail,
   MapPin,
+  MessageCircle,
   MessageSquareText,
   Phone,
   ShieldCheck,
@@ -24,6 +26,7 @@ import {
   SUPPORT_EMAIL,
   SUPPORT_EMAIL_HREF,
   SUPPORT_INSTAGRAM_URL,
+  SUPPORT_LOCATION_LABEL,
   SUPPORT_LOCATION_MAP_URL,
   SUPPORT_PHONE_E164,
   SUPPORT_PHONE_LOCAL,
@@ -46,6 +49,41 @@ const INITIAL_FORM: ContactFormState = {
   message: "",
 };
 
+const CONTACT_RING_CHANNELS = [
+  {
+    key: "phone",
+    labelKey: "channels.phone.label",
+    valueKey: "channels.phone.value",
+    hrefKind: "phone" as const,
+    accent: "#104d49",
+    angle: -90,
+  },
+  {
+    key: "instagram",
+    labelKey: "channels.instagram.label",
+    valueKey: "channels.instagram.value",
+    hrefKind: "instagram" as const,
+    accent: "#9c9fa2",
+    angle: 0,
+  },
+  {
+    key: "email",
+    labelKey: "channels.email.label",
+    valueKey: "channels.email.value",
+    hrefKind: "email" as const,
+    accent: "#86ab62",
+    angle: 90,
+  },
+  {
+    key: "whatsapp",
+    labelKey: "channels.whatsapp.label",
+    valueKey: "channels.whatsapp.value",
+    hrefKind: "whatsapp" as const,
+    accent: "#5a7a50",
+    angle: 180,
+  },
+] as const;
+
 export function PublicContactExperience() {
   const locale = useLocale();
   const t = useTranslations("publicContact");
@@ -56,6 +94,12 @@ export function PublicContactExperience() {
 
   const [form, setForm] = useState<ContactFormState>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ringPointer, setRingPointer] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const formRef = useRef<HTMLElement | null>(null);
@@ -106,57 +150,6 @@ export function PublicContactExperience() {
     },
   ];
 
-  const contactChannels = [
-    {
-      key: "phone",
-      Icon: Phone,
-      label: t("channels.phone.label"),
-      value: SUPPORT_PHONE_LOCAL,
-      href: `tel:${SUPPORT_PHONE_E164}`,
-      accent: "#104d49",
-    },
-    {
-      key: "email",
-      Icon: Mail,
-      label: t("channels.email.label"),
-      value: SUPPORT_EMAIL,
-      href: `mailto:${SUPPORT_EMAIL_HREF}`,
-      accent: "#86ab62",
-    },
-    {
-      key: "whatsapp",
-      Icon: MessageSquareText,
-      label: t("channels.whatsapp.label"),
-      value: t("channels.whatsapp.value"),
-      href: SUPPORT_WHATSAPP_URL,
-      accent: "#5a7a50",
-    },
-    {
-      key: "instagram",
-      Icon: ArrowUpRight,
-      label: t("channels.instagram.label"),
-      value: t("channels.instagram.value"),
-      href: SUPPORT_INSTAGRAM_URL,
-      accent: "#9c9fa2",
-    },
-    {
-      key: "location",
-      Icon: MapPin,
-      label: t("channels.location.label"),
-      value: t("channels.location.value"),
-      href: SUPPORT_LOCATION_MAP_URL,
-      accent: "#104d49",
-    },
-    {
-      key: "hours",
-      Icon: Clock3,
-      label: t("channels.hours.label"),
-      value: t("channels.hours.value"),
-      href: `/${locale}/services/medical-visits`,
-      accent: "#86ab62",
-    },
-  ] as const;
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -198,6 +191,69 @@ export function PublicContactExperience() {
 
   const handleTrackedContactClick = (channel: "phone" | "email" | "whatsapp") => {
     onContactChannelClick({ channel, locale });
+  };
+
+  const getContactRingMeta = (channel: (typeof CONTACT_RING_CHANNELS)[number]) => {
+    switch (channel.hrefKind) {
+      case "phone":
+        return {
+          href: `tel:${SUPPORT_PHONE_E164}`,
+          label: t(channel.labelKey),
+          value: SUPPORT_PHONE_LOCAL,
+          Icon: Phone,
+          onClick: () => handleTrackedContactClick("phone"),
+        };
+      case "email":
+        return {
+          href: `mailto:${SUPPORT_EMAIL_HREF}`,
+          label: t(channel.labelKey),
+          value: SUPPORT_EMAIL,
+          Icon: Mail,
+          onClick: () => handleTrackedContactClick("email"),
+        };
+      case "whatsapp":
+        return {
+          href: SUPPORT_WHATSAPP_URL,
+          label: t(channel.labelKey),
+          value: t(channel.valueKey),
+          Icon: MessageCircle,
+          onClick: () => handleTrackedContactClick("whatsapp"),
+        };
+      default:
+        return {
+          href: SUPPORT_INSTAGRAM_URL,
+          label: t(channel.labelKey),
+          value: t(channel.valueKey),
+          Icon: Instagram,
+          onClick: undefined,
+        };
+    }
+  };
+
+  const getRingScale = (angle: number) => {
+    if (!ringPointer || prefersReducedMotion) {
+      return 1;
+    }
+
+    const radius = Math.min(ringPointer.width, ringPointer.height) * 0.34;
+    const centerX = ringPointer.width / 2;
+    const centerY = ringPointer.height / 2;
+    const angleInRadians = (angle * Math.PI) / 180;
+    const nodeX = centerX + Math.cos(angleInRadians) * radius;
+    const nodeY = centerY + Math.sin(angleInRadians) * radius;
+    const distance = Math.hypot(ringPointer.x - nodeX, ringPointer.y - nodeY);
+    const maxDistance = Math.max(110, radius * 0.95);
+    const normalized = Math.max(0, 1 - distance / maxDistance);
+
+    return 1 + normalized * 0.34;
+  };
+
+  const getRingOpacity = (angle: number) => {
+    if (!ringPointer || prefersReducedMotion) {
+      return 0.8;
+    }
+
+    return Math.min(1, 0.6 + (getRingScale(angle) - 1) * 1.35);
   };
 
   const setField = (field: keyof ContactFormState, value: string) => {
@@ -441,52 +497,136 @@ export function PublicContactExperience() {
             </motion.section>
 
             <div className="grid gap-4">
-              {contactChannels.map((channel) => (
-                <motion.a
-                  key={channel.key}
-                  data-contact-side-card
-                  href={channel.href}
-                  onClick={
-                    channel.key === "phone"
-                      ? () => handleTrackedContactClick("phone")
-                      : channel.key === "email"
-                        ? () => handleTrackedContactClick("email")
-                        : channel.key === "whatsapp"
-                          ? () => handleTrackedContactClick("whatsapp")
-                          : undefined
-                  }
-                  whileHover={prefersReducedMotion ? undefined : { y: -6 }}
-                  transition={{ type: "spring", stiffness: 210, damping: 18, mass: 0.78 }}
-                  className="group relative overflow-hidden rounded-[1.75rem] border border-white bg-white/92 p-5 shadow-[0_28px_84px_-60px_rgba(16,77,73,0.26)]"
-                >
-                  <div
-                    className="pointer-events-none absolute inset-x-5 top-0 h-16 translate-y-[-28%] opacity-0 transition-[opacity,transform] duration-500 group-hover:translate-y-0 group-hover:opacity-100"
-                    style={{ background: `radial-gradient(circle, ${channel.accent}1b 0%, transparent 70%)` }}
-                  />
-                  <div className="relative flex items-start gap-4">
-                    <div
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] text-white shadow-[0_20px_54px_-32px_rgba(0,0,0,0.24)]"
-                      style={{ background: `linear-gradient(145deg, ${channel.accent} 0%, #104d49 100%)` }}
-                    >
-                      <channel.Icon className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-[#104d49]">{channel.label}</div>
-                      <div className="mt-1 text-sm leading-7 text-[#304a43]">{channel.value}</div>
-                    </div>
-                    <ArrowUpRight className="ms-auto h-4 w-4 shrink-0 text-[#104d49] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                  </div>
-                </motion.a>
-              ))}
-
               <motion.div
                 data-contact-side-card
                 whileHover={prefersReducedMotion ? undefined : { y: -6 }}
                 transition={{ type: "spring", stiffness: 210, damping: 18, mass: 0.78 }}
-                className="overflow-hidden rounded-[1.9rem] border border-[#104d49]/10 bg-[linear-gradient(180deg,#104d49_0%,#0f433f_100%)] p-6 text-white shadow-[0_32px_90px_-60px_rgba(16,77,73,0.56)]"
+                className="overflow-hidden rounded-[1.9rem] border border-white bg-white/92 p-5 shadow-[0_28px_84px_-60px_rgba(16,77,73,0.26)] sm:p-6"
               >
-                <div className="text-sm font-semibold text-[#c7dcd5]">{t("coverage.title")}</div>
-                <div className="mt-3 text-lg font-semibold leading-8">{t("coverage.copy")}</div>
+                <div className="text-sm font-semibold text-[#104d49]">
+                  {isArabic ? "قنوات التواصل السريعة" : "Quick contact ring"}
+                </div>
+                <p className="mt-2 text-sm leading-7 text-[#304a43]">
+                  {isArabic
+                    ? "اقترب بالمؤشر من أي قناة لتكبر أمامك، ثم اضغط مباشرة للتواصل معنا."
+                    : "Move your cursor toward any channel to let it rise forward, then click to connect instantly."}
+                </p>
+
+                <div
+                  className="relative mx-auto mt-8 aspect-square w-full max-w-[25rem] rounded-full"
+                  onMouseMove={(event) => {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    setRingPointer({
+                      x: event.clientX - rect.left,
+                      y: event.clientY - rect.top,
+                      width: rect.width,
+                      height: rect.height,
+                    });
+                  }}
+                  onMouseLeave={() => setRingPointer(null)}
+                >
+                  <div className="absolute inset-[12%] rounded-full border border-[#d7e5de] bg-[radial-gradient(circle,rgba(16,77,73,0.03)_0%,rgba(255,255,255,0.92)_62%,rgba(255,255,255,0.98)_100%)]" />
+                  <div className="absolute inset-[25%] rounded-full border border-dashed border-[#d7e5de]" />
+                  <div className="absolute inset-[3%] rounded-full border border-[#eef4f1]" />
+
+                  {CONTACT_RING_CHANNELS.map((channel) => {
+                    const meta = getContactRingMeta(channel);
+                    const scale = getRingScale(channel.angle);
+                    const opacity = getRingOpacity(channel.angle);
+                    const angleInRadians = (channel.angle * Math.PI) / 180;
+                    const orbitOffsetX = `${Math.cos(angleInRadians) * 34}%`;
+                    const orbitOffsetY = `${Math.sin(angleInRadians) * 34}%`;
+
+                    return (
+                      <motion.a
+                        key={channel.key}
+                        data-contact-side-card
+                        href={meta.href}
+                        target={meta.href.startsWith("http") ? "_blank" : undefined}
+                        rel={meta.href.startsWith("http") ? "noreferrer" : undefined}
+                        onClick={meta.onClick}
+                        animate={{
+                          scale,
+                          opacity,
+                        }}
+                        transition={{ type: "spring", stiffness: 260, damping: 22, mass: 0.7 }}
+                        className="absolute left-1/2 top-1/2 block"
+                        style={{
+                          transform: `translate(calc(-50% + ${orbitOffsetX}), calc(-50% + ${orbitOffsetY}))`,
+                        }}
+                      >
+                        <span
+                          className="flex h-[4.8rem] w-[4.8rem] items-center justify-center rounded-full border border-white/80 text-white shadow-[0_24px_54px_-24px_rgba(16,77,73,0.36)] sm:h-[5.3rem] sm:w-[5.3rem]"
+                          style={{
+                            background: `linear-gradient(145deg, ${channel.accent} 0%, #104d49 100%)`,
+                          }}
+                        >
+                          <meta.Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                        </span>
+                        <span className="pointer-events-none absolute left-1/2 top-[calc(100%+0.8rem)] min-w-max -translate-x-1/2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#104d49] shadow-[0_18px_42px_-26px_rgba(16,77,73,0.28)]">
+                          {meta.label}
+                        </span>
+                      </motion.a>
+                    );
+                  })}
+
+                  <div className="absolute left-1/2 top-1/2 flex h-[6.8rem] w-[6.8rem] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white shadow-[0_26px_70px_-34px_rgba(16,77,73,0.3)] sm:h-[8rem] sm:w-[8rem]">
+                    <div className="absolute inset-[0.45rem] rounded-full bg-[radial-gradient(circle,rgba(16,77,73,0.08)_0%,rgba(255,255,255,0.96)_72%)]" />
+                    <Image
+                      src="/icon.png"
+                      alt="Curevie"
+                      width={76}
+                      height={76}
+                      className="relative z-10 h-14 w-14 rounded-full object-cover sm:h-[4.25rem] sm:w-[4.25rem]"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                  {CONTACT_RING_CHANNELS.map((channel) => {
+                    const meta = getContactRingMeta(channel);
+
+                    return (
+                      <div
+                        key={`meta-${channel.key}`}
+                        className="rounded-[1.35rem] border border-[#e0ebe5] bg-[#f8fbf9] px-4 py-4"
+                      >
+                        <div className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#9c9fa2]">
+                          {meta.label}
+                        </div>
+                        <div className="mt-2 text-sm font-semibold text-[#12312d]">
+                          {meta.value}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+
+              <motion.a
+                data-contact-side-card
+                href={SUPPORT_LOCATION_MAP_URL}
+                target="_blank"
+                rel="noreferrer"
+                whileHover={prefersReducedMotion ? undefined : { y: -6 }}
+                transition={{ type: "spring", stiffness: 210, damping: 18, mass: 0.78 }}
+                className="group overflow-hidden rounded-[1.9rem] border border-[#104d49]/10 bg-[linear-gradient(180deg,#104d49_0%,#0f433f_100%)] p-6 text-white shadow-[0_32px_90px_-60px_rgba(16,77,73,0.56)]"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-semibold text-[#c7dcd5]">
+                      {t("channels.location.label")}
+                    </div>
+                    <div className="mt-3 text-lg font-semibold leading-8">
+                      {SUPPORT_LOCATION_LABEL}
+                    </div>
+                    <div className="mt-3 text-sm leading-7 text-white/80">
+                      {t("coverage.copy")}
+                    </div>
+                  </div>
+                  <MapPin className="h-5 w-5 shrink-0 text-[#d7e7df] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </div>
+
                 <div className="mt-6 flex flex-wrap gap-3">
                   <span className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white/88">
                     {t("coverage.chipOne")}
@@ -498,7 +638,7 @@ export function PublicContactExperience() {
                     {t("coverage.chipThree")}
                   </span>
                 </div>
-              </motion.div>
+              </motion.a>
             </div>
           </div>
         </div>
