@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
-import {
-  CONSENT_UPDATED_EVENT,
-  getConsent,
-  isAnalyticsAllowed,
-  type ConsentState,
-} from "@/lib/analytics";
 
 declare global {
   interface Window {
@@ -38,33 +32,17 @@ function trackPageView(measurementId: string, pathname: string, searchParams: UR
 export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [consent, setConsent] = useState<ConsentState>(() => getConsent());
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const analyticsEnabled = useMemo(
-    () => consent.decided && isAnalyticsAllowed(),
-    [consent],
-  );
-
   useEffect(() => {
-    const syncConsent = () => {
-      setConsent(getConsent());
-    };
-
-    syncConsent();
-    window.addEventListener(CONSENT_UPDATED_EVENT, syncConsent);
-    return () => window.removeEventListener(CONSENT_UPDATED_EVENT, syncConsent);
-  }, []);
-
-  useEffect(() => {
-    if (!analyticsEnabled || !pathname || !searchParams || !isInitialized) {
+    if (!measurementId || !pathname || !searchParams || !isInitialized) {
       return;
     }
 
     trackPageView(measurementId, pathname, searchParams);
-  }, [analyticsEnabled, isInitialized, measurementId, pathname, searchParams]);
+  }, [isInitialized, measurementId, pathname, searchParams]);
 
-  if (!measurementId || !analyticsEnabled) {
+  if (!measurementId) {
     return null;
   }
 
@@ -85,9 +63,7 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
           function gtag(){dataLayer.push(arguments);}
           window.gtag = gtag;
           gtag('js', new Date());
-          gtag('config', '${measurementId}', {
-            send_page_view: false
-          });
+          gtag('config', '${measurementId}');
         `}
       </Script>
     </>
