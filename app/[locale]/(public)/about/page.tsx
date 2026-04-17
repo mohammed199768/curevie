@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { StructuredData } from "@/components/seo/StructuredData";
 import { PublicAboutExperience } from "@/components/about/PublicAboutExperience";
 import type { AppLocale } from "@/i18n";
 import { ABOUT_PAGE_KEYWORDS, buildPublicPageMetadata } from "@/lib/seo";
+import {
+  buildAboutPageSchema,
+  buildBreadcrumbSchema,
+  buildOrganizationSchema,
+} from "@/lib/seo-content";
+import { buildAbsoluteUrl } from "@/lib/seo";
 
 interface AboutPageProps {
   params: {
@@ -25,6 +32,26 @@ export function generateMetadata({ params }: AboutPageProps): Metadata {
   });
 }
 
-export default function AboutPage() {
-  return <PublicAboutExperience />;
+export default function AboutPage({ params }: AboutPageProps) {
+  return (
+    <>
+      <StructuredData
+        data={[
+          buildOrganizationSchema(params.locale),
+          buildAboutPageSchema(params.locale),
+          buildBreadcrumbSchema([
+            {
+              name: params.locale === "ar" ? "الرئيسية" : "Home",
+              url: buildAbsoluteUrl(`/${params.locale}`),
+            },
+            {
+              name: params.locale === "ar" ? "عن كيورفي" : "About Curevie",
+              url: buildAbsoluteUrl(`/${params.locale}/about`),
+            },
+          ]),
+        ]}
+      />
+      <PublicAboutExperience />
+    </>
+  );
 }

@@ -213,29 +213,32 @@ export function PublicAboutExperience() {
                 {t("hero.eyebrow")}
               </div>
 
-              <div
+              <h1
                 dir={isArabic ? "rtl" : undefined}
                 style={rtlBidiStyle}
                 className={cn(isArabic ? "space-y-0 text-right" : "space-y-1 text-balance")}
               >
                 {titleLines.map((line) => (
-                  <div key={line.key} className={cn("overflow-hidden", isArabic ? "py-2" : "py-0")}>
-                    <div
+                  <span
+                    key={line.key}
+                    className={cn("block overflow-hidden", isArabic ? "py-2" : "py-0")}
+                  >
+                    <span
                       data-about-hero-title
                       dir={isArabic ? "rtl" : undefined}
                       style={rtlBidiStyle}
                       className={cn(
-                        "max-w-full font-editorial-display will-change-transform",
+                        "block max-w-full font-editorial-display will-change-transform",
                         displayFontClass,
                         line.colorClass,
                         line.sizeClass,
                       )}
                     >
                       {line.text}
-                    </div>
-                  </div>
+                    </span>
+                  </span>
                 ))}
-              </div>
+              </h1>
 
               <p
                 data-about-hero-copy

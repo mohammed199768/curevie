@@ -18,30 +18,30 @@
     "notifications": "Notifications"
   },
   "hero": {
-    "title": "Healthcare, Choreographed for Your Home",
-    "subtitle": "Clinical precision meets the comfort of home. Organized medical care, delivered where life happens.",
-    "bookNow": "Begin Your Care Journey",
-    "learnMore": "Our Approach",
-    "networkTitle": "The Curevie Clinical Ecosystem",
-    "patientsLabel": "Patients Protected",
-    "providersLabel": "Clinical Experts",
-    "servicesLabel": "Care Paths"
+    "title": "A doctor at your door. No hospital trip needed.",
+    "subtitle": "We send certified doctors, nurses, and lab technicians to your home across Jordan.",
+    "bookNow": "Book a Home Visit",
+    "learnMore": "See What We Offer",
+    "networkTitle": "Curevie — Home Healthcare",
+    "patientsLabel": "Patients Helped",
+    "providersLabel": "Certified Specialists",
+    "servicesLabel": "Services Available"
   },
   "services": {
-    "title": "Organized Clinical Lanes",
-    "doctor": "Physician Consultations",
-    "doctorDesc": "Bedside evaluations and expert medical guidance.",
-    "nurse": "Nursing Services",
-    "nurseDesc": "Professional clinical support with empathy and precision.",
-    "lab": "Diagnostic Laboratory",
-    "labDesc": "Hospital-grade diagnostics in your private environment.",
-    "radiology": "Portable Radiology",
-    "radiologyDesc": "Advanced high-resolution imaging brought directly to you.",
-    "bookNow": "Initiate Care"
+    "title": "What we bring to you",
+    "doctor": "Doctor Home Visit",
+    "doctorDesc": "A licensed doctor comes to your home, checks on you, and writes a prescription if needed. No waiting room, no commute.",
+    "nurse": "Nursing at Home",
+    "nurseDesc": "Wound care, injections, IV drips, and daily monitoring — all done at home by a certified nurse.",
+    "lab": "Lab Tests at Home",
+    "labDesc": "A technician collects your samples at home. Digital results sent to your account.",
+    "radiology": "Scans at Home",
+    "radiologyDesc": "X-rays and imaging brought to you. The patient doesn't need to go anywhere.",
+    "bookNow": "Book Now"
   },
   "booking": {
-    "title": "Book a Service Now",
-    "subtitle": "No registration required",
+    "title": "Book a Home Visit",
+    "subtitle": "No account needed. Just tell us where you are.",
     "fullName": "Full Name",
     "phone": "Phone Number",
     "address": "Address / Area",
@@ -50,8 +50,8 @@
     "notes": "Additional Notes (optional)",
     "submit": "Book Now",
     "submitting": "Submitting...",
-    "successTitle": "Request Submitted!",
-    "successMessage": "Your request ID is: {id}. Our team will contact you shortly.",
+    "successTitle": "We got your request!",
+    "successMessage": "We'll be in touch to confirm your visit. Reference: #{id}",
     "close": "Close",
     "fullNameMin": "Full name must be at least 2 characters",
     "invalidPhone": "Invalid phone number format",
@@ -62,28 +62,28 @@
     "addressPlaceholder": "Select your district"
   },
   "howItWorks": {
-    "title": "Clarity in Motion",
-    "step1Title": "Defined Intent",
-    "step1Desc": "Select your care path and detailing your requirements within our secure interface.",
-    "step2Title": "Coordinated Dispatch",
-    "step2Desc": "We orchestrate the clinical logistics, matching you with the right expertise.",
-    "step3Title": "Digital Resolution",
-    "step3Desc": "Experience seamless care followed by comprehensive digital health records."
+    "title": "How it works",
+    "step1Title": "Tell us what you need",
+    "step1Desc": "Pick your service and share your location. No account required. Done in 2 minutes.",
+    "step2Title": "We send the right person",
+    "step2Desc": "We match you with a certified doctor, nurse, or technician and send them to your address.",
+    "step3Title": "Care at home. Report ready.",
+    "step3Desc": "Get treated at home, then download your full medical report — no paperwork needed."
   },
   "stats": {
-    "patients": "Lives Protected",
-    "providers": "Clinical Experts",
-    "services": "Unified Care Paths"
+    "patients": "Patients Helped at Home",
+    "providers": "Certified Specialists",
+    "services": "Services Available"
   },
   "cta": {
-    "title": "Reclaim Your Peace of Mind",
-    "subtitle": "Establish a secure account to centralize your medical narrative and orchestrate future care.",
-    "createAccount": "Create Your Health Profile",
-    "bookWithoutAccount": "Proceed with Guided Request"
+    "title": "Don't put it off",
+    "subtitle": "Create a free account to track your visits, see your reports, and book faster — right from your phone.",
+    "createAccount": "Create Free Account",
+    "bookWithoutAccount": "Book Without Signing Up"
   },
   "auth": {
     "title": "Welcome Back",
-    "subtitle": "Sign in to manage your healthcare requests",
+    "subtitle": "Sign in to check your requests, reports, and upcoming visits.",
     "login": "Patient Login",
     "email": "Email",
     "password": "Password",
@@ -94,7 +94,7 @@
     "registerNow": "Register",
     "invalidCredentials": "Invalid email or password",
     "registerTitle": "Create Your Account",
-    "registerSubtitle": "Join Curevie and manage your services easily",
+    "registerSubtitle": "Join to track your requests, view your reports, and book faster.",
     "register": "Register",
     "fullName": "Full Name",
     "confirmPassword": "Confirm Password",
@@ -144,14 +144,14 @@
     },
     "timelineTitle": "Request Timeline",
     "timelineSubtitle": "Follow your request step by step with a clearer story of what is happening now and what comes next.",
-    "timelineTrackerEyebrow": "Live request tracker",
+    "timelineTrackerEyebrow": "Your request — live",
     "timelineCurrentMoment": "What is happening now",
     "timelineNextCheckpoint": "What comes next",
     "timelineJourneyMap": "Journey map",
     "timelineJourneyProgress": "{percent}% of the journey is complete",
     "timelineReachedAt": "Reached on {time}",
     "timelineWaiting": "Waiting for this step",
-    "timelineStageHistory": "Full request story",
+    "timelineStageHistory": "Full activity history",
     "timelineStagePending": "This stage will unlock automatically when your request moves forward.",
     "timelineJourneyDoneTitle": "Request fully completed",
     "timelineJourneyDoneDescription": "The request finished its full journey and your final report is available.",
@@ -233,8 +233,8 @@
       "chatGenericDescription": "A new message was added in {room}.",
       "orderAddedTitle": "An additional service was added",
       "orderAddedDescription": "The care team added a new order so the request can move through the required medical steps.",
-      "workflowAdvancedTitle": "Workflow advanced",
-      "workflowAdvancedDescription": "Your request moved into the {stage} stage for the next internal step.",
+      "workflowAdvancedTitle": "Request moving forward",
+      "workflowAdvancedDescription": "Your request has moved to the next step.",
       "requestClosedTitle": "Request closed",
       "requestClosedDescription": "Admin closed the request and published the final report package.",
       "publishedTitle": "Report published",
@@ -249,8 +249,8 @@
       "assignedDescription": "A provider has been assigned and will contact you if needed.",
       "inProgressTitle": "Service in progress",
       "inProgressDescription": "Your care team is currently working on the request.",
-      "completedTitle": "Waiting for final close",
-      "completedDescription": "The service is complete and the final report is being prepared.",
+      "completedTitle": "Service done — report being prepared",
+      "completedDescription": "The service is complete and your final report is on its way.",
       "closedTitle": "Report ready",
       "closedDescription": "Your final report is available now.",
       "cancelledTitle": "Request cancelled",
@@ -292,7 +292,7 @@
       "PENDING": "Pending"
     },
     "chatTitle": "Direct Care Chat",
-    "chatSubtitle": "Your assigned provider can message you here once the request starts.",
+    "chatSubtitle": "Your provider can message you here once the service begins.",
     "chatNotAvailableYet": "Chat will be available when the service starts",
     "chatClosed": "This conversation is closed",
     "chatStatusClosed": "Closed",
@@ -348,7 +348,7 @@
   },
   "chatPage": {
     "adminOnlyBadge": "Inbox",
-    "adminOnlyDescription": "Follow admin coordination and all provider conversations for your care cases in one place.",
+    "adminOnlyDescription": "All messages from our team and your active care cases — in one place.",
     "inboxTitle": "All conversations",
     "inboxDescription": "The admin conversation stays first, followed by active care cases and then archived ones by latest activity.",
     "adminConversations": "Admin conversations",
@@ -453,16 +453,16 @@
   "dashboardPage": {
     "viewAll": "View all",
     "view": "View",
-    "noRequests": "No requests yet",
-    "summaryDescription": "Summary of your medical cases",
+    "noRequests": "You haven't made any requests yet.",
+    "summaryDescription": "Here's what's going on with your care.",
     "recentNotifications": "Recent Notifications",
     "noNotifications": "No notifications yet",
-    "pendingInvoicesSummary": "You have {count} pending invoice(s). Total due: {amount} JD"
+    "pendingInvoicesSummary": "You have {count} unpaid invoice(s). Total: {amount} JD"
   },
   "requestsPage": {
     "all": "All",
     "summaryEyebrow": "Requests overview",
-    "summaryDescription": "Track every care request from one place, see what still needs attention, and jump directly into the next action.",
+    "summaryDescription": "Track all your care requests in one place — see what's active and what's done.",
     "totalRequests": "Total requests",
     "totalRequestsHint": "All requests created under your account.",
     "activeRequests": "Active requests",
@@ -484,8 +484,8 @@
     "stageLabel": "Current stage",
     "updatedLabel": "Updated {time}",
     "notScheduled": "Not scheduled yet",
-    "noWorkflowStage": "Preparing workflow",
-    "cardDefaultDescription": "This request is currently marked as {status}.",
+    "noWorkflowStage": "Getting things ready",
+    "cardDefaultDescription": "This request is currently {status}.",
     "continueTracking": "Continue tracking",
     "openChat": "Open chat",
     "openReport": "Open report",
@@ -535,8 +535,8 @@
     "emptyUnread": "No unread notifications",
     "content": {
       "REQUEST_CREATED": {
-        "title": "Case received",
-        "body": "Your {service} care case was received successfully. Our team will coordinate the next step soon."
+        "title": "Request received",
+        "body": "Your {service} request is with us. We'll keep you updated on next steps."
       },
       "REQUEST_ACCEPTED": {
         "title": "Case accepted",
@@ -555,8 +555,8 @@
         "body": "This care case has been cancelled."
       },
       "CASE_CREATED": {
-        "title": "Case received",
-        "body": "Your {service} care case was received successfully. Our team will coordinate the next step soon."
+        "title": "Request received",
+        "body": "Your {service} request is with us. We'll keep you updated on next steps."
       },
       "CASE_ASSIGNED": {
         "title": "Provider assigned",
@@ -571,8 +571,8 @@
         "body": "This care case has been cancelled."
       },
       "CASE_CLOSED": {
-        "title": "Case closed",
-        "body": "Your care case has been closed and the final report is ready."
+        "title": "Visit complete",
+        "body": "Your visit is done and your final report is ready to view."
       },
       "PAYMENT_PARTIAL": {
         "title": "Payment received",
@@ -587,8 +587,8 @@
         "body": "You earned {points} points. Current balance: {totalPoints} points."
       },
       "REPORT_PUBLISHED": {
-        "title": "Final report ready",
-        "body": "The final medical report for your care case has been reviewed and is now available."
+        "title": "Your report is ready",
+        "body": "Your medical report has been reviewed and is ready to download."
       }
     }
   },
@@ -605,10 +605,10 @@
     "labPanel": "Lab Panel",
     "individualTest": "Individual Test",
     "testPanel": "Test Panel",
-    "noServices": "No services are available right now. Please try again shortly.",
-    "noLabPanels": "No lab panels are available right now. Please try again shortly.",
-    "noLabPackages": "No lab packages are available right now. Please try again shortly.",
-    "noComprehensivePackages": "No comprehensive packages are available right now. Please try again shortly.",
+    "noServices": "No services right now. Please refresh and try again.",
+    "noLabPanels": "No lab panels right now. Please refresh and try again.",
+    "noLabPackages": "No lab packages right now. Please refresh and try again.",
+    "noComprehensivePackages": "No care packages right now. Please refresh and try again.",
     "requestSubmitted": "Request submitted",
     "packageContents": "Package Contents",
     "panelTests": "Panel Tests",
@@ -621,10 +621,10 @@
     "panelsCount": "{count} panels",
     "servicesCount": "{count} services",
     "notesPlaceholder": "Notes",
-    "reviewBeforeSubmit": "Review before submit",
+    "reviewBeforeSubmit": "One last check",
     "reviewTitle": "Review your request",
-    "reviewSubtitle": "Confirm your contact details and the requested service before Curevie creates the request.",
-    "contactCardTitle": "Requester details",
+    "reviewSubtitle": "Review your details before we send this request.",
+    "contactCardTitle": "Your details",
     "serviceCardTitle": "Requested service",
     "nameLabel": "Full name",
     "phoneLabel": "Phone number",
@@ -634,9 +634,9 @@
     "serviceTypeLabel": "Service category",
     "priceLabel": "Estimated price",
     "notesLabel": "Notes",
-    "confirmRequest": "Confirm request",
-    "editRequest": "Back to edit",
-    "reviewHint": "Your request will only be created after you confirm the details from this review card.",
+    "confirmRequest": "Confirm and Send",
+    "editRequest": "Go back and edit",
+    "reviewHint": "We'll only send your request after you confirm below.",
     "notProvided": "Not provided"
   },
   "labCatalog": {
@@ -660,130 +660,130 @@
   },
   "homeExperience": {
     "hero": {
-      "eyebrow": "Premium home healthcare, choreographed end to end",
+      "eyebrow": "Home healthcare — available now",
       "titleLineOne": "Healthcare that",
-      "titleLineTwo": "operates with",
-      "titleAccent": "absolute clarity.",
-      "copy": "Curevie orchestrates the fragmented layers of home healthcare into a single, seamless narrative. From selection to digital closure, we ensure every clinical step is visible, coordinated, and calm.",
-      "primaryCta": "Explore Care Paths",
-      "secondaryCta": "Your Records, Your Health — We Care",
-      "readyLink": "Defined Priority? Begin Your Request",
+      "titleLineTwo": "comes",
+      "titleAccent": "to you.",
+      "copy": "When you or someone you love needs care, we send a certified doctor, nurse, or lab technician to your home. No hospital trip. No waiting room.",
+      "primaryCta": "Book a Home Visit",
+      "secondaryCta": "See All Services",
+      "readyLink": "Know what you need? Book now",
       "features": {
-        "speedTitle": "Fast Response",
-        "speedCopy": "Our medical team reaches you as quickly as possible, available around the clock.",
-        "qualityTitle": "Certified Professionals",
-        "qualityCopy": "Licensed physicians and health specialists with verified clinical expertise.",
-        "reportsTitle": "Instant Digital Reports",
-        "reportsCopy": "Every visit concludes with a comprehensive digital medical report kept securely.",
-        "homeTitle": "Care at Home",
-        "homeCopy": "Receive professional medical care without leaving home, with full privacy standards."
+        "speedTitle": "Doctor in hours, not days",
+        "speedCopy": "Our team gets to you as fast as possible. Available daily.",
+        "qualityTitle": "Licensed and verified",
+        "qualityCopy": "Every doctor, nurse, and technician is licensed and background-checked.",
+        "reportsTitle": "A full report after every visit",
+        "reportsCopy": "Get a complete digital medical report after every service — ready to download.",
+        "homeTitle": "No hospital needed",
+        "homeCopy": "Get real medical care without leaving home."
       },
       "board": {
-        "eyebrow": "Clinical Dispatch",
-        "title": "Every service line, one coordinated entry point.",
+        "eyebrow": "Our services",
+        "title": "All home care services, one place to book.",
         "badge": "Active",
-        "countLabel": "paths"
+        "countLabel": "services"
       },
       "signal": {
-        "eyebrow": "System Clarity",
-        "title": "A care journey that speaks your language",
-        "copy": "Instead of navigating a black box, every request moves through transparent stages that respect your time and your health."
+        "eyebrow": "Nothing hidden",
+        "title": "You see every step of your care, as it happens",
+        "copy": "From the moment you book until your report is ready, every update is in plain language. No guessing about what's going on."
       },
       "assurance": {
-        "eyebrow": "Built for Trust",
+        "eyebrow": "Why patients choose us",
         "points": {
-          "1": "A singular, unified request path for complex care journeys.",
-          "2": "Clinical architecture designed specifically for the home environment.",
-          "3": "Guaranteed digital documentation for every completed action."
+          "1": "One request covers everything — doctor, nurse, lab, or a full care package.",
+          "2": "Every service is built for home delivery, not adapted from a hospital setting.",
+          "3": "Every completed visit ends with a downloadable digital medical report."
         }
       }
     },
     "categories": {
-      "eyebrow": "Specialized Care Paths",
-      "title": "Select the care path that matches your needs.",
-      "copy": "Healthcare should not be a puzzle. We have organized our expertise into distinct lanes, ensuring your journey starts with the correct medical context and moves without noise.",
-      "countLabel": "{count} active paths",
+      "eyebrow": "Our services",
+      "title": "What do you need today?",
+      "copy": "Pick the service that fits. We handle everything from there.",
+      "countLabel": "{count} services",
       "countPending": "Status loading",
-      "cardCta": "Open Lane",
+      "cardCta": "Book this",
       "medicalVisits": {
-        "eyebrow": "Clinical presence",
-        "title": "Medical Visits",
-        "short": "Physician and nursing care",
-        "summary": "Expert clinical evaluations and hands-on care visits for patients requiring direct medical attention in their own space.",
-        "routeLabel": "Physician and nursing expertise joined in a single path"
+        "eyebrow": "Doctor at home",
+        "title": "Doctor Visits",
+        "short": "Doctor & nurse visits",
+        "summary": "A licensed doctor or nurse comes to your home, checks on you, and gives you a diagnosis or prescription — no hospital trip needed.",
+        "routeLabel": "Doctor and nurse visits, one booking"
       },
       "nursingCare": {
-        "eyebrow": "Clinical support",
+        "eyebrow": "Nursing at home",
         "title": "Home Nursing",
-        "short": "Professional nursing care",
-        "summary": "Skilled nursing services at home for injections, wound care, monitoring, and ongoing bedside support.",
-        "routeLabel": "Specialized nursing services delivered through a focused home-care path"
+        "short": "Professional nursing",
+        "summary": "Wound dressing, injections, IV drips, and daily monitoring — done at home by a certified nurse.",
+        "routeLabel": "Nursing care built for home visits"
       },
       "physicalTherapy": {
-        "eyebrow": "Recovery movement",
+        "eyebrow": "Recovery at home",
         "title": "Physical Therapy",
-        "short": "Rehabilitation at home",
-        "summary": "Personalized rehabilitation sessions designed to restore mobility, strength, and confidence in the home setting.",
-        "routeLabel": "A guided rehabilitation path for safe home-based recovery"
+        "short": "Rehab at home",
+        "summary": "Personalized physical therapy sessions to help you recover and regain movement — at home, on your schedule.",
+        "routeLabel": "Rehab sessions designed for home recovery"
       },
       "occupationalTherapy": {
-        "eyebrow": "Daily function",
+        "eyebrow": "Daily life therapy",
         "title": "Occupational Therapy",
-        "short": "Functional therapy at home",
-        "summary": "Targeted therapy that helps patients rebuild independence and daily living skills within their own environment.",
-        "routeLabel": "Functional therapy organized around real-life home routines"
+        "short": "Daily independence",
+        "summary": "Therapy that helps you rebuild everyday independence — done in your own home environment.",
+        "routeLabel": "Functional therapy for real daily-life goals"
       },
       "imaging": {
-        "eyebrow": "Precision diagnostics",
+        "eyebrow": "Scans at home",
         "title": "Radiology",
         "short": "Portable imaging",
-        "summary": "Advanced portable radiology that brings high-resolution diagnostic power directly to the patient's bedside.",
-        "routeLabel": "Diagnostic imaging with a dedicated, coordinated catalog"
+        "summary": "X-rays and imaging brought to your home. The patient doesn't need to travel anywhere.",
+        "routeLabel": "Portable imaging for home visits"
       },
       "labDiagnostics": {
-        "eyebrow": "Clinical laboratory",
-        "title": "Lab Diagnostics",
-        "short": "Home-based collection",
-        "summary": "Structured laboratory services optimized for home collection with seamless digital reporting.",
-        "routeLabel": "Direct access to laboratory diagnostics in a clean interface"
+        "eyebrow": "Lab tests at home",
+        "title": "Lab Tests",
+        "short": "Home sample collection",
+        "summary": "A lab technician comes to collect your samples. Digital results delivered to your account.",
+        "routeLabel": "Lab tests with home collection — no clinic visit needed"
       },
       "carePrograms": {
-        "eyebrow": "Choreographed care",
+        "eyebrow": "Full care packages",
         "title": "Care Programs",
-        "short": "Bundled clinical paths",
-        "summary": "Comprehensive programs that group multiple services into a single, coordinated clinical journey.",
-        "routeLabel": "Integrated programs built for complex care coordination"
+        "short": "Bundled care",
+        "summary": "Need more than one service? One request handles multiple steps together.",
+        "routeLabel": "Bundled programs for complex care needs"
       }
     },
     "workflow": {
-      "eyebrow": "The Orchestration Layer",
-      "title": "From intake to digital resolution, with absolute visibility.",
-      "copy": "We absorb the operational complexity behind the scenes, leaving you with a clean, predictable narrative from start to finish.",
-      "assuranceTitle": "Designed for transparency.",
-      "assuranceCopy": "Every phase has a clinical purpose: intake, coordination, execution, and documented closure.",
+      "eyebrow": "How it works, step by step",
+      "title": "From booking to your report — we handle everything in between.",
+      "copy": "Pick what you need and we take care of the rest.",
+      "assuranceTitle": "Simple and transparent.",
+      "assuranceCopy": "Every step has a clear purpose — booking, sending the right person, delivering care, and closing with a report.",
       "step1": {
-        "eyebrow": "01 · Intent Definition",
-        "title": "Enter through the correct clinical lane.",
-        "copy": "Instead of a generic form, you start with the right medical context, ensuring your needs are captured accurately from the first click.",
-        "proof": "Clarity begins here: the right lane ensures the right resources are assigned immediately."
+        "eyebrow": "Step 1",
+        "title": "Pick your service.",
+        "copy": "Choose what you need from our list. No account required. Takes under 2 minutes.",
+        "proof": "The right service gets you the right specialist, automatically."
       },
       "step2": {
-        "eyebrow": "02 · Logic & Coordination",
-        "title": "Curevie orchestrates the clinical logistics.",
-        "copy": "Our system translates your request into an organized path, matching you with the correct provider and diagnostic sequence without noise.",
-        "proof": "Operational complexity stays in the system. You see a calm, guided trajectory."
+        "eyebrow": "Step 2",
+        "title": "We find and send the right person.",
+        "copy": "We match your request to a licensed doctor, nurse, or technician and send them to your door.",
+        "proof": "You get a confirmation and can track everything from your account."
       },
       "step3": {
-        "eyebrow": "03 · Clinical Execution",
-        "title": "Care that honors your environment.",
-        "copy": "Visits, imaging, or diagnostics are dispatched to your home, removing the friction of travel and keeping your focus on recovery.",
-        "proof": "The healthcare system moves toward you, respecting your space and time."
+        "eyebrow": "Step 3",
+        "title": "Get care at home.",
+        "copy": "Your specialist arrives, does the job, and documents everything. No travel, no waiting room.",
+        "proof": "You can follow your visit live from your phone."
       },
       "step4": {
-        "eyebrow": "04 · Final Resolution",
-        "title": "Conclusion with a digital narrative.",
-        "copy": "Every journey ends with a visible result: your full request history, transparent billing, and clinical reports available instantly.",
-        "proof": "Closure is documented and reviewable, ensuring you remain in control of your records."
+        "eyebrow": "Step 4",
+        "title": "Your report is ready.",
+        "copy": "After every visit, a full digital report is added to your account. Download it anytime.",
+        "proof": "Your health history stays in one place — private and always accessible."
       }
     }
   },
@@ -805,8 +805,8 @@
       "backHome": "Back to home"
     },
     "guestRequest": {
-      "title": "Confirm a guest request",
-      "description": "Fill the guest details below and Curevie will create this request directly from the {category} catalog without sending you into the dashboard flow.",
+      "title": "Book as a guest",
+      "description": "Fill in your details below and we'll create this request directly — no account needed.",
       "guestInfo": "Guest details",
       "serviceCardTitle": "Requested service",
       "serviceFieldLabel": "Service option",
@@ -816,9 +816,9 @@
       "requestModeValue": "Guest request",
       "categoryLabel": "Category",
       "priceLabel": "Estimated price",
-      "footerNote": "After confirmation, the request is submitted as a guest request using the name, phone number, and address entered above.",
-      "confirm": "Confirm request",
-      "error": "We could not create this guest request right now. Please try again."
+      "footerNote": "After you confirm, the request is submitted using the name, phone number, and address you entered.",
+      "confirm": "Confirm and Book",
+      "error": "We couldn't create this request right now. Please try again."
     },
     "stats": {
       "liveCatalog": "Live catalog",
@@ -830,179 +830,179 @@
       "requestPathCopy": "Every option here leads into the correct request setup instead of a generic form."
     },
     "catalog": {
-      "eyebrow": "Filtered service catalog",
-      "title": "Browse the available options in this category.",
-      "copy": "Search within the category, compare what fits the patient, then move into the right request flow directly from the card.",
+      "eyebrow": "Available services",
+      "title": "Browse what's available in this category.",
+      "copy": "Find what fits, then book directly from the card.",
       "searchPlaceholder": "Search inside this category"
     },
     "error": {
-      "eyebrow": "Catalog unavailable",
-      "title": "We could not load this service line right now.",
-      "copy": "Try again in a moment. If the issue continues, the public API may be temporarily unavailable.",
+      "eyebrow": "Couldn't load services",
+      "title": "We couldn't load this service right now.",
+      "copy": "Please try again in a moment.",
       "retry": "Try again"
     },
     "empty": {
-      "eyebrow": "Nothing matched",
-      "title": "No items match this search yet.",
-      "copy": "Try a broader keyword or return later when the catalog has more available options."
+      "eyebrow": "Nothing found",
+      "title": "No results for this search.",
+      "copy": "Try a different word or check back later."
     },
     "labels": {
       "priceOnRequest": "Price on request",
       "curatedFor home delivery": "Optimized for home care",
       "curatedForHome": "Optimized for home care",
-      "labTest": "Diagnostic lab test",
-      "labBundle": "Laboratory path",
-      "comprehensiveBundle": "Care program",
-      "price": "Estimated rate",
-      "defaultDescription": "This option is structured for a guided home-care request through the Curevie system.",
-      "serviceMode": "Clinical Path",
-      "openForBooking": "Available for Dispatch",
+      "labTest": "Lab test",
+      "labBundle": "Lab package",
+      "comprehensiveBundle": "Care package",
+      "price": "Estimated price",
+      "defaultDescription": "This service is available for a home visit through Curevie.",
+      "serviceMode": "Home Service",
+      "openForBooking": "Available to Book",
       "unit": "Unit",
       "referenceRange": "Clinical range",
       "includedServices": "Included services",
       "includedTests": "Associated tests",
-      "preview": "Pre-request preview",
-      "requestReady": "Optimized for immediate request",
-      "searchPlaceholder": "Search within this lane"
+      "preview": "Service details",
+      "requestReady": "Ready to book",
+      "searchPlaceholder": "Search this category"
     },
     "bottomBand": {
-      "eyebrow": "Next phase",
-      "title": "Select your care path and enter the coordinated request flow.",
-      "copy": "This experience is designed for complete focus: one clinical lane, one catalog, and a clear path to resolution."
+      "eyebrow": "Ready to book?",
+      "title": "Pick your service and book it in minutes.",
+      "copy": "One category, one clear list, one booking flow."
     },
     "categories": {
       "medicalVisits": {
-        "eyebrow": "Clinical presence",
-        "title": "Medical Visits",
-        "subtitle": "A focused catalog for physician-led visits and specialized bedside care.",
-        "story": "This lane ensures high-touch clinical care: consultation, expert assessment, and immediate intervention, all within your space.",
-        "description": "Focused physician-led visits and bedside care"
+        "eyebrow": "Doctor at home",
+        "title": "Doctor Visits",
+        "subtitle": "A licensed doctor or nurse comes to you — no clinic, no waiting.",
+        "story": "Get a full check-up, diagnosis, and prescription without leaving home.",
+        "description": "Doctor and nurse visits at home"
       },
       "nursingCare": {
-        "eyebrow": "Nursing support",
+        "eyebrow": "Nursing at home",
         "title": "Home Nursing",
-        "subtitle": "Professional nursing care delivered at home for continuous bedside support and clinical follow-up.",
-        "story": "This lane is designed for practical care delivery at home: wound dressing, injections, monitoring, and specialized nursing interventions.",
-        "description": "Professional nursing care at home"
+        "subtitle": "Professional nursing care delivered at home.",
+        "story": "Wound dressing, injections, monitoring, and follow-up — all at home.",
+        "description": "Certified nursing at home"
       },
       "homeNursing": {
-        "eyebrow": "Nursing support",
+        "eyebrow": "Nursing at home",
         "title": "Home Nursing",
-        "subtitle": "Professional nursing care delivered at home for continuous bedside support and clinical follow-up.",
-        "story": "This lane is designed for practical care delivery at home: wound dressing, injections, monitoring, and specialized nursing interventions.",
-        "description": "Professional nursing care at home"
+        "subtitle": "Professional nursing care delivered at home.",
+        "story": "Wound dressing, injections, monitoring, and follow-up — all at home.",
+        "description": "Certified nursing at home"
       },
       "physicalTherapy": {
-        "eyebrow": "Rehabilitation",
+        "eyebrow": "Rehab at home",
         "title": "Physical Therapy",
-        "subtitle": "Structured physical rehabilitation sessions designed for safe recovery and mobility support at home.",
-        "story": "This lane focuses on movement recovery, strength building, and guided rehabilitation programs tailored to the home environment.",
-        "description": "Physical rehabilitation at home"
+        "subtitle": "Structured rehab sessions to help you recover at home.",
+        "story": "Build strength, regain movement, and recover safely in your own space.",
+        "description": "Physical therapy at home"
       },
       "occupationalTherapy": {
-        "eyebrow": "Daily independence",
+        "eyebrow": "Daily life therapy",
         "title": "Occupational Therapy",
-        "subtitle": "Functional therapy that helps patients rebuild confidence and independence in daily activities at home.",
-        "story": "This lane supports real-life recovery goals by improving routine function, coordination, and independence within the home setting.",
+        "subtitle": "Therapy that helps you get back to everyday independence.",
+        "story": "Improve routine function and daily skills in your own home environment.",
         "description": "Occupational therapy at home"
       },
       "imaging": {
-        "eyebrow": "Diagnostic power",
+        "eyebrow": "Scans at home",
         "title": "Radiology",
-        "subtitle": "High-resolution imaging that remains close to the patient, delivered via a specialized request path.",
-        "story": "This lane is built for speed and precision: portable imaging coordinated accurately with your clinical needs."
+        "subtitle": "X-rays and imaging brought to your home.",
+        "story": "High-quality imaging without moving the patient. Fast and coordinated."
       },
       "labDiagnostics": {
-        "eyebrow": "Clinical analytics",
-        "title": "Lab Diagnostics",
-        "subtitle": "Comprehensive laboratory tests prepared for precise home collection and digital record integration.",
-        "story": "We simplify diagnostic monitoring: select your test, follow the guided path, and receive a refined digital result."
+        "eyebrow": "Lab tests at home",
+        "title": "Lab Tests",
+        "subtitle": "Home sample collection with digital results.",
+        "story": "A technician comes to you, collects samples, and your results arrive digitally."
       },
       "carePrograms": {
-        "eyebrow": "Coordinated care",
+        "eyebrow": "Full care packages",
         "title": "Care Programs",
-        "subtitle": "Bundled solutions that group multiple clinical steps into one seamless, guided experience.",
-        "story": "For more complex journeys, this lane provides a single orchestration point for diverse clinical requirements."
+        "subtitle": "Multiple services bundled into one coordinated request.",
+        "story": "For when you need more than one service — everything handled together, simply."
       }
     }
   },
   "footer": {
-    "eyebrow": "Clinical integrity, through every section",
-    "title": "A conclusion with the same clarity our care paths promise.",
-    "copy": "Move into a focused clinical lane or connect with our coordination desk to start your journey without the friction of traditional booking systems.",
-    "primaryCta": "Explore Care Paths",
-    "secondaryCta": "Connect with Coordination",
-    "brandTitle": "Home-first care. Orchestrated clearly.",
-    "description": "A refined platform for home healthcare, bringing clinical excellence directly to you.",
-    "microTag1": "Home-first architecture",
-    "microTag2": "Guided request logic",
-    "microTag3": "Verified digital closure",
-    "quickLinks": "Navigation",
-    "servicesTitle": "Clinical Lanes",
-    "contactTitle": "Coordination",
-    "contactCardTitle": "Coordination Desk",
-    "contactCardCopy": "Active daily for request orchestration, service guidance, and clinical follow-up.",
-    "availabilityLabel": "Active coverage",
-    "availabilityValue": "Daily from 8:00 AM to 10:00 PM",
-    "responseLabel": "Support logic",
-    "responseValue": "Professional guidance for care paths and new request setup",
-    "trustPoint1": "A single, transparent narrative from intake to closure.",
-    "trustPoint2": "Specialized catalogs filtered by clinical intent.",
-    "trustPoint3": "Comprehensive digital records for every care milestone.",
+    "eyebrow": "We're here when you need us",
+    "title": "Don't put off your health. We're ready.",
+    "copy": "Book a home visit, reach out to our team, or browse what we offer.",
+    "primaryCta": "Book a Home Visit",
+    "secondaryCta": "Talk to Us",
+    "brandTitle": "Home healthcare you can count on.",
+    "description": "Certified doctors, nurses, and diagnostic services — at your door.",
+    "microTag1": "Certified professionals",
+    "microTag2": "Fast response",
+    "microTag3": "Full medical reports",
+    "quickLinks": "Quick Links",
+    "servicesTitle": "Our Services",
+    "contactTitle": "Contact Us",
+    "contactCardTitle": "Need help?",
+    "contactCardCopy": "Our team is here daily from 8 AM to 10 PM to answer your questions and confirm bookings.",
+    "availabilityLabel": "Hours",
+    "availabilityValue": "Daily, 8:00 AM – 10:00 PM",
+    "responseLabel": "How to reach us",
+    "responseValue": "Call us or message on WhatsApp",
+    "trustPoint1": "Certified doctors, nurses, and technicians sent to your door.",
+    "trustPoint2": "Every step tracked and confirmed.",
+    "trustPoint3": "Full digital report after every completed visit.",
     "rights": "© 2026 Curevie. All rights reserved.",
-    "bottomNote": "Home-first care. Coordinated paths. Digital resolution."
+    "bottomNote": "Care at home. Fast. Certified. Documented."
   },
   "publicAbout": {
     "hero": {
-      "eyebrow": "The Curevie Narrative",
+      "eyebrow": "Our story",
       "titleLineOne": "Healthcare",
-      "titleLineTwo": "reimagined for",
-      "titleAccent": "the home.",
-      "copy": "Curevie exists to solve the fragmentation inherent in modern healthcare. We believe clinical excellence deserves an operating model that prioritizes patient visibility, precise coordination, and documented results.",
-      "primaryCta": "View Care Paths",
-      "secondaryCta": "Contact Our Team",
-      "railEyebrow": "Our philosophy",
-      "railTitle": "Built to keep healthcare readable for the human at its center.",
-      "railCopy": "The patient should feel direction, not operational noise. Our platform absorbs the clinical complexity behind the scenes, leaving a clean, guided narrative in front of you.",
+      "titleLineTwo": "that comes",
+      "titleAccent": "to you.",
+      "copy": "We started Curevie because getting good healthcare at home was harder than it should be. We built a simple way to get a doctor, nurse, or lab test delivered to your door.",
+      "primaryCta": "See Our Services",
+      "secondaryCta": "Get in Touch",
+      "railEyebrow": "How we think",
+      "railTitle": "You shouldn't have to navigate a complicated system when you're unwell.",
+      "railCopy": "We built Curevie so the process stays simple for the patient. You tell us what you need. We take care of the rest.",
       "points": {
         "homeFirst": {
-          "title": "Home-first execution",
-          "copy": "We design our services around what can be delivered safely and accurately within the home environment."
+          "title": "Built for home delivery",
+          "copy": "Everything we offer is designed to work safely and well inside your home."
         },
         "singlePath": {
-          "title": "A singular care journey",
-          "copy": "Complex care can pass through multiple steps without ever becoming fragmented or confusing for the patient."
+          "title": "One clear path",
+          "copy": "Even complex care stays simple for you — one request, one tracking view, one report."
         },
         "documented": {
-          "title": "Documented outcomes",
-          "copy": "Every journey ends with a visible result, ensuring your medical history remains coherent and reviewable."
+          "title": "Always documented",
+          "copy": "Every visit ends with a proper medical report — yours to keep and review anytime."
         }
       }
     },
     "pillars": {
-      "eyebrow": "Operational Logic",
-      "title": "Three principles that define our product.",
-      "copy": "These are not slogans; they are the rules that define how Curevie routes requests and turns healthcare into something you can follow.",
-      "boardTitle": "Designed around absolute visibility.",
-      "boardCopy": "Clinical quality is the foundation, but the patient experience relies on structure, timing, and logical next steps.",
+      "eyebrow": "What we stand for",
+      "title": "Three things we never compromise on.",
+      "copy": "These aren't values on a wall. They're how we actually build and run the service.",
+      "boardTitle": "Built around you, not around the system.",
+      "boardCopy": "Good healthcare needs structure and timing — but always with the patient at the center.",
       "items": {
         "clarity": {
-          "tag": "Visibility first",
-          "title": "The patient must understand the path.",
-          "copy": "Every service lane explains itself instantly, guiding you toward the correct request shape and reducing uncertainty.",
-          "proof": "Structured service pages and live request states eliminate ambiguity from the start."
+          "tag": "Always clear",
+          "title": "You should always know what's happening.",
+          "copy": "Every step of your care is visible. No black boxes, no guessing.",
+          "proof": "Live status updates and plain-language descriptions at every stage."
         },
         "coordination": {
-          "tag": "Coordination layer",
-          "title": "Complexity remains inside the workflow.",
-          "copy": "You shouldn't need to navigate internal logistics or sequencing. We orchestrate the path while you focus on care.",
-          "proof": "The platform handles the clinical orchestration silently, presenting only a calm and guided journey."
+          "tag": "We handle the complexity",
+          "title": "You focus on getting better. We handle the rest.",
+          "copy": "Scheduling, matching, dispatch — we take care of all of it so you don't have to.",
+          "proof": "You follow one simple request. We manage everything behind it."
         },
         "closure": {
-          "tag": "Digital resolution",
-          "title": "The final state is documented, never implied.",
-          "copy": "When care ends, you leave with a visible result and a digital record that honors your long-term health narrative.",
-          "proof": "Comprehensive reports and request histories make the conclusion of care legible and accountable."
+          "tag": "Documented outcomes",
+          "title": "Every visit ends with a real medical record.",
+          "copy": "When your care is done, you get a proper report — not a verbal summary.",
+          "proof": "Full medical reports, downloadable and accessible from your account."
         }
       }
     },
@@ -1037,76 +1037,76 @@
       }
     },
     "signature": {
-      "eyebrow": "Our Vision",
-      "title": "A care experience that feels deliberate.",
-      "copy": "Professional healthcare is more than quality; it is the design of trust and a journey that stays understandable from intake to resolution.",
-      "primaryCta": "Explore Care Paths",
-      "secondaryCta": "Contact Our Experts",
+      "eyebrow": "Our goal",
+      "title": "Healthcare that feels like someone actually cares.",
+      "copy": "We're not building technology for its own sake. We're building a better way to get medical help at home — clear, fast, and honest.",
+      "primaryCta": "See Our Services",
+      "secondaryCta": "Contact Us",
       "chips": {
         "homeFirst": "Home-first care",
         "singlePath": "One unified path",
         "documented": "Documented resolution"
       },
-      "quote": "Curevie is designed so you see the direction, not the noise."
+      "quote": "We built Curevie so you always know what's happening with your care."
     }
   },
   "publicContact": {
     "hero": {
-      "eyebrow": "Contact Orchestration",
-      "titleLineOne": "A direct line",
-      "titleLineTwo": "to the correct",
-      "titleAccent": "care path.",
-      "copy": "If you are deciding between services or following up on clinical progress, this page is designed to bring you to the right expertise quickly and clearly.",
-      "primaryCta": "Connect Now",
-      "secondaryCta": "Email Coordination",
-      "exploreLink": "View Care Paths",
-      "panelEyebrow": "Our Commitment",
-      "panelTitle": "We respond with direction, not generic noise.",
-      "panelCopy": "Our goal is not to keep you in an inbox, but to move your question into the right operational lane as quickly as possible.",
+      "eyebrow": "Talk to us",
+      "titleLineOne": "We're here",
+      "titleLineTwo": "to help you",
+      "titleAccent": "directly.",
+      "copy": "Whether you want to book a visit, ask about a service, or follow up on a request — we're available and we respond.",
+      "primaryCta": "Call Us Now",
+      "secondaryCta": "Send a Message",
+      "exploreLink": "Browse Our Services",
+      "panelEyebrow": "What to expect",
+      "panelTitle": "A real answer, not a form letter.",
+      "panelCopy": "We read every message and reply with a direct answer — not a generic response.",
       "points": {
         "guidance": {
-          "title": "Clinical Guidance",
-          "copy": "We help you identify the correct care path before the journey becomes complex."
+          "title": "Service guidance",
+          "copy": "Not sure which service you need? We'll help you figure it out."
         },
         "followUp": {
-          "title": "Progress Follow-up",
-          "copy": "Clarify active requests instantly, ensuring you remain certain about the next clinical step."
+          "title": "Request follow-up",
+          "copy": "Have an active request? We can check on it for you."
         },
         "routing": {
-          "title": "Operational Precision",
-          "copy": "Every inquiry is routed to the specialized team equipped to handle it, avoiding dead ends."
+          "title": "Fast routing",
+          "copy": "Your message goes to the right person — no dead ends."
         }
       }
     },
     "workspace": {
-      "eyebrow": "Coordination Workspace",
-      "title": "Inquire once. We route accurately.",
-      "copy": "Use our message form when your request needs context and a structured reply. For immediate needs, our direct channels remain open."
+      "eyebrow": "Contact us",
+      "title": "Send us a message or call directly.",
+      "copy": "Use the form for detailed questions. For urgent needs, call or WhatsApp us."
     },
     "form": {
-      "title": "Send a Structured Inquiry",
-      "copy": "Detail your requirements, and we will route your message to the appropriate clinical or coordination path.",
+      "title": "Send us a message",
+      "copy": "Tell us what you need and we'll get back to you.",
       "fields": {
         "name": {
           "label": "Full name",
-          "placeholder": "Enter your name"
+          "placeholder": "Your name"
         },
         "email": {
-          "label": "Professional email",
-          "placeholder": "Enter your email"
+          "label": "Email",
+          "placeholder": "Your email"
         },
         "phone": {
           "label": "Phone number",
-          "placeholder": "Optional contact number"
+          "placeholder": "Optional"
         },
         "message": {
-          "label": "Detailed inquiry",
-          "placeholder": "Describe your question, request, or clinical follow-up"
+          "label": "Your message",
+          "placeholder": "What do you need help with?"
         }
       },
-      "assurance": "Your inquiry is managed within Curevie's secure coordination and care routing system.",
-      "submit": "Send Inquiry",
-      "submitting": "Processing..."
+      "assurance": "Your message is handled securely by our team.",
+      "submit": "Send Message",
+      "submitting": "Sending..."
     },
     "channels": {
       "phone": {
@@ -1135,15 +1135,15 @@
       }
     },
     "coverage": {
-      "title": "Care Outlook",
-      "copy": "Our model is built for those who require precision healthcare delivered at home, with a clean path and reviewable digital resolution.",
+      "title": "Who we serve",
+      "copy": "We're built for patients who want real medical care delivered at home — clear, fast, and fully documented.",
       "chipOne": "Home-first entry",
       "chipTwo": "Guided care paths",
       "chipThree": "Verified results"
     },
-    "validationError": "Please complete the required fields to ensure accurate routing.",
-    "success": "Inquiry received and queued for coordination.",
-    "error": "We couldn't send your inquiry right now. Please try again."
+    "validationError": "Please fill in all required fields.",
+    "success": "Message received. We'll be in touch soon.",
+    "error": "Couldn't send your message right now. Please try again."
   },
   "consent": {
     "banner_title": "We use cookies",
@@ -1206,39 +1206,39 @@
     "arabic": "Arabic"
   },
   "testimonials": {
-    "title": "Patient Narratives",
+    "title": "Real stories from our patients",
     "first": {
-      "text": "The service was exceptional. The physician arrived quickly and handled the evaluation with high professional standards.",
+      "text": "My father had a fever at midnight. The doctor was at our door within two hours and did a full check-up at home. I didn't even know this kind of service existed.",
       "name": "Ahmad K.",
       "city": "Amman"
     },
     "second": {
-      "text": "The coordination was seamless. Having a nurse visit at home saved me significant time and hospital stress.",
+      "text": "After surgery, my mother needed daily wound dressing. The nurse came to our home every morning. We never had to take her back to the hospital.",
       "name": "Sara M.",
       "city": "Zarqa"
     },
     "third": {
-      "text": "The diagnostic collection was quiet and professional. I received my digital report ahead of schedule.",
+      "text": "I needed blood tests but couldn't get out. The technician came the same day. My results were ready by evening.",
       "name": "Lina A.",
       "city": "Irbid"
     }
   },
   "reportsPage": {
-    "title": "Clinical Archives",
-    "description": "Review each final case report with the included services and the source files attached to every service inside that case.",
-    "searchPlaceholder": "Search by case, service, or provider",
-    "searchHint": "Uploaded files are grouped by service so you can always tell which document fed which part of the final report.",
-    "empty": "No clinical records published yet.",
-    "emptyFiltered": "No records match this specific filter.",
-    "loadError": "Unable to synchronize your clinical archives right now.",
-    "caseLabel": "Clinical Case",
-    "providedBy": "Medical Expert",
-    "publishedAt": "Published at",
-    "viewDetails": "View details",
+    "title": "My Reports",
+    "description": "Your medical reports, organized by visit. View what was included and download any report as a PDF.",
+    "searchPlaceholder": "Search by visit, service, or provider",
+    "searchHint": "Files are grouped by service so you can see exactly what belongs to each part of your visit.",
+    "empty": "No reports yet. They'll appear here after your first completed visit.",
+    "emptyFiltered": "No reports match this filter.",
+    "loadError": "We couldn't load your reports right now.",
+    "caseLabel": "Visit",
+    "providedBy": "Seen by",
+    "publishedAt": "Published",
+    "viewDetails": "View report",
     "hideDetails": "Hide details",
     "downloadPdf": "Download PDF",
-    "includedServices": "Services included in this report",
-    "includedServicesDescription": "Each service is shown separately so you can see exactly what was included in this medical case.",
+    "includedServices": "Services in this visit",
+    "includedServicesDescription": "Each service is listed separately so you can see exactly what was done.",
     "serviceReference": "Service reference",
     "serviceCategory": "Service category",
     "serviceStatus": "Service status",
@@ -1246,69 +1246,69 @@
     "createdAt": "Created at",
     "sourceFiles": "Files attached to services",
     "sourceFilesDescription": "These are the files uploaded by the care team and attached to each service before they were merged into the final report.",
-    "noSourceFiles": "No source files are visible for this case yet.",
-    "noFilesForService": "No files are attached to this service.",
+    "noSourceFiles": "No files attached to this visit yet.",
+    "noFilesForService": "No files attached to this service.",
     "viewFile": "Open file",
     "uploadedAt": "Uploaded at",
     "sickLeave": "Sick leave",
     "servicesCount": "{count} services",
     "filters": {
-      "ALL": "Complete History",
-      "DOCTOR": "Physician Visits",
-      "LAB": "Diagnostic Labs",
+      "ALL": "All Reports",
+      "DOCTOR": "Doctor Visits",
+      "LAB": "Lab Tests",
       "IMAGING": "Radiology"
     }
   },
   "profilePage": {
     "title": "My Health Profile",
     "tabs": {
-      "personal": "Personal Identity",
-      "medical": "Health Narrative",
-      "security": "Privacy & Ethics",
-      "loyalty": "Engagement",
-      "appearance": "Interface"
+      "personal": "Personal Info",
+      "medical": "Health Info",
+      "security": "Password & Security",
+      "loyalty": "Loyalty Points",
+      "appearance": "Display"
     },
-    "personalTitle": "Personal Identity",
-    "medicalTitle": "Health Narrative",
-    "securityTitle": "Security Credentials",
-    "loyaltyTitle": "Loyalty Status",
-    "appearanceTitle": "Interface Appearance",
-    "fullName": "Full Legal Name",
-    "phone": "Verified Phone",
-    "address": "Residential Context",
+    "personalTitle": "Personal Info",
+    "medicalTitle": "Health Info",
+    "securityTitle": "Password & Security",
+    "loyaltyTitle": "Loyalty Points",
+    "appearanceTitle": "Display Settings",
+    "fullName": "Full Name",
+    "phone": "Phone Number",
+    "address": "Home Address",
     "dateOfBirth": "Birth Date",
     "gender": "Clinical Gender",
     "height": "Height (cm)",
     "weight": "Weight (kg)",
-    "allergies": "Known Sensitivities",
-    "currentPassword": "Current Credential",
-    "newPassword": "New Credential",
-    "confirmPassword": "Confirm New Credential",
+    "allergies": "Known Allergies",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
     "currentPointsBalance": "Active points balance",
     "standardMember": "Standard Tier",
-    "noPointsHistory": "No engagement activity recorded.",
-    "profileUpdated": "Identity profile synchronized",
-    "profileUpdateFailed": "Synchronization failed",
-    "medicalUpdated": "Health narrative updated",
-    "medicalUpdateFailed": "Narrative update failed",
-    "passwordUpdated": "Credentials refreshed",
-    "passwordUpdateFailed": "Credential change failed",
-    "avatarUploaded": "Visual identity synchronized",
-    "avatarUploadFailed": "Visual identity upload failed",
+    "noPointsHistory": "No activity recorded yet.",
+    "profileUpdated": "Profile updated",
+    "profileUpdateFailed": "Couldn't update profile",
+    "medicalUpdated": "Health info updated",
+    "medicalUpdateFailed": "Couldn't update health info",
+    "passwordUpdated": "Password changed",
+    "passwordUpdateFailed": "Couldn't change password",
+    "avatarUploaded": "Profile photo updated",
+    "avatarUploadFailed": "Couldn't upload photo",
     "validation": {
       "fullNameMin": "Name must be at least 2 characters",
       "phoneMin": "Phone number must meet international standards",
-      "addressMin": "Address context must be meaningful",
-      "currentPasswordRequired": "Current credential is required",
-      "newPasswordMin": "New credential must meet security length requirements",
-      "confirmPasswordMin": "Consistency check failed for new credential",
-      "passwordsDoNotMatch": "Credentials do not align"
+      "addressMin": "Please enter a valid address",
+      "currentPasswordRequired": "Please enter your current password",
+      "newPasswordMin": "New password must meet the minimum length requirement",
+      "confirmPasswordMin": "Please confirm your new password",
+      "passwordsDoNotMatch": "Passwords don't match"
     },
     "loyaltyReasons": {
-      "REQUEST_COMPLETED": "Successful Care Journey",
-      "POINTS_EARNED": "Narrative Reward",
-      "POINTS_REDEEMED": "Reward Redeemed",
-      "INVOICE_PAID": "Settled Account"
+      "REQUEST_COMPLETED": "Care Visit Completed",
+      "POINTS_EARNED": "Points Earned",
+      "POINTS_REDEEMED": "Points Redeemed",
+      "INVOICE_PAID": "Invoice Paid"
     }
   }
 }

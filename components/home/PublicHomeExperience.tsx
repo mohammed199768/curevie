@@ -24,6 +24,7 @@ import {
   fetchPublicServiceCounts,
   PUBLIC_SERVICE_CATEGORIES,
 } from "@/lib/public-service-categories";
+import type { HomeSeoContent } from "@/lib/seo-content";
 
 const categoryIcons = {
   medicalVisits: Stethoscope,
@@ -35,7 +36,11 @@ const categoryIcons = {
   occupationalTherapy: Brain,
 } as const;
 
-export function PublicHomeExperience() {
+type PublicHomeExperienceProps = {
+  seoContent: HomeSeoContent;
+};
+
+export function PublicHomeExperience({ seoContent }: PublicHomeExperienceProps) {
   const locale = useLocale();
   const t = useTranslations("homeExperience");
   const prefersReducedMotion = useReducedMotion();
@@ -407,19 +412,22 @@ export function PublicHomeExperience() {
                 {t("hero.eyebrow")}
               </div>
 
-              <div
+              <h1
                 dir={isArabic ? "rtl" : undefined}
                 style={rtlBidiStyle}
                 className={cn(isArabic ? "space-y-0 text-right" : "space-y-1 text-balance")}
               >
                 {heroTitleLines.map((line) => (
-                  <div key={line.key} className={cn("overflow-hidden", isArabic ? "py-2" : "py-0")}>
-                    <div
+                  <span
+                    key={line.key}
+                    className={cn("block overflow-hidden", isArabic ? "py-2" : "py-0")}
+                  >
+                    <span
                       data-hero-title-line
                       dir={isArabic ? "rtl" : undefined}
                       style={rtlBidiStyle}
                       className={cn(
-                        "max-w-full font-editorial-display will-change-transform",
+                        "block max-w-full font-editorial-display will-change-transform",
                         displayFontClass,
                         line.sizeClass,
                         line.colorClass,
@@ -427,10 +435,10 @@ export function PublicHomeExperience() {
                       )}
                     >
                       {line.text}
-                    </div>
-                  </div>
+                    </span>
+                  </span>
                 ))}
-              </div>
+              </h1>
 
               <p
                 data-hero-copy
@@ -682,6 +690,72 @@ export function PublicHomeExperience() {
                     </div>
                   </div>
                 </motion.article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="services"
+        className="border-t border-[#dce8e2] bg-[linear-gradient(180deg,#f7fbf8_0%,#ffffff_100%)]"
+      >
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:items-start">
+            <div>
+              <div className={cn("text-sm font-semibold text-[#5a7a50]", isArabic ? "tracking-[0.04em]" : "uppercase tracking-[0.22em]")}>
+                {seoContent.eyebrow}
+              </div>
+              <h2 className="mt-4 text-3xl font-semibold leading-tight text-[#104d49] sm:text-4xl">
+                {seoContent.title}
+              </h2>
+            </div>
+            <div className="space-y-4 text-base leading-8 text-[#304a43]">
+              {seoContent.paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {categoryCards.map((card) => (
+              <Link
+                key={card.slug}
+                href={card.href}
+                className="rounded-[1.7rem] border border-[#dbe6e0] bg-white p-6 shadow-[0_28px_70px_-58px_rgba(16,77,73,0.18)] transition hover:-translate-y-1 hover:shadow-[0_34px_90px_-56px_rgba(16,77,73,0.28)]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-[#104d49] text-white">
+                    <card.Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-[#104d49]">
+                      {t(`categories.${card.translationKey}.title`)}
+                    </div>
+                    <div className="text-sm text-[#5a7a50]">{card.countLabel}</div>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-7 text-[#304a43]">
+                  {t(`categories.${card.translationKey}.summary`)}
+                </p>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-12 rounded-[2rem] border border-[#dbe6e0] bg-[#104d49] p-6 text-white sm:p-8">
+            <h2 className="text-2xl font-semibold sm:text-3xl">{seoContent.faqTitle}</h2>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-white/82 sm:text-base">
+              {seoContent.faqIntro}
+            </p>
+            <div className="mt-8 grid gap-5 lg:grid-cols-3">
+              {seoContent.faqItems.map((item) => (
+                <article
+                  key={item.question}
+                  className="rounded-[1.5rem] border border-white/10 bg-white/8 p-5"
+                >
+                  <h3 className="text-lg font-semibold text-white">{item.question}</h3>
+                  <p className="mt-3 text-sm leading-7 text-white/78">{item.answer}</p>
+                </article>
               ))}
             </div>
           </div>

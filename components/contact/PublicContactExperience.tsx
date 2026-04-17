@@ -343,10 +343,16 @@ export function PublicContactExperience() {
         <div className="perf-drift-slow pointer-events-none absolute left-[-8rem] top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(16,77,73,0.09)_0%,rgba(16,77,73,0.02)_42%,transparent_72%)]" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-          <div data-contact-form-intro className="max-w-3xl mb-8">
-            <h2 className={cn("font-editorial-display mt-4 text-5xl leading-[0.92] text-[#104d49]", displayFontClass)}>
-              {isArabic ? "تواصل معنا" : "Contact Us"}
-            </h2>
+          <div data-contact-form-intro className="mb-8 max-w-3xl">
+            <div className={cn("text-sm font-semibold text-[#5a7a50]", isArabic ? "tracking-[0.04em]" : "uppercase tracking-[0.22em]")}>
+              {t("workspace.eyebrow")}
+            </div>
+            <h1 className={cn("font-editorial-display mt-4 text-5xl leading-[0.92] text-[#104d49]", displayFontClass)}>
+              {isArabic ? "تواصل مع كيورفي" : "Contact Curevie"}
+            </h1>
+            <p className="mt-4 text-base leading-8 text-[#304a43] sm:text-lg">
+              {t("workspace.copy")}
+            </p>
           </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(18rem,0.88fr)]">
