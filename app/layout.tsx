@@ -5,7 +5,6 @@ import { hasLocale } from "next-intl";
 import { getLocale } from "next-intl/server";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { defaultLocale, locales } from "@/i18n";
-import { cairo, cormorantGaramond, inter } from "@/lib/fonts";
 import {
   BASE_SEO_KEYWORDS,
   DEFAULT_SITE_DESCRIPTION,
@@ -50,7 +49,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="كيورفي" />
       </head>
-      <body className={`${cairo.variable} ${inter.variable} ${cormorantGaramond.variable}`}>
+      <body>
         <Suspense fallback={null}>
           <GoogleAnalytics measurementId={googleAnalyticsId} />
         </Suspense>

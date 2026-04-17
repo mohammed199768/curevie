@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { locales } from "@/i18n";
-import { cairo, cormorantGaramond, inter } from "@/lib/fonts";
 import { BASE_SEO_KEYWORDS, DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_TITLE } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -57,7 +56,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       data-locale-root
       lang={locale}
       dir={locale === "ar" ? "rtl" : "ltr"}
-      className={`${cairo.variable} ${inter.variable} ${cormorantGaramond.variable} min-h-screen`}
+      className="min-h-screen"
     >
       <NextIntlClientProvider locale={locale} messages={messages}>
         <AppProviders>{children}</AppProviders>
