@@ -143,17 +143,6 @@ export function GuestServiceRequestDialog({
     setSelectedEntryIds((current) => current.filter((id) => entries.some((entry) => entry.id === id)));
   }, [defaultEntryId, entries, open, preSelectedEntryIds]);
 
-  const selectedEntries = useMemo(
-    () =>
-      selectedEntryIds
-        .map((id) => entries.find((entry) => entry.id === id) || null)
-        .filter((entry): entry is PublicCatalogEntry => entry !== null),
-    [entries, selectedEntryIds],
-  );
-  const totalSelectedPrice = useMemo(
-    () => selectedEntries.reduce((sum, entry) => sum + Number(entry.price ?? 0), 0),
-    [selectedEntries],
-  );
   const groupedEntries = useMemo(() => {
     const groups: Record<string, typeof entries> = {};
 
@@ -281,7 +270,7 @@ export function GuestServiceRequestDialog({
             </DialogHeader>
           </div>
 
-          <div className="grid gap-4 px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] xl:gap-6">
+          <div className="px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="min-w-0 space-y-4">
                 <div className="grid gap-4">
@@ -432,88 +421,6 @@ export function GuestServiceRequestDialog({
                 </DialogFooter>
               </form>
             </Form>
-
-            <div className="min-w-0 space-y-4">
-              <div className="rounded-[1.5rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)] sm:rounded-[1.7rem]">
-                <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#9c9fa2]">
-                  {t("guestRequest.serviceCardTitle")}
-                </div>
-
-                <div className="mt-4 rounded-[1.5rem] border border-white/70 p-4 shadow-[0_20px_56px_-50px_rgba(15,79,72,0.2)]" style={{ background: `linear-gradient(180deg, ${categoryTheme.soft} 0%, #ffffff 100%)` }}>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0 text-xs font-semibold uppercase tracking-[0.18em] sm:text-sm sm:tracking-[0.22em]" style={{ color: categoryTheme.muted }}>
-                      {categoryTitle}
-                    </div>
-                    <Badge className="rounded-full bg-[#12312d] px-3 py-1 text-xs font-semibold text-white hover:bg-[#12312d]">
-                      {selectedEntries.length} {t("selectedCount")}
-                    </Badge>
-                  </div>
-                  <div className="mt-3 break-words text-xl font-semibold text-[#12312d] sm:text-2xl">
-                    {selectedEntries.length ? t("guestRequest.serviceCardTitle") : t("guestRequest.serviceFieldPlaceholder")}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {selectedEntries.length ? (
-                      selectedEntries.map((entry) => (
-                        <span
-                          key={entry.id}
-                          className="inline-flex items-center rounded-full border border-[#d9e6df] bg-white/90 px-3 py-1 text-xs font-medium text-[#12312d]"
-                        >
-                          {entry.name}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-sm leading-7 text-[#617672]">{t("guestRequest.serviceHint")}</p>
-                    )}
-                  </div>
-                  <p className="mt-4 text-sm font-semibold text-[#12312d]">
-                    {selectedEntries.length
-                      ? formatCurrency(totalSelectedPrice, locale)
-                      : t("labels.priceOnRequest")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-[1.5rem] border border-[#dbe7e2] bg-white/88 p-4 shadow-[0_24px_70px_-54px_rgba(15,79,72,0.22)] sm:rounded-[1.7rem]">
-                <div className="grid gap-4">
-                  <div>
-                    <div className="text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#9c9fa2]">
-                      {t("guestRequest.requestMode")}
-                    </div>
-                    <div className="mt-2 text-base font-semibold text-[#12312d]">
-                      {t("guestRequest.requestModeValue")}
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[1.25rem] border border-[#e5eeea] bg-[#f9fbfa] p-4">
-                      <div className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#9c9fa2]">
-                        {t("guestRequest.categoryLabel")}
-                      </div>
-                      <div className="mt-2 text-sm font-semibold text-[#12312d]">
-                        {categoryTitle}
-                      </div>
-                      <div className="mt-1 text-xs text-[#7a8f89]">
-                        {selectedEntries.length} / 5
-                      </div>
-                    </div>
-                    <div className="rounded-[1.25rem] border border-[#e5eeea] bg-[#f9fbfa] p-4">
-                      <div className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#9c9fa2]">
-                        {t("guestRequest.priceLabel")}
-                      </div>
-                      <div className="mt-2 text-sm font-semibold text-[#12312d]">
-                        {!selectedEntries.length
-                          ? t("labels.priceOnRequest")
-                          : formatCurrency(totalSelectedPrice, locale)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[1.35rem] border border-[#dfe9e4] bg-[#f4f8f6] px-4 py-4 text-sm leading-7 text-[#304a43]">
-                    {t("guestRequest.footerNote")}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </DialogContent>
