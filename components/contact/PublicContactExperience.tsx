@@ -53,7 +53,7 @@ const CONTACT_RING_CHANNELS = [
     valueKey: "channels.phone.value",
     hrefKind: "phone" as const,
     accent: "#104d49",
-    angle: -55,
+    angle: -90,
   },
   {
     key: "instagram",
@@ -61,7 +61,7 @@ const CONTACT_RING_CHANNELS = [
     valueKey: "channels.instagram.value",
     hrefKind: "instagram" as const,
     accent: "#9c9fa2",
-    angle: 35,
+    angle: 0,
   },
   {
     key: "email",
@@ -69,7 +69,7 @@ const CONTACT_RING_CHANNELS = [
     valueKey: "channels.email.value",
     hrefKind: "email" as const,
     accent: "#86ab62",
-    angle: 125,
+    angle: 90,
   },
   {
     key: "whatsapp",
@@ -77,7 +77,7 @@ const CONTACT_RING_CHANNELS = [
     valueKey: "channels.whatsapp.value",
     hrefKind: "whatsapp" as const,
     accent: "#5a7a50",
-    angle: 215,
+    angle: 180,
   },
 ] as const;
 
@@ -194,8 +194,8 @@ export function PublicContactExperience() {
     const distance = Math.hypot(ringPointer.x - nodeX, ringPointer.y - nodeY);
     const maxDistance = Math.max(120, radius * 0.92);
     const normalized = Math.max(0, 1 - distance / maxDistance);
-    const proximityBoost = normalized * 0.28;
-    const activeBoost = activeRingKey === channel.key ? 0.16 : 0;
+    const proximityBoost = normalized * 0.22;
+    const activeBoost = activeRingKey === channel.key ? 0.1 : 0;
 
     return 1 + proximityBoost + activeBoost;
   };
@@ -389,7 +389,7 @@ export function PublicContactExperience() {
                 </div>
 
                 <div
-                  className="relative mx-auto mt-8 aspect-square w-full max-w-[25rem] rounded-full"
+                  className="relative mx-auto mt-8 aspect-square w-full max-w-[27rem] rounded-full"
                   onMouseMove={(event) => {
                     const rect = event.currentTarget.getBoundingClientRect();
                     setRingPointer({
@@ -410,8 +410,8 @@ export function PublicContactExperience() {
                     const scale = getRingScale(channel);
                     const opacity = getRingOpacity(channel);
                     const angleInRadians = (channel.angle * Math.PI) / 180;
-                    const orbitOffsetX = `${Math.cos(angleInRadians) * 37}%`;
-                    const orbitOffsetY = `${Math.sin(angleInRadians) * 37}%`;
+                    const orbitOffsetX = `${Math.cos(angleInRadians) * 43}%`;
+                    const orbitOffsetY = `${Math.sin(angleInRadians) * 43}%`;
 
                     return (
                       <div
@@ -419,12 +419,13 @@ export function PublicContactExperience() {
                         className="absolute left-1/2 top-1/2"
                         style={{
                           transform: `translate(calc(-50% + ${orbitOffsetX}), calc(-50% + ${orbitOffsetY}))`,
+                          zIndex: activeRingKey === channel.key ? 20 : 10,
                         }}
                       >
                         <span
                           className="pointer-events-none absolute left-1/2 top-1/2 h-px origin-left bg-[linear-gradient(90deg,rgba(16,77,73,0.22),rgba(16,77,73,0.03))]"
                           style={{
-                            width: "4.4rem",
+                            width: "5.4rem",
                             transform: `translate(-100%, -50%) rotate(${channel.angle + 180}deg)`,
                           }}
                         />
@@ -439,25 +440,25 @@ export function PublicContactExperience() {
                           animate={{
                             scale,
                             opacity,
-                            y: activeRingKey === channel.key ? -4 : 0,
+                            y: 0,
                           }}
                           transition={{ type: "spring", stiffness: 260, damping: 22, mass: 0.7 }}
                           className="group/ring relative block"
                         >
                           <span
-                            className="flex h-[4.9rem] w-[4.9rem] items-center justify-center rounded-full border border-white/80 text-white shadow-[0_24px_54px_-24px_rgba(16,77,73,0.36)] sm:h-[5.35rem] sm:w-[5.35rem]"
+                            className="flex h-[4.15rem] w-[4.15rem] items-center justify-center rounded-full border border-white/80 text-white shadow-[0_24px_54px_-24px_rgba(16,77,73,0.36)] sm:h-[4.55rem] sm:w-[4.55rem]"
                             style={{
                               background: `linear-gradient(145deg, ${channel.accent} 0%, #104d49 100%)`,
                             }}
                           >
-                            <meta.Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                            <meta.Icon className="h-5 w-5 sm:h-6 sm:w-6" />
                           </span>
                           <span
                             className={cn(
                               "pointer-events-none absolute left-1/2 top-1/2 min-w-max -translate-x-1/2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#104d49] shadow-[0_18px_42px_-26px_rgba(16,77,73,0.28)] transition-all duration-300",
                               activeRingKey === channel.key
-                                ? "-translate-y-[4.55rem] opacity-100"
-                                : "-translate-y-[3.9rem] opacity-0",
+                                ? "-translate-y-[4.9rem] opacity-100"
+                                : "-translate-y-[4.25rem] opacity-0",
                             )}
                           >
                             {meta.label}
@@ -467,7 +468,7 @@ export function PublicContactExperience() {
                     );
                   })}
 
-                  <div className="absolute left-1/2 top-1/2 h-[7rem] w-[7rem] -translate-x-1/2 -translate-y-1/2 sm:h-[8.4rem] sm:w-[8.4rem]">
+                  <div className="absolute left-1/2 top-1/2 h-[5.85rem] w-[5.85rem] -translate-x-1/2 -translate-y-1/2 sm:h-[6.85rem] sm:w-[6.85rem]">
                     <motion.div
                       className="absolute inset-[-0.8rem] rounded-full border border-[#d6e5dd]/80"
                       animate={
