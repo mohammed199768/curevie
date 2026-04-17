@@ -590,7 +590,7 @@ export function PublicHomeExperience() {
                       <div className={cn("text-[0.72rem] font-semibold text-[#a9cfc8]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.28em]")}>
                         {t("hero.board.eyebrow")}
                       </div>
-                      <h2 className="mt-3 text-xl font-semibold text-white sm:text-[2rem]">
+                      <h2 className="mt-3 cursor-default text-xl font-semibold text-white [text-decoration:none] sm:text-[2rem]">
                         {t("hero.board.title")}
                       </h2>
                     </div>
