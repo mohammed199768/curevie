@@ -8,6 +8,7 @@ export type ConsentState = {
 
 const CONSENT_STORAGE_KEY = "curevie_consent_v1";
 const CONSENT_VERSION = "1.0";
+export const CONSENT_UPDATED_EVENT = "curevie-consent-updated";
 
 const DEFAULT_CONSENT: ConsentState = {
   necessary: true,
@@ -71,6 +72,7 @@ export function setConsent(state: ConsentState): ConsentState {
 
   try {
     window.localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(normalized));
+    window.dispatchEvent(new CustomEvent(CONSENT_UPDATED_EVENT, { detail: normalized }));
   } catch {
     // Ignore storage write failures and keep the in-memory decision flow alive.
   }

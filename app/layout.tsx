@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { hasLocale } from "next-intl";
 import { getLocale } from "next-intl/server";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { defaultLocale, locales } from "@/i18n";
 import { cairo, cormorantGaramond, inter } from "@/lib/fonts";
 import {
@@ -36,6 +38,7 @@ export default async function RootLayout({
   const requestedLocale = await getLocale().catch(() => defaultLocale);
   const locale = hasLocale(locales, requestedLocale) ? requestedLocale : defaultLocale;
   const isArabic = locale === "ar";
+  const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-TT2L23SLLH";
 
   return (
     <html lang={locale} dir={isArabic ? "rtl" : "ltr"} suppressHydrationWarning>
@@ -48,6 +51,9 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="كيورفي" />
       </head>
       <body className={`${cairo.variable} ${inter.variable} ${cormorantGaramond.variable}`}>
+        <Suspense fallback={null}>
+          <GoogleAnalytics measurementId={googleAnalyticsId} />
+        </Suspense>
         {children}
       </body>
     </html>

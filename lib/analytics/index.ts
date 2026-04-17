@@ -1,5 +1,12 @@
 export type { ConsentState } from "./consent";
-export { getConsent, hasDecided, isAnalyticsAllowed, isMarketingAllowed, setConsent } from "./consent";
+export {
+  CONSENT_UPDATED_EVENT,
+  getConsent,
+  hasDecided,
+  isAnalyticsAllowed,
+  isMarketingAllowed,
+  setConsent,
+} from "./consent";
 export { initPixel, trackContact, trackLead, trackPageView, trackViewContent } from "./pixel";
 export {
   onContactChannelClick,
