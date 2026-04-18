@@ -42,6 +42,9 @@ export default function InvoicesPage() {
         closedCases.map(async (caseItem): Promise<PatientInvoiceRow | null> => {
           try {
             const invoiceDetail = (await casesApi.getInvoice(caseItem.id)).data;
+            if (invoiceDetail.invoice.payment_status !== "PAID") {
+              return null;
+            }
             const serviceLabel = caseItem.services
               .map((service) => service.service_name)
               .filter(Boolean)

@@ -37,7 +37,9 @@ export default function InvoiceDetailPage() {
 
   const invoiceDetail = invoiceQuery.data;
   const caseDetail = caseQuery.data;
-  if (!invoiceDetail?.invoice) return <p className="text-sm">{tPage("notFound")}</p>;
+  if (!invoiceDetail?.invoice || invoiceDetail.invoice.payment_status !== "PAID") {
+    return <p className="text-sm">{tPage("notFound")}</p>;
+  }
 
   const invoice = invoiceDetail.invoice;
   const servicesLabel = caseDetail?.services?.map((service) => service.service_name).filter(Boolean).join(", ");
