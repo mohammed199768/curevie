@@ -3,7 +3,7 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import { MessageSquareText, Send, ShieldCheck } from "lucide-react";
+import { MapPin, MessageSquareText, Navigation, Send, ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { AppPreloader } from "@/components/shared/AppPreloader";
@@ -18,6 +18,13 @@ import {
 } from "@/lib/api/cases";
 import type { RequestChatMessage, RequestStatus } from "@/lib/api/types";
 import { translateEnumValue } from "@/lib/i18n";
+import {
+  extractLocationInfo,
+  formatLocationMessage,
+  isAppleDevice,
+  shareLocationWithBestAccuracy,
+  ShareLocationError,
+} from "@/lib/chat-location";
 import { connectAppSocket, type AppSocket } from "@/lib/socket-client";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { cn, formatRelativeTime } from "@/lib/utils";
@@ -134,6 +141,7 @@ export default function ChatPage() {
   const [caseSocketReady, setCaseSocketReady] = useState(false);
   const [currentRoomId, setCurrentRoomId] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [isSharingLocation, setIsSharingLocation] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<AppSocket | null>(null);
 
@@ -422,6 +430,77 @@ export default function ChatPage() {
       toast.error(error instanceof Error ? error.message : tCommon("error")),
   });
 
+  const handleShareLocation = useCallback(async () => {
+    if (isSharingLocation) return;
+
+    if (!activeCaseEntry?.isOpen) {
+      toast.error(tChatPage("requestClosedNotice"));
+      return;
+    }
+
+    if (!caseSocketReady || !socketRef.current || !currentRoomId) {
+      toast.error(tChatPage("chatConnecting"));
+      return;
+    }
+
+    setIsSharingLocation(true);
+
+    try {
+      const reading = await shareLocationWithBestAccuracy({
+        durationMs: 8000,
+        targetAccuracy: 15,
+        timeoutMs: 15000,
+      });
+
+      const accuracyMeters = Math.round(reading.accuracy);
+      const content = formatLocationMessage(
+        reading.latitude,
+        reading.longitude,
+        tChatPage("chatLocationMessagePrefix"),
+      );
+
+      socketRef.current.emit("send_message", {
+        room_id: currentRoomId,
+        content,
+      });
+
+      if (accuracyMeters > 100) {
+        toast.warning(
+          tChatPage("chatLocationLowAccuracy", { meters: accuracyMeters }),
+        );
+      } else {
+        toast.success(
+          tChatPage("chatLocationSentWithAccuracy", { meters: accuracyMeters }),
+        );
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: ["patient-chat", CASE_ROOM_METADATA_QUERY_KEY],
+      });
+    } catch (error) {
+      if (error instanceof ShareLocationError) {
+        if (error.code === "UNSUPPORTED") {
+          toast.error(tChatPage("chatLocationNotSupported"));
+        } else if (error.code === "PERMISSION_DENIED") {
+          toast.error(tChatPage("chatLocationPermissionDenied"));
+        } else {
+          toast.error(tChatPage("chatLocationFailed"));
+        }
+      } else {
+        toast.error(tChatPage("chatLocationFailed"));
+      }
+    } finally {
+      setIsSharingLocation(false);
+    }
+  }, [
+    activeCaseEntry,
+    caseSocketReady,
+    currentRoomId,
+    isSharingLocation,
+    queryClient,
+    tChatPage,
+  ]);
+
   const caseMessages = caseMessagesQuery.data || [];
   const hasInboxEntries = caseInboxEntries.length > 0;
   const isInitialLoading = casesQuery.isLoading && !casesQuery.data;
@@ -665,6 +744,17 @@ export default function ChatPage() {
                     casesApi.resolveMediaUrl(message.file_url || null)
                     || message.file_url
                     || null;
+                  const locationInfo = extractLocationInfo(message.content);
+                  const textContent = locationInfo
+                    ? locationInfo.displayText
+                    : message.content;
+                  const preferApple = isAppleDevice();
+                  const primaryMapUrl = preferApple
+                    ? locationInfo?.appleMapsUrl
+                    : locationInfo?.googleMapsUrl;
+                  const primaryDirUrl = preferApple
+                    ? locationInfo?.appleDirectionsUrl
+                    : locationInfo?.googleDirectionsUrl;
 
                   return (
                     <div
@@ -682,7 +772,52 @@ export default function ChatPage() {
                             {message.sender_name}
                           </p>
                         ) : null}
-                        {message.content ? <p>{message.content}</p> : null}
+                        {textContent ? <p>{textContent}</p> : null}
+                        {locationInfo ? (
+                          <div
+                            className={cn(
+                              "mt-2 rounded-lg border px-3 py-2",
+                              mine
+                                ? "border-primary-foreground/20 bg-primary-foreground/10"
+                                : "border-border/70 bg-background"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em]">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {tChatPage("locationShared")}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <a
+                                href={primaryMapUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium",
+                                  mine
+                                    ? "border-primary-foreground/20 bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/25"
+                                    : "border-border/70 bg-background hover:bg-muted"
+                                )}
+                              >
+                                <MapPin className="h-3 w-3" />
+                                {tChatPage("viewLocation")}
+                              </a>
+                              <a
+                                href={primaryDirUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium",
+                                  mine
+                                    ? "border-primary-foreground/20 bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/25"
+                                    : "border-border/70 bg-background hover:bg-muted"
+                                )}
+                              >
+                                <Navigation className="h-3 w-3" />
+                                {tChatPage("getDirections")}
+                              </a>
+                            </div>
+                          </div>
+                        ) : null}
                         {fileUrl ? (
                           <ChatMediaLink
                             filePath={fileUrl}
@@ -732,6 +867,18 @@ export default function ChatPage() {
                   placeholder={tChatPage("typeMessage")}
                   className="min-w-[12rem] flex-1"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleShareLocation}
+                  disabled={isSharingLocation || !canSendMessage}
+                  title={tChatPage("shareLocation")}
+                >
+                  <MapPin className="h-4 w-4" />
+                  {isSharingLocation
+                    ? tChatPage("sharing")
+                    : tChatPage("shareLocation")}
+                </Button>
                 <Button type="submit" disabled={sendMutation.isPending || !canSendMessage}>
                   <Send className="h-4 w-4" />
                   {tChatPage("send")}
