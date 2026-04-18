@@ -70,6 +70,56 @@ export interface PatientCaseReport {
   published_at?: string;
 }
 
+export interface PatientCaseInvoice {
+  id: string;
+  case_id: string;
+  original_amount: number;
+  final_amount: number;
+  total_paid: number;
+  remaining_amount: number;
+  payment_status: "PENDING" | "PARTIAL" | "PAID" | "CANCELLED";
+  payment_method?: "CASH" | "CARD" | "INSURANCE" | "CLICK" | "OTHER" | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  finalized_at?: string | null;
+  finalized_by?: string | null;
+  is_patient_visible: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PatientCaseInvoicePayment {
+  id: string;
+  invoice_id: string;
+  case_id: string;
+  amount: number;
+  method: "CASH" | "CARD" | "INSURANCE" | "CLICK" | "OTHER";
+  notes?: string | null;
+  recorded_by?: string;
+  recorded_by_role?: string;
+  recorded_by_name?: string | null;
+  approval_status?: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at: string;
+}
+
+export interface PatientCaseInvoiceAdjustment {
+  id: string;
+  invoice_id: string;
+  amount: number;
+  type: "DISCOUNT" | "SURCHARGE";
+  reason?: string | null;
+  created_at: string;
+  created_by_name?: string | null;
+}
+
+export interface PatientCaseInvoiceDetail {
+  invoice: PatientCaseInvoice;
+  payments: PatientCaseInvoicePayment[];
+  adjustments: PatientCaseInvoiceAdjustment[];
+}
+
 export interface CreateCasePayload {
   services: Array<{
     service_id: string;
@@ -299,6 +349,91 @@ function normalizeReport(report: unknown): PatientCaseReport | null {
   };
 }
 
+function normalizeCaseInvoice(invoice: unknown): PatientCaseInvoice {
+  const row = invoice && typeof invoice === "object" ? (invoice as Record<string, unknown>) : {};
+  const paymentStatus = toStringValue(row.payment_status, "PENDING");
+  const paymentMethod = toOptionalString(row.payment_method);
+
+  return {
+    id: toStringValue(row.id),
+    case_id: toStringValue(row.case_id),
+    original_amount: toNumberValue(row.original_amount),
+    final_amount: toNumberValue(row.final_amount),
+    total_paid: toNumberValue(row.total_paid),
+    remaining_amount: toNumberValue(row.remaining_amount),
+    payment_status:
+      paymentStatus === "PAID" || paymentStatus === "PARTIAL" || paymentStatus === "CANCELLED"
+        ? paymentStatus
+        : "PENDING",
+    payment_method:
+      paymentMethod === "CASH"
+      || paymentMethod === "CARD"
+      || paymentMethod === "INSURANCE"
+      || paymentMethod === "CLICK"
+      || paymentMethod === "OTHER"
+        ? paymentMethod
+        : null,
+    approved_at: toOptionalString(row.approved_at) || null,
+    approved_by: toOptionalString(row.approved_by) || null,
+    finalized_at: toOptionalString(row.finalized_at) || null,
+    finalized_by: toOptionalString(row.finalized_by) || null,
+    is_patient_visible: Boolean(row.is_patient_visible),
+    created_at: toOptionalString(row.created_at),
+    updated_at: toOptionalString(row.updated_at),
+  };
+}
+
+function normalizeCaseInvoicePayment(payment: unknown): PatientCaseInvoicePayment {
+  const row = payment && typeof payment === "object" ? (payment as Record<string, unknown>) : {};
+  const method = toStringValue(row.method, "CASH");
+
+  return {
+    id: toStringValue(row.id),
+    invoice_id: toStringValue(row.invoice_id),
+    case_id: toStringValue(row.case_id),
+    amount: toNumberValue(row.amount),
+    method:
+      method === "CARD" || method === "INSURANCE" || method === "CLICK" || method === "OTHER"
+        ? method
+        : "CASH",
+    notes: toOptionalString(row.notes) || null,
+    recorded_by: toOptionalString(row.recorded_by),
+    recorded_by_role: toOptionalString(row.recorded_by_role),
+    recorded_by_name: toOptionalString(row.recorded_by_name) || null,
+    approval_status: toOptionalString(row.approval_status),
+    approved_by: toOptionalString(row.approved_by) || null,
+    approved_at: toOptionalString(row.approved_at) || null,
+    created_at: toStringValue(row.created_at),
+  };
+}
+
+function normalizeCaseInvoiceAdjustment(adjustment: unknown): PatientCaseInvoiceAdjustment {
+  const row = adjustment && typeof adjustment === "object" ? (adjustment as Record<string, unknown>) : {};
+  const type = toStringValue(row.type, "DISCOUNT");
+
+  return {
+    id: toStringValue(row.id),
+    invoice_id: toStringValue(row.invoice_id),
+    amount: toNumberValue(row.amount),
+    type: type === "SURCHARGE" ? "SURCHARGE" : "DISCOUNT",
+    reason: toOptionalString(row.reason) || null,
+    created_at: toStringValue(row.created_at),
+    created_by_name: toOptionalString(row.created_by_name) || null,
+  };
+}
+
+function normalizeCaseInvoiceDetail(payload: unknown): PatientCaseInvoiceDetail {
+  const row = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const payments = Array.isArray(row.payments) ? row.payments.map(normalizeCaseInvoicePayment) : [];
+  const adjustments = Array.isArray(row.adjustments) ? row.adjustments.map(normalizeCaseInvoiceAdjustment) : [];
+
+  return {
+    invoice: normalizeCaseInvoice(row.invoice),
+    payments,
+    adjustments,
+  };
+}
+
 function normalizeChatRoom(room: unknown): PatientCaseChatRoom {
   const row = room && typeof room === "object" ? (room as Record<string, unknown>) : {};
 
@@ -480,15 +615,26 @@ function downloadReportPdf(id: string) {
   return apiClient.get<Blob>(`/cases/${id}/report/download`, { responseType: "blob" });
 }
 
+async function getCaseInvoice(id: string) {
+  const response = await apiClient.get<PatientCaseInvoiceDetail | { data?: PatientCaseInvoiceDetail }>(`/cases/${id}/invoice`);
+  return { data: normalizeCaseInvoiceDetail(unwrapCasePayload(response.data)) };
+}
+
+function downloadInvoicePdf(id: string) {
+  return apiClient.get<Blob>(`/cases/${id}/invoice/pdf`, { responseType: "blob" });
+}
+
 export const casesApi = {
   list: listCases,
   getById: getCaseById,
   create: createCase,
   createPublic: createPublicCase,
   getReport: getCaseReport,
+  getInvoice: getCaseInvoice,
   getChatRooms: getCaseChatRooms,
   getChatMessages: getCaseChatMessages,
   getUnreadChatCount,
   resolveMediaUrl,
   downloadReportPdf,
+  downloadInvoicePdf,
 };
