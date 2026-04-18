@@ -15,6 +15,16 @@ const staticPublicRoutes = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const rootEntry = {
+    url: buildAbsoluteUrl("/"),
+    lastModified,
+    changeFrequency: "weekly" as const,
+    priority: 1,
+    alternates: {
+      languages: buildLocaleAlternates(""),
+    },
+  };
+
   const publicRoutes = staticPublicRoutes.flatMap((route) =>
     locales.map((locale) => ({
       url: buildAbsoluteUrl(`/${locale}${route.pathname}`),
@@ -39,5 +49,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   );
 
-  return [...publicRoutes, ...serviceRoutes];
+  return [rootEntry, ...publicRoutes, ...serviceRoutes];
 }
