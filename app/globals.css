@@ -1,18 +1,42 @@
-@import "@fontsource/ibm-plex-sans-arabic/arabic-400.css";
-@import "@fontsource/ibm-plex-sans-arabic/arabic-500.css";
-@import "@fontsource/ibm-plex-sans-arabic/arabic-700.css";
-@import "@fontsource/inter/latin-400.css";
-@import "@fontsource/inter/latin-500.css";
-@import "@fontsource/inter/latin-600.css";
-@import "@fontsource/inter/latin-700.css";
-@import "@fontsource/cormorant-garamond/latin-400.css";
-@import "@fontsource/cormorant-garamond/latin-400-italic.css";
-@import "@fontsource/cormorant-garamond/latin-500.css";
-@import "@fontsource/cormorant-garamond/latin-500-italic.css";
-@import "@fontsource/cormorant-garamond/latin-600.css";
-@import "@fontsource/cormorant-garamond/latin-600-italic.css";
-@import "@fontsource/cormorant-garamond/latin-700.css";
-@import "@fontsource/cormorant-garamond/latin-700-italic.css";
+@font-face {
+  font-family: "Lama Sans";
+  src: url("/fonts/lama-sans-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lama Sans";
+  src: url("/fonts/lama-sans-500.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lama Sans";
+  src: url("/fonts/lama-sans-600.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lama Sans";
+  src: url("/fonts/lama-sans-700.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lama Sans";
+  src: url("/fonts/lama-sans-700-italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -58,19 +82,13 @@
     --brand-border: #dbe6e0;
     --brand-ink: #12312d;
 
-    /* Curevie type system: editorial Latin display, clinical sans body, Arabic throughout RTL. */
-    --font-latin-body: "Inter";
-    --font-arabic: "IBM Plex Sans Arabic";
-    --font-latin-display: "Cormorant Garamond";
-    --font-body: var(--font-latin-body);
-    --font-display: var(--font-latin-display);
+    /* Curevie type system: one highly legible bilingual family across every role. */
+    --font-brand: "Lama Sans";
+    --font-arabic: var(--font-brand);
+    --font-body: var(--font-brand);
+    --font-display: var(--font-brand);
     --font-sans: var(--font-body);
     --radius: 1rem;
-  }
-
-  html[lang="ar"] {
-    --font-body: var(--font-arabic);
-    --font-display: var(--font-arabic);
   }
 
   .dark {
@@ -124,8 +142,8 @@
   }
 
   .font-editorial-display {
-    font-family: var(--font-display), serif;
-    font-weight: 500;
+    font-family: var(--font-display), sans-serif;
+    font-weight: 700;
     letter-spacing: -0.025em;
   }
 
@@ -146,8 +164,8 @@
 @layer components {
   .type-page-title,
   .type-section-title {
-    font-family: var(--font-display), serif;
-    font-weight: 500;
+    font-family: var(--font-display), sans-serif;
+    font-weight: 700;
     letter-spacing: -0.025em;
     text-wrap: balance;
   }
