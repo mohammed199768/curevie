@@ -10,11 +10,13 @@ import Link from "next/link";
 import {
   Activity,
   Brain,
-  CheckCircle2,
+  CalendarCheck2,
   Crosshair,
+  FileText,
   FlaskConical,
   Heart,
   Home,
+  ListChecks,
   Package2,
   Shield,
   Stethoscope,
@@ -131,9 +133,9 @@ export function PublicHomeExperience() {
       if (!isMobileWorkflow) {
         gsap.fromTo(
           "[data-story-line]",
-          { scaleY: 0, transformOrigin: "top center" },
+          { scaleX: 0, transformOrigin: isArabic ? "right center" : "left center" },
           {
-            scaleY: 1,
+            scaleX: 1,
             ease: "none",
             scrollTrigger: {
               trigger: "[data-story-steps]",
@@ -254,31 +256,6 @@ export function PublicHomeExperience() {
         }
       });
 
-      if (!isMobileWorkflow) {
-        gsap.to("[data-story-current='left']", {
-          yPercent: -10,
-          xPercent: 4,
-          ease: "none",
-          scrollTrigger: {
-            trigger: "[data-story-steps]",
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true,
-          },
-        });
-
-        gsap.to("[data-story-current='right']", {
-          yPercent: 8,
-          xPercent: -6,
-          ease: "none",
-          scrollTrigger: {
-            trigger: "[data-story-steps]",
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true,
-          },
-        });
-      }
     }, rootRef);
 
     return () => {
@@ -321,30 +298,22 @@ export function PublicHomeExperience() {
     {
       key: "step1" as const,
       index: "01",
-      Icon: Crosshair,
-      accent: "#86ab62",
-      glow: "radial-gradient(circle at 16% 18%, rgba(134,171,98,0.22), transparent 55%)",
+      Icon: ListChecks,
     },
     {
       key: "step2" as const,
       index: "02",
-      Icon: Shield,
-      accent: "#9c9fa2",
-      glow: "radial-gradient(circle at 18% 20%, rgba(156,159,162,0.2), transparent 55%)",
+      Icon: CalendarCheck2,
     },
     {
       key: "step3" as const,
       index: "03",
       Icon: Home,
-      accent: "#86ab62",
-      glow: "radial-gradient(circle at 22% 22%, rgba(90,122,80,0.24), transparent 56%)",
     },
     {
       key: "step4" as const,
       index: "04",
-      Icon: CheckCircle2,
-      accent: "#d7e7df",
-      glow: "radial-gradient(circle at 20% 18%, rgba(215,231,223,0.18), transparent 56%)",
+      Icon: FileText,
     },
   ];
   const boardTickerItems = [...heroTickerCards, ...heroTickerCards];
@@ -605,128 +574,72 @@ export function PublicHomeExperience() {
         </div>
       </section>
 
-      <section ref={workflowRef} className="relative isolate overflow-hidden bg-[#104d49] text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(134,171,98,0.17),transparent_24%),radial-gradient(circle_at_86%_18%,rgba(255,255,255,0.08),transparent_18%),linear-gradient(180deg,#104d49_0%,#0d4440_28%,#0a3734_62%,#072b29_100%)]" />
-        <div data-story-current="left" className="perf-drift-slow pointer-events-none absolute left-[-6rem] top-12 h-64 w-64 rounded-full border border-white/10 opacity-60" />
-        <div data-story-current="right" className="perf-drift-reverse pointer-events-none absolute right-[-3rem] top-24 h-48 w-48 rounded-full border border-[#86ab62]/25 opacity-70" />
-        <div className="pointer-events-none absolute inset-y-0 left-[12%] hidden w-px bg-gradient-to-b from-transparent via-white/10 to-transparent xl:block" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-[linear-gradient(180deg,transparent_0%,rgba(4,19,24,0.34)_100%)]" />
+      <section ref={workflowRef} className="relative isolate overflow-hidden bg-[#0b3f3b] text-white">
+        <div className="absolute inset-x-0 top-0 h-1 bg-[#86ab62]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,#104d49_0%,#0b3f3b_58%,#082f2c_100%)]" />
 
-        <div className="relative mx-auto max-w-7xl px-4 pt-16 pb-24 sm:px-6 sm:pb-28 lg:grid lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:items-start lg:gap-16 lg:px-8 lg:pt-28 lg:pb-44">
-          <div data-story-pin className="max-w-2xl lg:sticky lg:top-24 lg:self-start">
-            <div data-story-intro className="max-w-2xl">
-              <div className={cn("text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.08em]" : "uppercase tracking-[0.32em]")}>
+        <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
+          <div data-story-intro className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)] lg:items-end lg:gap-16">
+            <div className="max-w-3xl">
+              <div className={cn("text-[0.72rem] font-semibold text-[#bdd49f]", isArabic ? "tracking-[0.08em]" : "uppercase tracking-[0.28em]")}>
                 {t("workflow.eyebrow")}
               </div>
-              <h2 className={cn("font-editorial-display mt-4 text-[clamp(2.3rem,5vw,4.1rem)] leading-[0.92] text-white", displayFontClass)}>
+              <h2 className={cn("mt-4 max-w-3xl text-[clamp(2.15rem,5vw,4rem)] leading-[1.03] text-white", displayFontClass)}>
                 {t("workflow.title")}
               </h2>
-              <p className="mt-5 text-base leading-8 text-white/82 sm:text-lg">
+              <p className="mt-5 max-w-2xl text-base leading-8 text-white/76 sm:text-lg">
                 {t("workflow.copy")}
               </p>
+            </div>
 
-              <div data-story-intro-panel className="group relative mt-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-[0_28px_80px_-50px_rgba(0,0,0,0.45)] transition-transform duration-500 hover:-translate-y-1">
-                <div className="perf-sheen pointer-events-none absolute inset-y-0 left-[-25%] w-24 bg-[linear-gradient(115deg,transparent_0%,rgba(255,255,255,0.14)_45%,transparent_100%)] opacity-20" />
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                <div className="relative flex items-start gap-4">
-                  <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.2rem] bg-[#86ab62] text-[#104d49] shadow-[0_16px_42px_-24px_rgba(134,171,98,0.7)]">
-                    <Shield className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white">{t("workflow.assuranceTitle")}</div>
-                    <div className="mt-2 text-sm leading-7 text-white/74">{t("workflow.assuranceCopy")}</div>
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-[1.35rem] border border-white/8 bg-black/10 px-4 py-4">
-                        <div className={cn("text-[0.68rem] font-semibold text-white/44", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.2em]")}>
-                          {t("workflow.step1.eyebrow")}
-                        </div>
-                        <div className="mt-2 text-sm leading-6 text-white/84">{t("workflow.step1.proof")}</div>
-                      </div>
-                      <div className="rounded-[1.35rem] border border-white/8 bg-black/10 px-4 py-4">
-                        <div className={cn("text-[0.68rem] font-semibold text-white/44", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.2em]")}>
-                          {t("workflow.step4.eyebrow")}
-                        </div>
-                        <div className="mt-2 text-sm leading-6 text-white/84">{t("workflow.step4.proof")}</div>
-                      </div>
-                    </div>
-                  </div>
+            <div data-story-intro-panel className="border-s-2 border-[#86ab62] ps-5 sm:ps-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#86ab62] text-[#104d49]">
+                  <Shield className="h-[18px] w-[18px]" />
+                </div>
+                <div>
+                  <div className="font-semibold text-white">{t("workflow.assuranceTitle")}</div>
+                  <div className="mt-2 text-sm leading-7 text-white/68">{t("workflow.assuranceCopy")}</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div data-story-steps className="relative mt-10 lg:mt-0 lg:pt-10">
-            <div className="absolute start-[1.7rem] top-8 hidden h-[calc(100%-4rem)] w-px bg-white/10 md:block" />
+          <div data-story-steps className="relative mt-14 sm:mt-16 lg:mt-20">
+            <div className="absolute inset-x-[8%] top-7 hidden h-px bg-white/12 lg:block" />
             <div
               data-story-line
-              className="absolute start-[1.7rem] top-8 hidden h-[calc(100%-4rem)] w-px origin-top bg-gradient-to-b from-[#86ab62] via-[#d8e7df] to-transparent md:block"
+              className="absolute inset-x-[8%] top-7 hidden h-px origin-left bg-[#86ab62] lg:block"
             />
 
-            <div className="space-y-10 lg:space-y-16 xl:space-y-20">
-              {workflowSteps.map((step, index) => (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {workflowSteps.map((step) => (
                 <motion.article
                   key={step.key}
                   data-story-step
-                  whileHover={prefersReducedMotion ? undefined : { x: isArabic ? -8 : 8, y: -4 }}
+                  whileHover={prefersReducedMotion ? undefined : { y: -4 }}
                   transition={{ type: "spring", stiffness: 220, damping: 22 }}
-                  className={cn(
-                    "relative grid gap-4 sm:grid-cols-[3.5rem_minmax(0,1fr)] sm:items-start",
-                    index % 2 === 1 ? "lg:ms-12" : "lg:ms-0",
-                  )}
+                  className="relative flex min-h-full flex-col"
                 >
-                  <div className="relative flex justify-start sm:justify-center">
-                    <div
-                      data-story-marker
-                      className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-[#123f3b] shadow-[0_22px_55px_-32px_rgba(0,0,0,0.45)]"
-                    >
-                      <div className="perf-pulse-ring absolute inset-0 rounded-full border border-white/10" />
-                      <div
-                        className="absolute inset-[0.45rem] rounded-full opacity-60"
-                        style={{ background: `radial-gradient(circle, ${step.accent} 0%, transparent 72%)` }}
-                      />
-                      <div className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[#0e3532] text-white">
-                        <step.Icon className="h-[18px] w-[18px]" />
-                      </div>
+                  <div data-story-marker className="relative z-10 mb-5 flex items-center justify-between gap-3 lg:px-5">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#0b3f3b] bg-[#86ab62] text-[#104d49] shadow-[0_10px_30px_-18px_rgba(0,0,0,0.7)]">
+                      <step.Icon className="h-5 w-5" />
                     </div>
+                    <span className="text-sm font-semibold tabular-nums text-white/52">{step.index}</span>
                   </div>
-                  <div
-                    data-story-card
-                    className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-[0_24px_80px_-46px_rgba(0,0,0,0.45)] transition-transform duration-300"
-                    style={{ backgroundImage: step.glow }}
-                  >
-                    <div className="pointer-events-none absolute inset-y-0 right-0 w-24 translate-x-8 bg-[linear-gradient(135deg,rgba(134,171,98,0.12),transparent_70%)] opacity-0 transition-[opacity,transform] duration-500 group-hover:translate-x-0 group-hover:opacity-100" />
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
-                    <div className="relative">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-3">
-                            <div className="text-sm font-semibold text-white/78">{step.index}</div>
-                            <div className="h-px flex-1 bg-white/10" />
-                          </div>
-                          <div className={cn("mt-4 text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.08em]" : "uppercase tracking-[0.22em]")}>
-                            {t(`workflow.${step.key}.eyebrow`)}
-                          </div>
-                        </div>
-                        <div
-                          className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[1rem] border border-white/10 sm:flex"
-                          style={{ backgroundColor: `${step.accent}18`, color: step.accent }}
-                        >
-                          <step.Icon className="h-[18px] w-[18px]" />
-                        </div>
-                      </div>
-                      <h3 className="mt-4 text-[1.65rem] font-semibold leading-[1.18] text-white sm:text-[1.8rem]">
-                        {t(`workflow.${step.key}.title`)}
-                      </h3>
-                      <p className="mt-4 text-sm leading-7 text-white/78 sm:text-[0.96rem]">
-                        {t(`workflow.${step.key}.copy`)}
-                      </p>
-                      <div
-                        data-story-proof
-                        className="mt-5 rounded-[1.35rem] border px-4 py-4 text-sm font-medium leading-6 text-[#eef7f3]"
-                        style={{ borderColor: `${step.accent}2b`, backgroundColor: "rgba(5, 18, 21, 0.18)" }}
-                      >
-                        {t(`workflow.${step.key}.proof`)}
-                      </div>
+
+                  <div data-story-card className="flex flex-1 flex-col rounded-[1.65rem] border border-white/12 bg-white/[0.07] p-5 sm:p-6">
+                    <div className={cn("text-[0.68rem] font-semibold text-[#bdd49f]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.18em]")}>
+                      {t(`workflow.${step.key}.eyebrow`)}
+                    </div>
+                    <h3 className="mt-3 text-xl font-semibold leading-[1.3] text-white">
+                      {t(`workflow.${step.key}.title`)}
+                    </h3>
+                    <p className="mt-4 text-sm leading-7 text-white/72">
+                      {t(`workflow.${step.key}.copy`)}
+                    </p>
+                    <div data-story-proof className="mt-6 border-t border-white/10 pt-4 text-sm font-medium leading-6 text-[#dce9e4]">
+                      {t(`workflow.${step.key}.proof`)}
                     </div>
                   </div>
                 </motion.article>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Instagram, Sparkles } from "lucide-react";
+import { ArrowUpRight, CalendarClock, Instagram } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ export function PrelaunchNoticeDialog({ open, onOpenChange }: PrelaunchNoticeDia
           <div className="absolute -right-14 top-2 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
           <DialogHeader className="relative space-y-4 text-start">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#104d49] shadow-lg shadow-black/10">
-              <Sparkles className="h-5 w-5" />
+              <CalendarClock className="h-5 w-5" />
             </div>
             <div className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90">
               {t("badge")}
@@ -83,7 +83,7 @@ export function PrelaunchInlineNotice({ className }: { className?: string }) {
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#104d49] text-white">
-          <Sparkles className="h-3.5 w-3.5" />
+          <CalendarClock className="h-3.5 w-3.5" />
         </span>
         <div>
           <p className="font-semibold text-[#104d49]">{t("inlineTitle")}</p>
@@ -114,7 +114,7 @@ export function PrelaunchRequestPage() {
           <div className="absolute -right-16 top-8 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
           <div className="relative max-w-2xl">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#104d49]">
-              <Sparkles className="h-6 w-6" />
+              <CalendarClock className="h-6 w-6" />
             </div>
             <p className="mt-6 text-xs font-semibold uppercase tracking-[0.22em] text-[#bdd49f]">
               {t("badge")}

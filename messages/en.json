@@ -758,34 +758,34 @@
       }
     },
     "workflow": {
-      "eyebrow": "How it works, step by step",
-      "title": "From booking to your report — we handle everything in between.",
-      "copy": "Pick what you need and we take care of the rest.",
-      "assuranceTitle": "Simple and transparent.",
-      "assuranceCopy": "Every step has a clear purpose — booking, sending the right person, delivering care, and closing with a report.",
+      "eyebrow": "Your Curevie journey",
+      "title": "Four clear steps, from choosing care to receiving your report.",
+      "copy": "You tell us what you need. We coordinate the specialist, appointment, visit, and documentation.",
+      "assuranceTitle": "One clear care path",
+      "assuranceCopy": "At every stage, you know what is complete and what happens next.",
       "step1": {
-        "eyebrow": "Step 1",
-        "title": "Pick your service.",
-        "copy": "Choose what you need from our list. No account required. Takes under 2 minutes.",
-        "proof": "The right service gets you the right specialist, automatically."
+        "eyebrow": "Choose",
+        "title": "Choose the right service.",
+        "copy": "Browse the catalog and select the care you need at a time that suits you.",
+        "proof": "Clear service details help you choose the right care path."
       },
       "step2": {
-        "eyebrow": "Step 2",
-        "title": "We find and send the right person.",
-        "copy": "We match your request to a licensed doctor, nurse, or technician and send them to your door.",
-        "proof": "You get a confirmation and can track everything from your account."
+        "eyebrow": "Coordinate",
+        "title": "We coordinate the visit.",
+        "copy": "We review the details, match a qualified specialist, and confirm the appointment time.",
+        "proof": "You receive the appointment and specialist details before the visit."
       },
       "step3": {
-        "eyebrow": "Step 3",
-        "title": "Get care at home.",
-        "copy": "Your specialist arrives, does the job, and documents everything. No travel, no waiting room.",
-        "proof": "You can follow your visit live from your phone."
+        "eyebrow": "Visit",
+        "title": "Care comes to your home.",
+        "copy": "The specialist arrives on time, delivers the service, and documents the visit.",
+        "proof": "Track the visit status from your account without repeated calls."
       },
       "step4": {
-        "eyebrow": "Step 4",
-        "title": "Your report is ready.",
-        "copy": "After every visit, a full digital report is added to your account. Download it anytime.",
-        "proof": "Your health history stays in one place — private and always accessible."
+        "eyebrow": "Report",
+        "title": "Receive your report and follow-up.",
+        "copy": "When the visit is complete, its report is added to your account for review.",
+        "proof": "Your visit record stays organized in one place for future reference."
       }
     }
   },
