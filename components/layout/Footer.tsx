@@ -3,16 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Instagram, Mail, MapPin, MessageSquareText, PhoneCall } from "lucide-react";
+import { Instagram, Mail, MapPin } from "lucide-react";
 import {
   SUPPORT_EMAIL,
   SUPPORT_EMAIL_HREF,
   SUPPORT_INSTAGRAM_URL,
   SUPPORT_LOCATION_LABEL,
   SUPPORT_LOCATION_MAP_URL,
-  SUPPORT_PHONE_E164,
-  SUPPORT_PHONE_LOCAL,
-  SUPPORT_WHATSAPP_URL,
 } from "@/lib/contact";
 import { cn } from "@/lib/utils";
 
@@ -44,12 +41,10 @@ export function Footer({ locale }: FooterProps) {
   ] as const;
 
   const socialLinks = [
-    { href: SUPPORT_WHATSAPP_URL, label: tContact("channels.whatsapp.label"), icon: MessageSquareText },
     { href: SUPPORT_INSTAGRAM_URL, label: tContact("channels.instagram.label"), icon: Instagram },
   ] as const;
 
   const contactInfo = [
-    { href: `tel:${SUPPORT_PHONE_E164}`, label: SUPPORT_PHONE_LOCAL, icon: PhoneCall },
     { href: `mailto:${SUPPORT_EMAIL_HREF}`, label: SUPPORT_EMAIL, icon: Mail },
     { href: SUPPORT_LOCATION_MAP_URL, label: SUPPORT_LOCATION_LABEL, icon: MapPin },
   ] as const;

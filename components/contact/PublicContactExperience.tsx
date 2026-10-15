@@ -11,8 +11,6 @@ import {
   Instagram,
   Mail,
   MapPin,
-  MessageCircle,
-  Phone,
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,9 +23,6 @@ import {
   SUPPORT_INSTAGRAM_URL,
   SUPPORT_LOCATION_LABEL,
   SUPPORT_LOCATION_MAP_URL,
-  SUPPORT_PHONE_E164,
-  SUPPORT_PHONE_LOCAL,
-  SUPPORT_WHATSAPP_URL,
 } from "@/lib/contact";
 import { onContactChannelClick } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -48,14 +43,6 @@ const INITIAL_FORM: ContactFormState = {
 
 const CONTACT_RING_CHANNELS = [
   {
-    key: "phone",
-    labelKey: "channels.phone.label",
-    valueKey: "channels.phone.value",
-    hrefKind: "phone" as const,
-    accent: "#104d49",
-    angle: -90,
-  },
-  {
     key: "instagram",
     labelKey: "channels.instagram.label",
     valueKey: "channels.instagram.value",
@@ -69,14 +56,6 @@ const CONTACT_RING_CHANNELS = [
     valueKey: "channels.email.value",
     hrefKind: "email" as const,
     accent: "#86ab62",
-    angle: 90,
-  },
-  {
-    key: "whatsapp",
-    labelKey: "channels.whatsapp.label",
-    valueKey: "channels.whatsapp.value",
-    hrefKind: "whatsapp" as const,
-    accent: "#5a7a50",
     angle: 180,
   },
 ] as const;
@@ -91,7 +70,7 @@ export function PublicContactExperience() {
 
   const [form, setForm] = useState<ContactFormState>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeRingKey, setActiveRingKey] = useState<ContactRingChannel["key"]>("whatsapp");
+  const [activeRingKey, setActiveRingKey] = useState<ContactRingChannel["key"]>("email");
   const [ringPointer, setRingPointer] = useState<{
     x: number;
     y: number;
@@ -122,20 +101,12 @@ export function PublicContactExperience() {
     };
   }, [prefersReducedMotion]);
 
-  const handleTrackedContactClick = (channel: "phone" | "email" | "whatsapp") => {
+  const handleTrackedContactClick = (channel: "email") => {
     onContactChannelClick({ channel, locale });
   };
 
   const getContactRingMeta = (channel: ContactRingChannel) => {
     switch (channel.hrefKind) {
-      case "phone":
-        return {
-          href: `tel:${SUPPORT_PHONE_E164}`,
-          label: t(channel.labelKey),
-          value: SUPPORT_PHONE_LOCAL,
-          Icon: Phone,
-          onClick: () => handleTrackedContactClick("phone"),
-        };
       case "email":
         return {
           href: `mailto:${SUPPORT_EMAIL_HREF}`,
@@ -143,14 +114,6 @@ export function PublicContactExperience() {
           value: SUPPORT_EMAIL,
           Icon: Mail,
           onClick: () => handleTrackedContactClick("email"),
-        };
-      case "whatsapp":
-        return {
-          href: SUPPORT_WHATSAPP_URL,
-          label: t(channel.labelKey),
-          value: t(channel.valueKey),
-          Icon: MessageCircle,
-          onClick: () => handleTrackedContactClick("whatsapp"),
         };
       default:
         return {

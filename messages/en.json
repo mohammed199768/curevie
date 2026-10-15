@@ -947,7 +947,7 @@
     "availabilityLabel": "Hours",
     "availabilityValue": "Daily, 8:00 AM – 10:00 PM",
     "responseLabel": "How to reach us",
-    "responseValue": "Call us or message on WhatsApp",
+    "responseValue": "Email us or message us on Instagram",
     "trustPoint1": "Certified doctors, nurses, and technicians sent to your door.",
     "trustPoint2": "Every step tracked and confirmed.",
     "trustPoint3": "Full digital report after every completed visit.",
@@ -1082,8 +1082,8 @@
     },
     "workspace": {
       "eyebrow": "Contact us",
-      "title": "Send us a message or call directly.",
-      "copy": "Use the form for detailed questions. For urgent needs, call or WhatsApp us."
+      "title": "Send us a message directly.",
+      "copy": "Use the form for detailed questions, or contact us by email or Instagram."
     },
     "form": {
       "title": "Send us a message",
@@ -1111,17 +1111,9 @@
       "submitting": "Sending..."
     },
     "channels": {
-      "phone": {
-        "label": "Direct Line",
-        "value": "0792499199"
-      },
       "email": {
         "label": "Clinical Support",
         "value": "SUPPORT@curevie.net"
-      },
-      "whatsapp": {
-        "label": "Direct Chat",
-        "value": "Rapid coordination"
       },
       "instagram": {
         "label": "Instagram",

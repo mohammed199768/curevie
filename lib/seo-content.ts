@@ -3,9 +3,6 @@ import {
   SUPPORT_INSTAGRAM_URL,
   SUPPORT_LOCATION_LABEL,
   SUPPORT_LOCATION_MAP_URL,
-  SUPPORT_PHONE_E164,
-  SUPPORT_PHONE_LOCAL,
-  SUPPORT_WHATSAPP_URL,
 } from "@/lib/contact";
 import {
   PUBLIC_SERVICE_CATEGORIES,
@@ -592,8 +589,7 @@ export function buildOrganizationSchema(locale: SeoLocale) {
     logo: buildAbsoluteUrl("/icon.png"),
     image: buildAbsoluteUrl("/3.png"),
     email: SUPPORT_EMAIL_HREF,
-    telephone: SUPPORT_PHONE_LOCAL,
-    sameAs: [SUPPORT_INSTAGRAM_URL, SUPPORT_WHATSAPP_URL],
+    sameAs: [SUPPORT_INSTAGRAM_URL],
     areaServed: {
       "@type": "Country",
       name: "Jordan",
@@ -608,7 +604,6 @@ export function buildOrganizationSchema(locale: SeoLocale) {
         "@type": "ContactPoint",
         contactType: locale === "ar" ? "دعم المرضى" : "patient support",
         email: SUPPORT_EMAIL_HREF,
-        telephone: SUPPORT_PHONE_E164,
         areaServed: "JO",
         availableLanguage: ["ar", "en"],
       },
