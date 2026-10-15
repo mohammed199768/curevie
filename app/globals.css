@@ -1,3 +1,7 @@
+@import "@fontsource/ibm-plex-sans-arabic/arabic-400.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-500.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-700.css";
+
 @font-face {
   font-family: "Lama Sans";
   src: url("/fonts/lama-sans-400.woff2") format("woff2");
@@ -82,9 +86,9 @@
     --brand-border: #dbe6e0;
     --brand-ink: #12312d;
 
-    /* Curevie type system: one highly legible bilingual family across every role. */
+    /* Curevie type system: Lama Sans for Latin, IBM Plex Sans Arabic for Arabic. */
     --font-brand: "Lama Sans";
-    --font-arabic: var(--font-brand);
+    --font-arabic: "IBM Plex Sans Arabic";
     --font-body: var(--font-brand);
     --font-display: var(--font-brand);
     --font-sans: var(--font-body);
@@ -159,6 +163,11 @@
   input[type="datetime-local"] {
     text-align: start;
   }
+}
+
+html[lang="ar"] {
+  --font-body: var(--font-arabic);
+  --font-display: var(--font-arabic);
 }
 
 @layer components {
