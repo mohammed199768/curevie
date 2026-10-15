@@ -9,7 +9,25 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-body)", "sans-serif"],
+        display: ["var(--font-display)", "serif"],
+      },
       colors: {
+        brand: {
+          primary: "var(--brand-primary)",
+          secondary: "var(--brand-secondary)",
+          accent: "var(--brand-accent)",
+          olive: "var(--brand-olive)",
+          stone: "var(--brand-stone)",
+          deep: "var(--brand-deep)",
+          deeper: "var(--brand-deeper)",
+          sage: "var(--brand-sage)",
+          surface: "var(--brand-surface)",
+          "surface-soft": "var(--brand-surface-soft)",
+          border: "var(--brand-border)",
+          ink: "var(--brand-ink)",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -44,18 +44,33 @@
     --chart-3: 90.4 30.3% 52.7%;
     --chart-4: 105.7 20.8% 39.6%;
     --chart-5: 210 3.1% 62.4%;
+    /* Curevie brand kit */
     --brand-primary: #104d49;
     --brand-secondary: #304a43;
     --brand-accent: #86ab62;
     --brand-olive: #5a7a50;
     --brand-stone: #9c9fa2;
-    --font-cairo: "IBM Plex Sans Arabic";
-    --font-inter: "Inter";
-    --font-cormorant: "Cormorant Garamond";
-    --font-sans: var(--font-inter);
-    --font-arabic: var(--font-cairo);
-    --font-display: var(--font-cormorant);
+    --brand-deep: #0b3f3b;
+    --brand-deeper: #082f2c;
+    --brand-sage: #bdd49f;
+    --brand-surface: #f5f8f6;
+    --brand-surface-soft: #fbfcfa;
+    --brand-border: #dbe6e0;
+    --brand-ink: #12312d;
+
+    /* Curevie type system: editorial Latin display, clinical sans body, Arabic throughout RTL. */
+    --font-latin-body: "Inter";
+    --font-arabic: "IBM Plex Sans Arabic";
+    --font-latin-display: "Cormorant Garamond";
+    --font-body: var(--font-latin-body);
+    --font-display: var(--font-latin-display);
+    --font-sans: var(--font-body);
     --radius: 1rem;
+  }
+
+  html[lang="ar"] {
+    --font-body: var(--font-arabic);
+    --font-display: var(--font-arabic);
   }
 
   .dark {
@@ -91,7 +106,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-inter), sans-serif;
+    font-family: var(--font-body), sans-serif;
   }
 
   ::selection {
@@ -105,16 +120,19 @@
   body[lang="ar"],
   [data-locale-root][dir="rtl"],
   [data-locale-root][lang="ar"] {
-    font-family: var(--font-cairo), sans-serif;
+    font-family: var(--font-arabic), sans-serif;
   }
 
   .font-editorial-display {
     font-family: var(--font-display), serif;
+    font-weight: 500;
+    letter-spacing: -0.025em;
   }
 
   [dir="rtl"] .font-editorial-display,
   [lang="ar"] .font-editorial-display {
-    font-family: var(--font-cairo), sans-serif;
+    font-family: var(--font-arabic), sans-serif;
+    font-weight: 700;
     letter-spacing: normal;
     font-style: normal;
   }
@@ -122,6 +140,77 @@
   input[type="date"],
   input[type="datetime-local"] {
     text-align: start;
+  }
+}
+
+@layer components {
+  .type-page-title,
+  .type-section-title {
+    font-family: var(--font-display), serif;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .type-page-title {
+    font-size: clamp(2.75rem, 6vw, 5rem);
+    line-height: 0.94;
+  }
+
+  .type-section-title {
+    font-size: clamp(2.15rem, 5vw, 4rem);
+    line-height: 0.98;
+  }
+
+  .type-card-title {
+    font-family: var(--font-body), sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .type-eyebrow {
+    font-family: var(--font-body), sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .type-body-lead {
+    font-family: var(--font-body), sans-serif;
+    font-size: 1rem;
+    line-height: 2;
+  }
+
+  [dir="rtl"] .type-page-title,
+  [dir="rtl"] .type-section-title,
+  [lang="ar"] .type-page-title,
+  [lang="ar"] .type-section-title {
+    font-family: var(--font-arabic), sans-serif;
+    font-weight: 700;
+    letter-spacing: normal;
+  }
+
+  [dir="rtl"] .type-page-title,
+  [lang="ar"] .type-page-title {
+    font-size: clamp(2.35rem, 6vw, 4.35rem);
+    line-height: 1.16;
+  }
+
+  [dir="rtl"] .type-section-title,
+  [lang="ar"] .type-section-title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1.2;
+  }
+
+  [dir="rtl"] .type-eyebrow,
+  [lang="ar"] .type-eyebrow {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
   }
 }
 

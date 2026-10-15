@@ -45,8 +45,6 @@ export function PublicHomeExperience() {
   const prefersReducedMotion = useReducedMotion();
   const isArabic = locale === "ar";
   const rtlBidiStyle = isArabic ? ({ unicodeBidi: "plaintext" } as const) : undefined;
-  const displayFontClass = "font-editorial-display font-[family-name:var(--font-cormorant)]";
-
   const rootRef = useRef<HTMLDivElement | null>(null);
   const workflowRef = useRef<HTMLElement | null>(null);
   const [guestRequestOpen, setGuestRequestOpen] = useState(false);
@@ -425,7 +423,6 @@ export function PublicHomeExperience() {
                       style={rtlBidiStyle}
                       className={cn(
                         "block max-w-full font-editorial-display will-change-transform",
-                        displayFontClass,
                         line.sizeClass,
                         line.colorClass,
                         line.fontClass,
@@ -523,7 +520,7 @@ export function PublicHomeExperience() {
                 <div className="relative">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                     <div className="min-w-0">
-                      <div className={cn("text-[0.72rem] font-semibold text-[#a9cfc8]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.28em]")}>
+                      <div className="type-eyebrow text-[#a9cfc8]">
                         {t("hero.board.eyebrow")}
                       </div>
                       <h2 className="mt-3 cursor-default text-xl font-semibold text-white [text-decoration:none] sm:text-[2rem]">
@@ -574,27 +571,27 @@ export function PublicHomeExperience() {
         </div>
       </section>
 
-      <section ref={workflowRef} className="relative isolate overflow-hidden bg-[#0b3f3b] text-white">
-        <div className="absolute inset-x-0 top-0 h-1 bg-[#86ab62]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,#104d49_0%,#0b3f3b_58%,#082f2c_100%)]" />
+      <section ref={workflowRef} className="relative isolate overflow-hidden bg-brand-deep text-white">
+        <div className="absolute inset-x-0 top-0 h-1 bg-brand-accent" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--brand-primary)_0%,var(--brand-deep)_58%,var(--brand-deeper)_100%)]" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
           <div data-story-intro className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)] lg:items-end lg:gap-16">
             <div className="max-w-3xl">
-              <div className={cn("text-[0.72rem] font-semibold text-[#bdd49f]", isArabic ? "tracking-[0.08em]" : "uppercase tracking-[0.28em]")}>
+              <div className="type-eyebrow text-brand-sage">
                 {t("workflow.eyebrow")}
               </div>
-              <h2 className={cn("mt-4 max-w-3xl text-[clamp(2.15rem,5vw,4rem)] leading-[1.03] text-white", displayFontClass)}>
+              <h2 className="type-section-title mt-4 max-w-3xl text-white">
                 {t("workflow.title")}
               </h2>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-white/76 sm:text-lg">
+              <p className="type-body-lead mt-5 max-w-2xl text-white/76 sm:text-lg">
                 {t("workflow.copy")}
               </p>
             </div>
 
-            <div data-story-intro-panel className="border-s-2 border-[#86ab62] ps-5 sm:ps-6">
+            <div data-story-intro-panel className="border-s-2 border-brand-accent ps-5 sm:ps-6">
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#86ab62] text-[#104d49]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-accent text-brand-primary">
                   <Shield className="h-[18px] w-[18px]" />
                 </div>
                 <div>
@@ -609,7 +606,7 @@ export function PublicHomeExperience() {
             <div className="absolute inset-x-[8%] top-7 hidden h-px bg-white/12 lg:block" />
             <div
               data-story-line
-              className="absolute inset-x-[8%] top-7 hidden h-px origin-left bg-[#86ab62] lg:block"
+              className="absolute inset-x-[8%] top-7 hidden h-px origin-left bg-brand-accent lg:block"
             />
 
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -622,17 +619,17 @@ export function PublicHomeExperience() {
                   className="relative flex min-h-full flex-col"
                 >
                   <div data-story-marker className="relative z-10 mb-5 flex items-center justify-between gap-3 lg:px-5">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#0b3f3b] bg-[#86ab62] text-[#104d49] shadow-[0_10px_30px_-18px_rgba(0,0,0,0.7)]">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-brand-deep bg-brand-accent text-brand-primary shadow-[0_10px_30px_-18px_rgba(0,0,0,0.7)]">
                       <step.Icon className="h-5 w-5" />
                     </div>
                     <span className="text-sm font-semibold tabular-nums text-white/52">{step.index}</span>
                   </div>
 
                   <div data-story-card className="flex flex-1 flex-col rounded-[1.65rem] border border-white/12 bg-white/[0.07] p-5 sm:p-6">
-                    <div className={cn("text-[0.68rem] font-semibold text-[#bdd49f]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.18em]")}>
+                    <div className="type-eyebrow text-brand-sage">
                       {t(`workflow.${step.key}.eyebrow`)}
                     </div>
-                    <h3 className="mt-3 text-xl font-semibold leading-[1.3] text-white">
+                    <h3 className="type-card-title mt-3 text-white">
                       {t(`workflow.${step.key}.title`)}
                     </h3>
                     <p className="mt-4 text-sm leading-7 text-white/72">

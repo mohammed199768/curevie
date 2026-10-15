@@ -11,7 +11,6 @@ import {
   SUPPORT_LOCATION_LABEL,
   SUPPORT_LOCATION_MAP_URL,
 } from "@/lib/contact";
-import { cn } from "@/lib/utils";
 
 interface FooterProps {
   locale: string;
@@ -23,8 +22,6 @@ export function Footer({ locale }: FooterProps) {
   const tHome = useTranslations("homeExperience");
   const tContact = useTranslations("publicContact");
   const tConsent = useTranslations("consent");
-  const isArabic = locale === "ar";
-
   const quickLinks = [
     { href: `/${locale}`, label: tNav("home") },
     { href: `/${locale}/about`, label: tNav("about") },
@@ -83,7 +80,7 @@ export function Footer({ locale }: FooterProps) {
 
           {/* Quick Links */}
           <div>
-            <h3 className={cn("text-sm font-semibold text-[#bdd49f]", isArabic ? "tracking-wide" : "uppercase tracking-wider")}>
+            <h3 className="type-eyebrow text-brand-sage">
               {tFooter("quickLinks")}
             </h3>
             <ul className="mt-5 space-y-3">
@@ -102,7 +99,7 @@ export function Footer({ locale }: FooterProps) {
 
           {/* Services */}
           <div>
-            <h3 className={cn("text-sm font-semibold text-[#bdd49f]", isArabic ? "tracking-wide" : "uppercase tracking-wider")}>
+            <h3 className="type-eyebrow text-brand-sage">
               {tFooter("servicesTitle")}
             </h3>
             <ul className="mt-5 space-y-3">
@@ -121,7 +118,7 @@ export function Footer({ locale }: FooterProps) {
 
           {/* Contact Info */}
           <div>
-            <h3 className={cn("text-sm font-semibold text-[#bdd49f]", isArabic ? "tracking-wide" : "uppercase tracking-wider")}>
+            <h3 className="type-eyebrow text-brand-sage">
               {tFooter("contactTitle")}
             </h3>
             <ul className="mt-5 space-y-4">

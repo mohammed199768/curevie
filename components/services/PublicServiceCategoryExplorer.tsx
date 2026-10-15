@@ -67,7 +67,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const tEnums = useTranslations("enums");
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isArabic = locale === "ar";
-  const displayFontClass = "font-editorial-display font-[family-name:var(--font-cormorant)]";
   const eyebrowClass = isArabic
     ? "text-xs font-medium normal-case tracking-normal"
     : "text-[0.72rem] font-semibold uppercase tracking-[0.24em]";
@@ -262,7 +261,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   <div className={cn("text-white", isArabic ? "text-xs font-medium normal-case tracking-normal" : "text-sm font-semibold uppercase tracking-[0.24em]")}>
                     Curevie
                   </div>
-                  <h1 className={cn("font-editorial-display mt-4 max-w-full text-2xl leading-tight text-white md:text-4xl md:leading-[0.92]", displayFontClass)}>
+                  <h1 className="type-section-title mt-4 max-w-full text-white">
                     {categoryTitle}
                   </h1>
                 </div>

@@ -27,8 +27,6 @@ export function PublicAboutExperience({ seoContent }: PublicAboutExperienceProps
   const prefersReducedMotion = useReducedMotion();
   const isArabic = locale === "ar";
   const rtlBidiStyle = isArabic ? ({ unicodeBidi: "plaintext" } as const) : undefined;
-  const displayFontClass = "font-editorial-display font-[family-name:var(--font-cormorant)]";
-
   const rootRef = useRef<HTMLDivElement | null>(null);
   const principlesRef = useRef<HTMLElement | null>(null);
   const signatureRef = useRef<HTMLElement | null>(null);
@@ -234,7 +232,6 @@ export function PublicAboutExperience({ seoContent }: PublicAboutExperienceProps
                       style={rtlBidiStyle}
                       className={cn(
                         "block max-w-full font-editorial-display will-change-transform",
-                        displayFontClass,
                         line.colorClass,
                         line.sizeClass,
                       )}
@@ -281,7 +278,7 @@ export function PublicAboutExperience({ seoContent }: PublicAboutExperienceProps
               <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(134,171,98,0.18),transparent_72%)]" />
               <div className="absolute inset-y-0 right-0 w-24 bg-[linear-gradient(180deg,rgba(16,77,73,0.04),transparent_80%)]" />
 
-              <div className={cn("text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.06em]" : "uppercase tracking-[0.24em]")}>
+              <div className="type-eyebrow text-brand-stone">
                 {t("hero.railEyebrow")}
               </div>
               <h2 className="mt-4 max-w-md text-[1.8rem] font-semibold leading-[1.12] text-[#104d49] sm:text-[2.15rem]">
@@ -321,10 +318,10 @@ export function PublicAboutExperience({ seoContent }: PublicAboutExperienceProps
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
           <div className="grid gap-10 lg:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)] lg:gap-14">
             <div data-about-pillars-intro className="max-w-xl">
-              <div className={cn("text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.08em]" : "uppercase tracking-[0.32em]")}>
+              <div className="type-eyebrow text-brand-stone">
                 {t("pillars.eyebrow")}
               </div>
-              <h2 className={cn("font-editorial-display mt-4 text-[clamp(2.2rem,5.6vw,4rem)] leading-[0.92] text-[#104d49]", displayFontClass)}>
+              <h2 className="type-section-title mt-4 text-brand-primary">
                 {t("pillars.title")}
               </h2>
               <p className="mt-5 text-base leading-8 text-[#304a43] sm:text-lg">
@@ -412,10 +409,10 @@ export function PublicAboutExperience({ seoContent }: PublicAboutExperienceProps
           >
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] lg:gap-12">
               <div>
-                <div className={cn("text-[0.72rem] font-semibold text-[#9c9fa2]", isArabic ? "tracking-[0.08em]" : "uppercase tracking-[0.32em]")}>
+                <div className="type-eyebrow text-brand-stone">
                   {t("signature.eyebrow")}
                 </div>
-                <h2 className={cn("font-editorial-display mt-4 text-[clamp(2.15rem,4.8vw,3.6rem)] leading-[0.92] text-[#104d49]", displayFontClass)}>
+                <h2 className="type-section-title mt-4 text-brand-primary">
                   {t("signature.title")}
                 </h2>
                 <p className="mt-5 max-w-2xl text-base leading-8 text-[#304a43] sm:text-lg">
@@ -468,7 +465,7 @@ export function PublicAboutExperience({ seoContent }: PublicAboutExperienceProps
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:items-start">
             <div>
-              <div className={cn("text-sm font-semibold text-[#5a7a50]", isArabic ? "tracking-[0.04em]" : "uppercase tracking-[0.22em]")}>
+              <div className="type-eyebrow text-brand-olive">
                 {seoContent.eyebrow}
               </div>
               <h2 className="mt-4 text-3xl font-semibold leading-tight text-[#104d49] sm:text-4xl">

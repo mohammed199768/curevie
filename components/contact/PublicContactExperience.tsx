@@ -67,8 +67,6 @@ export function PublicContactExperience() {
   const locale = useLocale();
   const t = useTranslations("publicContact");
   const prefersReducedMotion = useReducedMotion();
-  const displayFontClass = "font-editorial-display font-[family-name:var(--font-cormorant)]";
-
   const [form, setForm] = useState<ContactFormState>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [prelaunchOpen, setPrelaunchOpen] = useState(false);
@@ -194,10 +192,10 @@ export function PublicContactExperience() {
 
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
           <div data-contact-form-intro className="mb-8 max-w-3xl">
-            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[#5a7a50]">
+            <div className="type-eyebrow text-brand-olive">
               {t("workspace.eyebrow")}
             </div>
-            <h1 className={cn("mt-4 text-5xl leading-[0.92] text-[#104d49]", displayFontClass)}>
+            <h1 className="type-page-title mt-4 text-brand-primary">
               {locale === "ar" ? "تواصل مع كيورفي" : "Contact Curevie"}
             </h1>
             <p className="mt-4 text-base leading-8 text-[#304a43] sm:text-lg">
@@ -307,7 +305,7 @@ export function PublicContactExperience() {
                 </p>
 
                 <div className="mt-5 rounded-[1.5rem] border border-[#e0ebe5] bg-[#f8fbf9] px-4 py-4">
-                  <div className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#9c9fa2]">
+                  <div className="type-eyebrow text-brand-stone">
                     {locale === "ar" ? "القناة المحددة" : "Active channel"}
                   </div>
                   <div className="mt-2 flex items-center gap-3">
@@ -510,7 +508,7 @@ export function PublicContactExperience() {
                           <meta.Icon className="h-4 w-4" />
                         </span>
                         <div>
-                          <div className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#9c9fa2]">
+                          <div className="type-eyebrow text-brand-stone">
                             {meta.label}
                           </div>
                           <div className="mt-1 text-sm font-semibold text-[#12312d]">

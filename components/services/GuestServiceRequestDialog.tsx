@@ -255,7 +255,7 @@ export function GuestServiceRequestDialog({
             }}
           >
             <DialogHeader className="space-y-3 text-left">
-              <div className="inline-flex w-fit items-center gap-3 rounded-full border border-white/14 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+              <div className="type-eyebrow inline-flex w-fit items-center gap-3 rounded-full border border-white/14 bg-white/10 px-3 py-2 text-white">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#104d49]">
                   <Shield className="h-4 w-4" />
                 </span>

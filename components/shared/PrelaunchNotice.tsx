@@ -116,7 +116,7 @@ export function PrelaunchRequestPage() {
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#104d49]">
               <CalendarClock className="h-6 w-6" />
             </div>
-            <p className="mt-6 text-xs font-semibold uppercase tracking-[0.22em] text-[#bdd49f]">
+            <p className="type-eyebrow mt-6 text-brand-sage">
               {t("badge")}
             </p>
             <h1 className="mt-4 text-3xl font-semibold leading-tight sm:text-5xl">{t("title")}</h1>

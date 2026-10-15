@@ -89,7 +89,7 @@ export function AppPreloader({
           </span>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[rgba(16,77,73,0.72)]">
+              <span className="type-eyebrow text-[rgba(16,77,73,0.72)]">
                 Curevie
               </span>
               <Shield className="h-3.5 w-3.5 text-[var(--brand-accent)]" />
