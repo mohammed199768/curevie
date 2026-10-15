@@ -1,0 +1,3 @@
+export const BOOKINGS_ENABLED = false;
+
+export const BOOKINGS_DISABLED_ERROR = "BOOKINGS_NOT_LAUNCHED";

@@ -1,7 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -19,11 +19,10 @@ import {
   Shield,
   Stethoscope,
 } from "lucide-react";
-import { GuestServiceRequestDialog } from "@/components/services/GuestServiceRequestDialog";
+import { PrelaunchInlineNotice, PrelaunchNoticeDialog } from "@/components/shared/PrelaunchNotice";
 import { onGuestRequestDialogOpen } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import {
-  fetchPublicServiceCategoryCatalog,
   fetchPublicServiceCounts,
   PUBLIC_SERVICE_CATEGORIES,
 } from "@/lib/public-service-categories";
@@ -55,15 +54,6 @@ export function PublicHomeExperience() {
     queryFn: fetchPublicServiceCounts,
     staleTime: 10 * 60 * 1000,
   });
-  const homeCategoryQueries = useQueries({
-    queries: PUBLIC_SERVICE_CATEGORIES.map((category) => ({
-      queryKey: ["home-guest-request", locale, category.slug],
-      queryFn: () => fetchPublicServiceCategoryCatalog(category.slug, locale),
-      staleTime: 10 * 60 * 1000,
-    })),
-  });
-
-
   useLayoutEffect(() => {
     if (typeof window === "undefined" || prefersReducedMotion) return undefined;
 
@@ -358,29 +348,6 @@ export function PublicHomeExperience() {
     },
   ];
   const boardTickerItems = [...heroTickerCards, ...heroTickerCards];
-  const homeDialogEntries = useMemo(
-    () =>
-      homeCategoryQueries.flatMap((query, index) => {
-        const category = PUBLIC_SERVICE_CATEGORIES[index];
-        const localizedCategoryTitle = t(`categories.${category.translationKey}.title`);
-
-        return (query.data?.entries || []).map((entry) => ({
-          ...entry,
-          categoryName: localizedCategoryTitle,
-        }));
-      }),
-    [homeCategoryQueries, t],
-  );
-  const homeRequestTheme = {
-    base: "#104d49",
-    secondary: "#304a43",
-    accent: "#86ab62",
-    soft: "rgba(16, 77, 73, 0.08)",
-    muted: "#9c9fa2",
-    shadow: "rgba(16, 77, 73, 0.24)",
-  } as const;
-  const isHomeRequestLoading = homeCategoryQueries.some((query) => query.isLoading);
-  const canOpenHomeRequest = homeDialogEntries.length > 0;
   const heroTitleLines = [
     ...(isArabic
       ? [
@@ -557,8 +524,7 @@ export function PublicHomeExperience() {
                 <button
                   type="button"
                   onClick={openHomeRequestDialog}
-                  disabled={isHomeRequestLoading && !canOpenHomeRequest}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#104d49] px-6 text-sm font-semibold text-white transition hover:bg-[#304a43] hover:shadow-[0_8px_32px_-8px_rgba(16,77,73,0.4)] disabled:cursor-wait disabled:opacity-70 sm:w-auto"
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#104d49] px-6 text-sm font-semibold text-white transition hover:bg-[#304a43] hover:shadow-[0_8px_32px_-8px_rgba(16,77,73,0.4)] sm:w-auto"
                 >
                   {t("hero.requestCta")}
                 </button>
@@ -569,6 +535,7 @@ export function PublicHomeExperience() {
                   {t("hero.secondaryCta")}
                 </Link>
               </div>
+              <PrelaunchInlineNotice className="mt-5 max-w-2xl" />
 
             </div>
 
@@ -771,13 +738,9 @@ export function PublicHomeExperience() {
 
       </div>
 
-      <GuestServiceRequestDialog
+      <PrelaunchNoticeDialog
         open={guestRequestOpen}
         onOpenChange={setGuestRequestOpen}
-        entries={homeDialogEntries}
-        serviceSlug="medical-visits"
-        categoryTitle={t("hero.requestDialogTitle")}
-        categoryTheme={homeRequestTheme}
       />
     </>
   );

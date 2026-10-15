@@ -16,6 +16,7 @@ import { translateEnumValue } from "@/lib/i18n";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { normalizeListResponse } from "@/lib/utils";
 import { AppPreloader } from "@/components/shared/AppPreloader";
+import { PrelaunchRequestPage } from "@/components/shared/PrelaunchNotice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,6 +86,12 @@ function getServicePrice(service: ServiceItem | null | undefined) {
 }
 
 export default function NewRequestPage() {
+  return <PrelaunchRequestPage />;
+}
+
+// Kept intact for the controlled post-launch switch; the default export blocks bookings for now.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function LiveNewRequestPage() {
   const locale = useLocale();
   const tPage = useTranslations("newRequestPage");
   const tBooking = useTranslations("booking");

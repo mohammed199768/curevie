@@ -47,10 +47,10 @@ function clearSessionAndRedirect() {
   window.location.href = getLoginPath();
 }
 
-function buildClient() {
+function buildClient(timeout = 20_000) {
   return axios.create({
     baseURL: BASE_URL,
-    timeout: 20_000,
+    timeout,
     headers: { "Content-Type": "application/json" },
     withCredentials: true, // FIX: F14 â€” allow auth requests to receive and send the httpOnly refresh-token cookie.
   });
@@ -72,7 +72,7 @@ function normalizeParams(config: InternalAxiosRequestConfig) {
 }
 
 export const apiClient = buildClient();
-export const publicApiClient = buildClient();
+export const publicApiClient = buildClient(3_500);
 
 publicApiClient.interceptors.request.use((config) => {
   return normalizeParams(config);

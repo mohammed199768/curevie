@@ -660,13 +660,13 @@
   },
   "homeExperience": {
     "hero": {
-      "eyebrow": "Home healthcare — available now",
+      "eyebrow": "Home healthcare — launching soon",
       "titleLineOne": "Healthcare that",
       "titleLineTwo": "comes",
       "titleAccent": "to you.",
       "copy": "When you or someone you love needs care, we send a certified doctor, nurse, or lab technician to your home. No hospital trip. No waiting room.",
       "primaryCta": "Book a Home Visit",
-      "requestCta": "Start Your Request",
+      "requestCta": "Booking opens soon",
       "secondaryCta": "Be Part of Curevie and We'll Handle the Rest",
       "requestDialogTitle": "Choose the right care service for you",
       "readyLink": "Know what you need? Book now",
@@ -789,16 +789,26 @@
       }
     }
   },
+  "prelaunch": {
+    "badge": "Launching soon",
+    "title": "Curevie bookings are not open yet.",
+    "description": "We are preparing the service carefully before the official launch. Requests are not being submitted or sent anywhere right now. Booking will be activated soon — stay tuned.",
+    "privacyNote": "No personal or medical request information is stored or sent while bookings are paused.",
+    "inlineTitle": "We have not officially launched yet",
+    "inlineCopy": "Browse the full service catalog now. Booking will be activated soon.",
+    "instagramCta": "Follow us on Instagram",
+    "close": "Continue browsing"
+  },
   "serviceExplorer": {
     "selectCard": "Select",
     "selectedCard": "Selected",
     "selectedCount": "selected",
-    "completeRequest": "Complete Request",
+    "completeRequest": "Continue",
     "minSelectionError": "Please select at least one service",
     "maxSelectionHint": "Maximum 5 services can be selected",
     "otherCategory": "Other",
     "actions": {
-      "startRequest": "Start a request",
+      "startRequest": "Booking opens soon",
       "signInToRequest": "Sign in to request",
       "createAccount": "Create account",
       "goToDashboard": "Go to dashboard",
@@ -834,7 +844,7 @@
     "catalog": {
       "eyebrow": "Available services",
       "title": "Browse what's available in this category.",
-      "copy": "Find what fits, then book directly from the card.",
+      "copy": "Explore the services planned for launch. Booking will be activated soon.",
       "searchPlaceholder": "Search inside this category"
     },
     "error": {
@@ -858,19 +868,19 @@
       "price": "Estimated price",
       "defaultDescription": "This service is available for a home visit through Curevie.",
       "serviceMode": "Home Service",
-      "openForBooking": "Available to Book",
+      "openForBooking": "Available at launch",
       "unit": "Unit",
       "referenceRange": "Clinical range",
       "includedServices": "Included services",
       "includedTests": "Associated tests",
       "preview": "Service details",
-      "requestReady": "Ready to book",
+      "requestReady": "Planned for launch",
       "searchPlaceholder": "Search this category"
     },
     "bottomBand": {
-      "eyebrow": "Ready to book?",
-      "title": "Pick your service and book it in minutes.",
-      "copy": "One category, one clear list, one booking flow."
+      "eyebrow": "Launching soon",
+      "title": "Explore the care that is coming to Curevie.",
+      "copy": "Browse the catalog now and follow us on Instagram for the official launch."
     },
     "categories": {
       "medicalVisits": {

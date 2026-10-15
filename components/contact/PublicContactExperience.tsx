@@ -14,6 +14,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PrelaunchNoticeDialog } from "@/components/shared/PrelaunchNotice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,6 +71,7 @@ export function PublicContactExperience() {
 
   const [form, setForm] = useState<ContactFormState>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [prelaunchOpen, setPrelaunchOpen] = useState(false);
   const [activeRingKey, setActiveRingKey] = useState<ContactRingChannel["key"]>("email");
   const [ringPointer, setRingPointer] = useState<{
     x: number;
@@ -172,7 +174,7 @@ export function PublicContactExperience() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
@@ -180,35 +182,8 @@ export function PublicContactExperience() {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        message: form.message.trim(),
-      };
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/contact`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed");
-      }
-
-      setForm(INITIAL_FORM);
-      toast.success(t("success"));
-    } catch {
-      toast.error(t("error"));
-    } finally {
-      setIsSubmitting(false);
-    }
+    setIsSubmitting(false);
+    setPrelaunchOpen(true);
   };
 
   return (
@@ -588,6 +563,7 @@ export function PublicContactExperience() {
           </div>
         </div>
       </section>
+      <PrelaunchNoticeDialog open={prelaunchOpen} onOpenChange={setPrelaunchOpen} />
     </div>
   );
 }

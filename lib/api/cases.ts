@@ -1,5 +1,6 @@
 import { apiClient, publicApiClient } from "./client";
 import type { ApiListResponse, ApiPagination, RequestChatMessage } from "./types";
+import { BOOKINGS_DISABLED_ERROR, BOOKINGS_ENABLED } from "@/lib/launch";
 
 export interface PatientCase {
   id: string;
@@ -546,6 +547,10 @@ async function listCases(params?: { page?: number; limit?: number; status?: stri
 }
 
 async function createCase(payload: CreateCasePayload) {
+  if (!BOOKINGS_ENABLED) {
+    throw new Error(BOOKINGS_DISABLED_ERROR);
+  }
+
   const response = await apiClient.post<CaseMutationEnvelope>("/cases", payload);
   const result = unwrapCaseMutationPayload(response.data);
 
@@ -562,6 +567,10 @@ async function createCase(payload: CreateCasePayload) {
 }
 
 async function createPublicCase(payload: CreateGuestCasePayload) {
+  if (!BOOKINGS_ENABLED) {
+    throw new Error(BOOKINGS_DISABLED_ERROR);
+  }
+
   const response = await publicApiClient.post<CaseMutationEnvelope>("/cases/public", payload);
   const result = unwrapCaseMutationPayload(response.data);
 

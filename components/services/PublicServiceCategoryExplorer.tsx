@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -20,14 +20,14 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GuestServiceRequestDialog } from "@/components/services/GuestServiceRequestDialog";
-import { formatCurrency } from "@/lib/formatting";
+import { PrelaunchInlineNotice, PrelaunchNoticeDialog } from "@/components/shared/PrelaunchNotice";
 import { translateEnumValue } from "@/lib/i18n";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { cn } from "@/lib/utils";
 import {
   buildAuthRedirectHref,
   fetchPublicServiceCategoryCatalog,
+  getLocalPublicServiceCategoryCatalog,
   getPublicServiceCategory,
   getPublicServiceCategoryAnalyticsKind,
   PUBLIC_SERVICE_CATEGORIES,
@@ -59,14 +59,6 @@ const categoryTitleFallbacks: Record<PublicServiceCategoryTranslationKey, string
   carePrograms: "Care Programs",
 };
 const STORAGE_KEY = "curevie_selected_services";
-const MEDICAL_GROUP_SLUGS = [
-  "medical-visits",
-  "home-nursing",
-  "physical-therapy",
-  "occupational-therapy",
-  "lab-diagnostics",
-] as const;
-
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
   const locale = useLocale();
   const t = useTranslations("serviceExplorer");
@@ -100,20 +92,12 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
       return new Set();
     }
   });
-  const isMedicalGroup = MEDICAL_GROUP_SLUGS.includes(slug as any);
-
   const dataQuery = useQuery({
-    queryKey: ["public-category-explorer", slug],
-    queryFn: () => fetchPublicServiceCategoryCatalog(slug),
+    queryKey: ["public-category-explorer", slug, locale],
+    queryFn: () => fetchPublicServiceCategoryCatalog(slug, locale),
+    initialData: () => getLocalPublicServiceCategoryCatalog(slug, locale),
+    initialDataUpdatedAt: 0,
     staleTime: 10 * 60 * 1000,
-  });
-  const medicalGroupQueries = useQueries({
-    queries: MEDICAL_GROUP_SLUGS.map((groupSlug) => ({
-      queryKey: ["public-category-explorer", groupSlug],
-      queryFn: () => fetchPublicServiceCategoryCatalog(groupSlug),
-      staleTime: 10 * 60 * 1000,
-      enabled: isMedicalGroup,
-    })),
   });
 
   const resolveCategoryTitle = (translationKey: PublicServiceCategoryTranslationKey) => {
@@ -132,22 +116,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   }, [dataQuery.data?.entries]);
 
   const filteredEntries = entries;
-  const allMedicalEntries = useMemo(() => {
-    if (!isMedicalGroup) return entries;
-
-    return medicalGroupQueries.flatMap((query, index) => {
-      const slugForQuery = MEDICAL_GROUP_SLUGS[index];
-      const matchingCategory = PUBLIC_SERVICE_CATEGORIES.find((item) => item.slug === slugForQuery);
-
-      return (query.data?.entries || []).map((entry) => ({
-        ...entry,
-        categoryName: matchingCategory
-          ? resolveCategoryTitle(matchingCategory.translationKey)
-          : entry.categoryName,
-      }));
-    });
-  }, [entries, isMedicalGroup, locale, medicalGroupQueries]);
-
   const toggleEntry = (entryId: string) => {
     setSelectedEntryIds((prev) => {
       const next = new Set(prev);
@@ -239,7 +207,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const categoryTitle = resolveCategoryTitle(category.translationKey);
   const categorySubtitle = t(`categories.${category.translationKey}.subtitle`);
   const categoryStory = t(`categories.${category.translationKey}.story`);
-  const canOpenGuestRequest = allMedicalEntries.length > 0 && !dataQuery.isLoading && !dataQuery.isError;
+  const canOpenGuestRequest = filteredEntries.length > 0 && !dataQuery.isLoading;
 
   const openGuestRequestDialog = () => {
     if (!canOpenGuestRequest) return;
@@ -322,6 +290,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                     </Link>
                   </Button>
                 </div>
+                <PrelaunchInlineNotice className="mt-5 border-white/15 bg-white/10 text-white shadow-none [&_p]:text-white/75 [&_p.font-semibold]:text-white [&_a]:bg-white [&_a]:text-[#104d49]" />
 
                 <div
                   className="relative mt-6 w-full"
@@ -469,12 +438,6 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                         {entry.name}
                       </h3>
 
-                      <div className="text-xs text-gray-500">
-                        {entry.price === null || entry.price === undefined || !Number.isFinite(entry.price)
-                          ? <span className="italic">{t("labels.priceOnRequest")}</span>
-                          : <span className="font-semibold text-gray-700">{formatCurrency(entry.price, locale)}</span>}
-                      </div>
-
                       <div className="flex-1" />
 
                       <button
@@ -566,14 +529,9 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         </div>
       </div>
 
-      <GuestServiceRequestDialog
+      <PrelaunchNoticeDialog
         open={guestRequestOpen}
         onOpenChange={handleGuestRequestOpenChange}
-        entries={allMedicalEntries}
-        serviceSlug={slug}
-        categoryTitle={categoryTitle}
-        categoryTheme={category.theme}
-        preSelectedEntryIds={Array.from(selectedEntryIds)}
       />
     </div>
   );
