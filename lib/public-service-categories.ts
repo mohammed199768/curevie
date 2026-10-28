@@ -1,6 +1,9 @@
-import { labPackagesApi, labPanelsApi } from "@/lib/api/lab-panels";
+import type { CaseItemRef, CaseItemType } from "@/lib/api/cases";
+import { packagesApi } from "@/lib/api/packages";
 import { servicesApi } from "@/lib/api/services";
-import type { LabPackageItem, LabPanelItem, PackageItem, ServiceItem } from "@/lib/api/types";
+import type { ApiListResponse, MoneyValue, PackageItem, ServiceItem, ServiceKind } from "@/lib/api/types";
+import { BOOKINGS_ENABLED } from "@/lib/launch";
+import { buildOrderItemsQuery, getOrderItemTypeLabel } from "@/lib/order-items";
 import { normalizeListResponse } from "@/lib/utils";
 
 export const BRAND_COLORS = {
@@ -34,8 +37,6 @@ export type PublicServiceCategoryTranslationKey =
 
 export type RequestPreset = {
   serviceType: AnalyticsServiceKind;
-  labMode?: "TEST" | "PANEL" | "PACKAGE";
-  serviceId?: string;
 };
 
 export type PublicCatalogEntry =
@@ -46,27 +47,7 @@ export type PublicCatalogEntry =
       description: string | null;
       categoryName: string | null;
       price: number | null;
-      serviceKind: "MEDICAL" | "RADIOLOGY";
-    }
-  | {
-      id: string;
-      type: "lab";
-      name: string;
-      description: string | null;
-      categoryName: string | null;
-      price: number | null;
-      unit: string | null;
-      referenceRange: string | null;
-    }
-  | {
-      id: string;
-      type: "panel";
-      name: string;
-      description: string | null;
-      categoryName: string | null;
-      price: number | null;
-      testsCount: number;
-      testsPreview: string[];
+      serviceKind: ServiceKind;
     }
   | {
       id: string;
@@ -75,11 +56,11 @@ export type PublicCatalogEntry =
       description: string | null;
       categoryName: string | null;
       price: number | null;
-      packageScope: "LAB_ONLY" | "COMPREHENSIVE";
-      testsCount: number;
       servicesCount: number;
-      testsPreview: string[];
-      servicesPreview: string[];
+      /** Names of the included services, in package order. */
+      includedServices: string[];
+      /** What the bundle saves compared to ordering its services one by one (null when nothing). */
+      savings: number | null;
     };
 
 export type PublicCategoryCatalog = {
@@ -322,8 +303,10 @@ type PublicServiceCategoryRuntimeTranslationKey = Exclude<PublicServiceCategoryT
 type PublicServiceCategoryDefinition = {
   slug: PublicServiceCategorySlug;
   translationKey: PublicServiceCategoryRuntimeTranslationKey;
-  source: "services" | "services-by-category" | "lab" | "packages";
-  serviceKind?: "MEDICAL" | "RADIOLOGY";
+  /** "services": services matching `serviceKind` or `categoryId`; "packages": GET /packages. */
+  source: "services" | "packages";
+  serviceKind?: ServiceKind;
+  /** Services of this admin category (used for sub-specialities that share a kind, e.g. physical therapy). */
   categoryId?: string;
   defaultRequestPreset: RequestPreset;
   theme: {
@@ -340,8 +323,8 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
   {
     slug: "medical-visits",
     translationKey: "medicalVisits",
-    source: "services-by-category",
-    categoryId: "79242b41-42dd-44a0-a944-77488fac2441",
+    source: "services",
+    serviceKind: "MEDICAL",
     defaultRequestPreset: { serviceType: "MEDICAL" },
     theme: {
       base: BRAND_COLORS.primary,
@@ -355,9 +338,8 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
   {
     slug: "home-nursing",
     translationKey: "nursingCare",
-    source: "services-by-category",
-    categoryId: "9bd587f7-2b6e-4885-b704-f3d53cd02414",
-    serviceKind: "MEDICAL",
+    source: "services",
+    serviceKind: "NURSING",
     defaultRequestPreset: { serviceType: "MEDICAL" },
     theme: {
       base: "#104d49",
@@ -371,9 +353,8 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
   {
     slug: "physical-therapy",
     translationKey: "physicalTherapy",
-    source: "services-by-category",
+    source: "services",
     categoryId: "3a3ab6d1-6b90-42b3-80aa-a0ef754576df",
-    serviceKind: "MEDICAL",
     defaultRequestPreset: { serviceType: "MEDICAL" },
     theme: {
       base: "#304a43",
@@ -387,9 +368,8 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
   {
     slug: "occupational-therapy",
     translationKey: "occupationalTherapy",
-    source: "services-by-category",
+    source: "services",
     categoryId: "53123e20-0e97-43b0-85e8-c8876e2b0dbc",
-    serviceKind: "MEDICAL",
     defaultRequestPreset: { serviceType: "MEDICAL" },
     theme: {
       base: "#5a7a50",
@@ -403,8 +383,8 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
   {
     slug: "imaging",
     translationKey: "imaging",
-    source: "services-by-category",
-    categoryId: "81b02ae3-76f5-4fd4-9221-6eb069c87d1a",
+    source: "services",
+    serviceKind: "RADIOLOGY",
     defaultRequestPreset: { serviceType: "RADIOLOGY" },
     theme: {
       base: BRAND_COLORS.secondary,
@@ -418,9 +398,9 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
   {
     slug: "lab-diagnostics",
     translationKey: "labDiagnostics",
-    source: "services-by-category",
-    categoryId: "fc689658-060f-4d2f-b455-b333f523703d",
-    defaultRequestPreset: { serviceType: "LAB", labMode: "PANEL" },
+    source: "services",
+    serviceKind: "LAB",
+    defaultRequestPreset: { serviceType: "LAB" },
     theme: {
       base: BRAND_COLORS.olive,
       secondary: BRAND_COLORS.secondary,
@@ -472,31 +452,20 @@ export function getLocalPublicServiceCategoryCatalog(
       price: null,
     };
 
-    if (slug === "lab-diagnostics") {
-      return {
-        ...shared,
-        type: "panel",
-        testsCount: 0,
-        testsPreview: [],
-      };
-    }
-
     if (slug === "care-programs") {
       return {
         ...shared,
         type: "package",
-        packageScope: "COMPREHENSIVE",
-        testsCount: 0,
         servicesCount: 0,
-        testsPreview: [],
-        servicesPreview: [],
+        includedServices: [],
+        savings: null,
       };
     }
 
     return {
       ...shared,
       type: "service",
-      serviceKind: slug === "imaging" ? "RADIOLOGY" : "MEDICAL",
+      serviceKind: getPublicServiceCategory(slug)?.serviceKind || "MEDICAL",
     };
   });
 
@@ -511,7 +480,13 @@ function mergeWithLocalCatalog(
   slug: PublicServiceCategorySlug,
   locale: string,
   remoteEntries: PublicCatalogEntry[],
-) {
+): PublicCategoryCatalog {
+  // Once ordering is live the catalog only lists real, orderable items with their prices.
+  if (BOOKINGS_ENABLED) {
+    const entries = sortEntries(remoteEntries);
+    return { entries, total: entries.length };
+  }
+
   const localCatalog = getLocalPublicServiceCategoryCatalog(slug, locale);
   const seen = new Set(remoteEntries.map((entry) => normalizeCatalogName(entry.name)));
   const mergedEntries = [
@@ -525,96 +500,70 @@ function mergeWithLocalCatalog(
   };
 }
 
-function getLocalPublicServiceCounts(): PublicCategoryCountMap {
-  const getCount = (slug: PublicServiceCategorySlug) => LOCAL_CATALOG_SEEDS[slug].length;
-
-  return {
-    medicalVisits: getCount("medical-visits"),
-    nursingCare: getCount("home-nursing"),
-    homeNursing: getCount("home-nursing"),
-    physicalTherapy: getCount("physical-therapy"),
-    occupationalTherapy: getCount("occupational-therapy"),
-    imaging: getCount("imaging"),
-    labDiagnostics: getCount("lab-diagnostics"),
-    carePrograms: getCount("care-programs"),
-  };
+function toPrice(value: MoneyValue | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const price = Number(value);
+  return Number.isFinite(price) ? price : null;
 }
 
-function mapServiceEntry(item: ServiceItem, serviceKind: "MEDICAL" | "RADIOLOGY"): PublicCatalogEntry {
+function localizedText(locale: string, ar?: string | null, en?: string | null, fallback?: string | null) {
+  return (locale === "ar" ? ar || en : en || ar) || fallback || "";
+}
+
+function mapServiceEntry(item: ServiceItem, locale: string): PublicCatalogEntry {
   return {
     id: item.id,
     type: "service",
-    name: item.name,
-    description: item.description || null,
+    name: localizedText(locale, item.name_ar, item.name_en, item.name),
+    description: localizedText(locale, item.description_ar, item.description_en, item.description) || null,
     categoryName: item.category_name || null,
-    price: null,
-    serviceKind,
+    price: toPrice(item.price),
+    serviceKind: item.service_kind || "MEDICAL",
   };
 }
 
-function getLocalizedLabName<T extends {
-  name_en?: string;
-  name_ar?: string;
-}>(item: T, locale: string) {
-  return locale === "ar"
-    ? item.name_ar || item.name_en || ""
-    : item.name_en || item.name_ar || "";
-}
+function mapPackageEntry(item: PackageItem, locale: string): PublicCatalogEntry {
+  const savings = toPrice(item.savings);
+  const includedServices = (item.services || []).map((service) =>
+    localizedText(locale, service.name_ar, service.name_en, service.name),
+  );
 
-function getLocalizedLabDescription<T extends {
-  description_en?: string | null;
-  description_ar?: string | null;
-}>(item: T, locale: string) {
-  return locale === "ar"
-    ? item.description_ar || item.description_en || null
-    : item.description_en || item.description_ar || null;
-}
-
-function mapPackageEntry(item: PackageItem, packageScope: "LAB_ONLY" | "COMPREHENSIVE"): PublicCatalogEntry {
   return {
     id: item.id,
     type: "package",
-    name: item.name,
-    description: item.description || null,
+    name: localizedText(locale, item.name_ar, item.name_en, item.name),
+    description: localizedText(locale, item.description_ar, item.description_en, item.description) || null,
     categoryName: item.category_name || null,
-    price: null,
-    packageScope,
-    testsCount: item.tests?.length || item.test_ids?.length || 0,
-    servicesCount: item.services?.length || item.service_ids?.length || 0,
-    testsPreview: (item.tests || []).map((test) => test.name).slice(0, 3),
-    servicesPreview: (item.services || []).map((service) => service.name).slice(0, 3),
+    price: toPrice(item.total_cost),
+    servicesCount: item.services_count ?? includedServices.length,
+    includedServices,
+    savings: savings !== null && savings > 0 ? savings : null,
   };
 }
 
-function mapLabPanelEntry(item: LabPanelItem, locale: string): PublicCatalogEntry {
-  return {
-    id: item.id,
-    type: "panel",
-    name: getLocalizedLabName(item, locale),
-    description: getLocalizedLabDescription(item, locale),
-    categoryName: null,
-    price: null,
-    testsCount: item.tests?.length || item.test_ids?.length || item.tests_count || 0,
-    testsPreview: (item.tests || []).map((test) => test.name).slice(0, 3),
-  };
+const PUBLIC_PAGE_LIMIT = 100;
+const PUBLIC_MAX_PAGES = 10;
+
+async function fetchAllPublicPages<T>(load: (page: number) => Promise<{ data: ApiListResponse<T> }>) {
+  const first = normalizeListResponse<T>((await load(1)).data);
+  const totalPages = Math.min(Number(first.pagination.total_pages || first.pagination.pages || 1), PUBLIC_MAX_PAGES);
+  if (totalPages <= 1) return first.data;
+
+  const rest = await Promise.all(
+    Array.from({ length: totalPages - 1 }, async (_, index) => normalizeListResponse<T>((await load(index + 2)).data).data),
+  );
+  return [...first.data, ...rest.flat()];
 }
 
-function mapLabPackageEntry(item: LabPackageItem, locale: string): PublicCatalogEntry {
-  return {
-    id: item.id,
-    type: "package",
-    name: getLocalizedLabName(item, locale),
-    description: getLocalizedLabDescription(item, locale),
-    categoryName: null,
-    price: null,
-    packageScope: "LAB_ONLY",
-    testsCount: item.tests?.length || item.test_ids?.length || item.tests_count || 0,
-    servicesCount: item.panels?.length || item.panel_ids?.length || item.panels_count || 0,
-    testsPreview: (item.tests || []).map((test) => test.name).slice(0, 3),
-    servicesPreview: (item.panels || [])
-      .map((panel) => getLocalizedLabName(panel, locale))
-      .slice(0, 3),
-  };
+/** Admin categories that have their own page; their services are not repeated on the kind-based pages. */
+const DEDICATED_CATEGORY_IDS = new Set(
+  PUBLIC_SERVICE_CATEGORIES.map((category) => category.categoryId).filter((id): id is string => Boolean(id)),
+);
+
+function belongsToCategory(item: ServiceItem, category: PublicServiceCategoryDefinition) {
+  if (category.categoryId) return item.category_id === category.categoryId;
+  if ((item.service_kind || "MEDICAL") !== category.serviceKind) return false;
+  return !item.category_id || !DEDICATED_CATEGORY_IDS.has(item.category_id);
 }
 
 export function getPublicServiceCategory(slug: string) {
@@ -627,92 +576,53 @@ export function getPublicServiceCategoryAnalyticsKind(slug: string): AnalyticsSe
     return null;
   }
 
-  if (
-    category.defaultRequestPreset.serviceType === "MEDICAL"
-    || category.defaultRequestPreset.serviceType === "RADIOLOGY"
-  ) {
-    return category.defaultRequestPreset.serviceType;
-  }
-
-  if (category.serviceKind) {
-    return category.serviceKind;
-  }
-
-  return category.source === "lab" ? "LAB" : "PACKAGE";
+  return category.defaultRequestPreset.serviceType;
 }
 
 export function getPublicServiceCategoryByKey(translationKey: PublicServiceCategoryTranslationKey) {
   return PUBLIC_SERVICE_CATEGORIES.find((category) => category.translationKey === translationKey) || null;
 }
 
-export function buildNewRequestHref(locale: string, preset: RequestPreset) {
-  const params = new URLSearchParams({ serviceType: preset.serviceType });
+/** Order item type the backend expects for a catalog entry (POST /cases items[].type). */
+export function getCatalogEntryItemType(entry: PublicCatalogEntry): CaseItemType {
+  return entry.type === "package" ? "PACKAGE" : "SERVICE";
+}
 
-  if (preset.labMode) {
-    params.set("labMode", preset.labMode);
-  }
+/** Badge label for a catalog entry: the service kind (medical, nursing, radiology, lab test) or "package". */
+export function getCatalogEntryTypeLabel(entry: PublicCatalogEntry, tOrders: (key: string) => string) {
+  return getOrderItemTypeLabel(
+    { type: getCatalogEntryItemType(entry), serviceKind: entry.type === "service" ? entry.serviceKind : null },
+    tOrders,
+  );
+}
 
-  if (preset.serviceId) {
-    params.set("serviceId", preset.serviceId);
-  }
+export function toCatalogItemRef(entry: PublicCatalogEntry): CaseItemRef {
+  return { type: getCatalogEntryItemType(entry), id: entry.id };
+}
 
-  return `/${locale}/requests/new?${params.toString()}`;
+/** Entries built from the local prelaunch seed have no backend id and cannot be ordered. */
+export function isOrderableCatalogEntry(entry: PublicCatalogEntry) {
+  return !entry.id.startsWith("local-");
+}
+
+export function buildNewRequestHref(locale: string, items: CaseItemRef[] = []) {
+  const query = buildOrderItemsQuery(items);
+  return `/${locale}/requests/new${query ? `?${query}` : ""}`;
 }
 
 export function buildAuthRedirectHref(
   locale: string,
-  preset: RequestPreset,
+  items: CaseItemRef[] = [],
   authPath: "login" | "register" = "login",
 ) {
-  const requestHref = buildNewRequestHref(locale, preset);
+  const requestHref = buildNewRequestHref(locale, items);
   return `/${locale}/${authPath}?redirect=${encodeURIComponent(requestHref)}`;
 }
 
-export function getEntryRequestPreset(entry: PublicCatalogEntry): RequestPreset {
-  if (entry.type === "service") {
-    return {
-      serviceType: entry.serviceKind,
-      serviceId: entry.id,
-    };
-  }
-
-  if (entry.type === "lab") {
-    return {
-      serviceType: "LAB",
-      labMode: "TEST",
-      serviceId: entry.id,
-    };
-  }
-
-  if (entry.type === "panel") {
-    return {
-      serviceType: "LAB",
-      labMode: "PANEL",
-      serviceId: entry.id,
-    };
-  }
-
-  if (entry.packageScope === "LAB_ONLY") {
-    return {
-      serviceType: "LAB",
-      labMode: "PACKAGE",
-      serviceId: entry.id,
-    };
-  }
-
-  return { serviceType: "PACKAGE", serviceId: entry.id };
-}
-
 export function getPublicCatalogEntryAnalyticsKind(entry: PublicCatalogEntry): AnalyticsServiceKind {
-  if (entry.type === "service") {
-    return entry.serviceKind;
-  }
-
-  if (entry.type === "lab" || entry.type === "panel") {
-    return "LAB";
-  }
-
-  return entry.packageScope === "LAB_ONLY" ? "LAB" : "PACKAGE";
+  if (entry.type === "package") return "PACKAGE";
+  if (entry.serviceKind === "RADIOLOGY" || entry.serviceKind === "LAB") return entry.serviceKind;
+  return "MEDICAL";
 }
 
 export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCategorySlug, locale: string = "en"): Promise<PublicCategoryCatalog> {
@@ -723,55 +633,54 @@ export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCateg
   }
 
   try {
-  if (category.source === "services") {
-    const response = normalizeListResponse(
-      (await servicesApi.listPublic({ limit: 100, service_kind: category.serviceKind })).data,
-    );
+    if (category.source === "packages") {
+      const packages = await fetchAllPublicPages((page) => packagesApi.listPublic({ page, limit: PUBLIC_PAGE_LIMIT }));
+      return mergeWithLocalCatalog(slug, locale, packages.map((item) => mapPackageEntry(item, locale)));
+    }
 
-    const entries = sortEntries(response.data.map((item) => mapServiceEntry(item, category.serviceKind!)));
-    return mergeWithLocalCatalog(slug, locale, entries);
-  }
-
-  if (category.source === "services-by-category") {
-    const serviceKind =
-      category.defaultRequestPreset.serviceType === "RADIOLOGY" ? "RADIOLOGY" : "MEDICAL";
-    const response = normalizeListResponse(
-      (await servicesApi.listPublic({
-        limit: 100,
-        category_id: category.categoryId,
-      })).data,
+    // The API narrows by category or kind; belongsToCategory then leaves out services that already
+    // have their own dedicated category page.
+    const services = await fetchAllPublicPages((page) =>
+      servicesApi.listPublic({
+        page,
+        limit: PUBLIC_PAGE_LIMIT,
+        ...(category.categoryId
+          ? { category_id: category.categoryId }
+          : category.serviceKind ? { service_kind: category.serviceKind } : {}),
+      }),
     );
-
-    const entries = sortEntries(
-      response.data.map((item) => mapServiceEntry(item, serviceKind)),
-    );
+    const entries = services
+      .filter((item) => belongsToCategory(item, category))
+      .map((item) => mapServiceEntry(item, locale));
 
     return mergeWithLocalCatalog(slug, locale, entries);
-  }
-
-  if (category.source === "lab") {
-    const [labPanelsResponse, labPackagesResponse] = await Promise.all([
-      labPanelsApi.listPublic({ limit: 100, is_active: true }),
-      labPackagesApi.listPublic({ limit: 100, is_active: true }),
-    ]);
-    const labPanels = normalizeListResponse(labPanelsResponse.data);
-    const labPackages = normalizeListResponse(labPackagesResponse.data);
-    const panelEntries = labPanels.data.map((item) => mapLabPanelEntry(item, locale));
-    const packageEntries = labPackages.data.map((item) => mapLabPackageEntry(item, locale));
-    const entries = sortEntries([...panelEntries, ...packageEntries]);
-
-    return mergeWithLocalCatalog(slug, locale, entries);
-  }
-
-  const packageResponse = normalizeListResponse((await servicesApi.listPackagesPublic({ limit: 100 })).data);
-  const entries = sortEntries(packageResponse.data.map((item) => mapPackageEntry(item, "COMPREHENSIVE")));
-
-  return mergeWithLocalCatalog(slug, locale, entries);
   } catch {
     return getLocalPublicServiceCategoryCatalog(slug, locale);
   }
 }
 
+/**
+ * Home-page category counts, computed from the live catalog with the same rules as the category
+ * pages. Throws when the API is unreachable so the cards show "pending" instead of invented numbers.
+ */
 export async function fetchPublicServiceCounts(): Promise<PublicCategoryCountMap> {
-  return getLocalPublicServiceCounts();
+  const { data } = (await servicesApi.publicCounts()).data;
+
+  const countFor = (category: PublicServiceCategoryDefinition) => {
+    if (category.source === "packages") return data.packages;
+    return data.services
+      .filter((row) =>
+        belongsToCategory(
+          { service_kind: row.service_kind || undefined, category_id: row.category_id } as ServiceItem,
+          category,
+        ),
+      )
+      .reduce((sum, row) => sum + row.count, 0);
+  };
+
+  const counts = Object.fromEntries(
+    PUBLIC_SERVICE_CATEGORIES.map((category) => [category.translationKey, countFor(category)]),
+  ) as Omit<PublicCategoryCountMap, "homeNursing">;
+
+  return { ...counts, homeNursing: counts.nursingCare };
 }

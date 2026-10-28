@@ -54,8 +54,6 @@ export function translateNotificationContent(
     amount: data.amount ?? "",
     remaining: data.remaining ?? "",
     discount: data.discount ?? "",
-    points: data.points ?? "",
-    totalPoints: data.totalPoints ?? data.total_points ?? "",
   };
 
   return {

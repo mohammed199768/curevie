@@ -7,6 +7,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   Brain,
@@ -23,6 +24,8 @@ import {
 } from "lucide-react";
 import { PrelaunchInlineNotice, PrelaunchNoticeDialog } from "@/components/shared/PrelaunchNotice";
 import { onGuestRequestDialogOpen } from "@/lib/analytics";
+import { BOOKINGS_ENABLED } from "@/lib/launch";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import { cn } from "@/lib/utils";
 import {
   fetchPublicServiceCounts,
@@ -42,6 +45,8 @@ const categoryIcons = {
 export function PublicHomeExperience() {
   const locale = useLocale();
   const t = useTranslations("homeExperience");
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const prefersReducedMotion = useReducedMotion();
   const isArabic = locale === "ar";
   const rtlBidiStyle = isArabic ? ({ unicodeBidi: "plaintext" } as const) : undefined;
@@ -362,6 +367,12 @@ export function PublicHomeExperience() {
   ];
 
   const openHomeRequestDialog = () => {
+    // Once ordering is live, patients order from their dashboard and guests pick items from the catalog.
+    if (BOOKINGS_ENABLED) {
+      router.push(isAuthenticated ? `/${locale}/requests/new` : `/${locale}/services`);
+      return;
+    }
+
     if (!guestRequestOpen) {
       onGuestRequestDialogOpen({
         service_slug: "medical-visits",
@@ -404,7 +415,7 @@ export function PublicHomeExperience() {
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#104d49] text-white">
                   <Home className="h-4 w-4" />
                 </span>
-                <span className="min-w-0 leading-5">{t("hero.eyebrow")}</span>
+                <span className="min-w-0 leading-5">{BOOKINGS_ENABLED ? t("hero.eyebrowLive") : t("hero.eyebrow")}</span>
               </div>
 
               <h1
@@ -492,7 +503,7 @@ export function PublicHomeExperience() {
                   onClick={openHomeRequestDialog}
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[#104d49] px-6 text-sm font-semibold text-white transition hover:bg-[#304a43] hover:shadow-[0_8px_32px_-8px_rgba(16,77,73,0.4)] sm:w-auto"
                 >
-                  {t("hero.requestCta")}
+                  {BOOKINGS_ENABLED ? t("hero.requestCtaLive") : t("hero.requestCta")}
                 </button>
                 <Link
                   href={`/${locale}/register`}
@@ -501,7 +512,7 @@ export function PublicHomeExperience() {
                   {t("hero.secondaryCta")}
                 </Link>
               </div>
-              <PrelaunchInlineNotice className="mt-5 max-w-2xl" />
+              {BOOKINGS_ENABLED ? null : <PrelaunchInlineNotice className="mt-5 max-w-2xl" />}
 
             </div>
 
@@ -648,10 +659,12 @@ export function PublicHomeExperience() {
 
       </div>
 
-      <PrelaunchNoticeDialog
-        open={guestRequestOpen}
-        onOpenChange={setGuestRequestOpen}
-      />
+      {BOOKINGS_ENABLED ? null : (
+        <PrelaunchNoticeDialog
+          open={guestRequestOpen}
+          onOpenChange={setGuestRequestOpen}
+        />
+      )}
     </>
   );
 }

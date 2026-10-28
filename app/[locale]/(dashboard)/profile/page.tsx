@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Moon, Star, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { type UseFormReturn, useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
+import { AreaSelect } from "@/components/orders/AreaSelect";
 import { AppPreloader } from "@/components/shared/AppPreloader";
 import { I18nDatePicker } from "@/components/shared/I18nDatePicker";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -22,10 +23,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { authApi } from "@/lib/api/auth";
 import { patientsApi } from "@/lib/api/patients";
-import type { PatientUser, PointsLogItem } from "@/lib/api/types";
-import { normalizeEnumKey, translateEnumValue } from "@/lib/i18n";
+import type { PatientUser } from "@/lib/api/types";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthStore } from "@/lib/stores/auth.store";
-import { formatDateTime, toNumber } from "@/lib/utils";
 import { getApiError, getValidationErrors } from "@/lib/utils/apiError"; // FIX: F12 â€” reuse the shared backend error parser in patient profile mutations.
 
 interface TranslationValues {
@@ -35,6 +35,7 @@ interface TranslationValues {
 interface ProfileFormValues {
   full_name: string;
   phone: string;
+  area_id?: string;
   address: string;
   gender: "male" | "female" | "other";
   date_of_birth?: string;
@@ -56,7 +57,6 @@ interface PatientProfileData extends PatientUser {
   height?: number | string | null;
   weight?: number | string | null;
   allergies?: string | null;
-  points?: number | null;
 }
 
 interface PatientProfileResponse {
@@ -69,6 +69,7 @@ function createPersonalSchema(t: TranslateFn) {
   return z.object({
     full_name: z.string().min(2, t("validation.fullNameMin")),
     phone: z.string().min(7, t("validation.phoneMin")),
+    area_id: z.string().optional(),
     address: z.string().min(3, t("validation.addressMin")),
     gender: z.enum(["male", "female", "other"]),
     date_of_birth: z.string().optional(),
@@ -133,6 +134,7 @@ function ProfileInfoTab({
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
           <Avatar className="h-14 w-14">
+            {patient?.avatar_url ? <AvatarImage src={patient.avatar_url} alt={patient.full_name} className="object-cover" /> : null}
             <AvatarFallback>
               {patient?.full_name
                 ?.split(" ")
@@ -184,6 +186,19 @@ function ProfileInfoTab({
                   <FormLabel>{t("phone")}</FormLabel>
                   <FormControl>
                     <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={personalForm.control}
+              name="area_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("area")}</FormLabel>
+                  <FormControl>
+                    <AreaSelect value={field.value} onChange={field.onChange} allowEmpty />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -321,73 +336,6 @@ function ProfileSecurityTab({
   );
 }
 
-type ProfilePointsTabProps = {
-  isLoading: boolean;
-  locale: string;
-  pointsBalance: number;
-  pointsRows: PointsLogItem[];
-  t: TranslateFn;
-  tCommon: TranslateFn;
-  getLoyaltyReasonLabel: (value?: string | null) => string;
-};
-
-function ProfilePointsTab({
-  isLoading,
-  locale,
-  pointsBalance,
-  pointsRows,
-  t,
-  tCommon,
-  getLoyaltyReasonLabel,
-}: ProfilePointsTabProps) {
-  return (
-    <Card className="rounded-2xl shadow-lg">
-      <CardHeader>
-        <CardTitle>{t("loyaltyTitle")}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="rounded-2xl border bg-primary/5 p-6 text-center">
-          <Star className="mx-auto h-6 w-6 text-primary" />
-          <p className="mt-2 text-4xl font-bold">{pointsBalance}</p>
-          <p className="text-sm text-muted-foreground">{t("currentPointsBalance")}</p>
-        </div>
-
-        {isLoading ? (
-          <AppPreloader variant="panel" title={tCommon("loading")} blockCount={2} blockVariant="line" />
-        ) : (
-          <div className="rounded-xl border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-start">
-                  <th className="p-2">{tCommon("type")}</th>
-                  <th className="p-2">{tCommon("amount")}</th>
-                  <th className="p-2">{tCommon("date")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pointsRows.map((row) => (
-                  <tr key={`${row.created_at}-${row.amount}`} className="border-b">
-                    <td className="p-2">{getLoyaltyReasonLabel(row.reason || row.type)}</td>
-                    <td className="p-2">{toNumber(row.points ?? row.amount)}</td>
-                    <td className="p-2">{formatDateTime(row.created_at, "dd/MM/yyyy, HH:mm", locale)}</td>
-                  </tr>
-                ))}
-                {!pointsRows.length ? (
-                  <tr>
-                    <td className="p-3 text-muted-foreground" colSpan={3}>
-                      {t("noPointsHistory")}
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function ProfilePage() {
   const locale = useLocale();
   const t = useTranslations("profilePage");
@@ -399,6 +347,7 @@ export default function ProfilePage() {
 
   const patient = useAuthStore((state) => state.patient);
   const patchPatient = useAuthStore((state) => state.patchPatient);
+  const { logout } = useAuth();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const personalSchema = createPersonalSchema(t);
   const medicalSchema = createMedicalSchema();
@@ -422,20 +371,12 @@ export default function ProfilePage() {
     enabled: Boolean(patient?.id),
   });
 
-  const pointsQuery = useQuery({
-    queryKey: ["points-log", patient?.id],
-    queryFn: async () => {
-      if (!patient?.id) return null;
-      return (await patientsApi.pointsLog(patient.id, { page: 1, limit: 20 })).data;
-    },
-    enabled: Boolean(patient?.id),
-  });
-
   const personalForm = useForm<ProfileFormValues>({
     resolver: zodResolver(personalSchema),
     defaultValues: {
       full_name: patient?.full_name || "",
       phone: patient?.phone || "",
+      area_id: patient?.area_id || "",
       address: patient?.address || "",
       gender: normalizeGender(patient?.gender),
       date_of_birth: patient?.date_of_birth || "",
@@ -467,6 +408,7 @@ export default function ProfilePage() {
     personalForm.reset({
       full_name: data.full_name || "",
       phone: data.phone || "",
+      area_id: data.area_id || "",
       address: data.address || "",
       gender: normalizeGender(data.gender),
       date_of_birth: data.date_of_birth || "",
@@ -482,7 +424,11 @@ export default function ProfilePage() {
   const updatePersonal = useMutation({
     mutationFn: async (values: ProfileFormValues) => {
       if (!patient?.id) return;
-      const response = await patientsApi.updateProfile(patient.id, values);
+      const response = await patientsApi.updateProfile(patient.id, {
+        ...values,
+        area_id: values.area_id || null,
+        date_of_birth: values.date_of_birth || undefined,
+      });
       return response.data;
     },
     onSuccess: (data) => {
@@ -492,6 +438,7 @@ export default function ProfilePage() {
         full_name: data.full_name,
         phone: data.phone,
         address: data.address,
+        area_id: data.area_id ?? null,
         gender: data.gender,
         date_of_birth: data.date_of_birth,
       });
@@ -513,7 +460,9 @@ export default function ProfilePage() {
     mutationFn: (values: PasswordFormValues) => authApi.changePassword(values),
     onSuccess: () => {
       passwordForm.reset();
-      toast.success(t("passwordUpdated"));
+      // The backend revokes every session after a password change, so sign in again.
+      toast.success(t("passwordUpdatedRelogin"));
+      void logout();
     },
     onError: (error) => {
       const { code, error: message } = getApiError(error); // FIX: F12 â€” inspect backend password-change codes before choosing patient feedback.
@@ -536,10 +485,11 @@ export default function ProfilePage() {
       if (!patient?.id || !avatarFile) return;
       const formData = new FormData();
       formData.append("file", avatarFile); // FIX: F1 â€” backend upload.js expects field name "file".
-      await patientsApi.updateAvatar(patient.id, formData);
+      return (await patientsApi.updateAvatar(patient.id, formData)).data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setAvatarFile(null);
+      if (data) patchPatient({ avatar_url: data.avatar_url ?? null });
       toast.success(t("avatarUploaded"));
     },
     onError: (error) => {
@@ -552,14 +502,6 @@ export default function ProfilePage() {
     },
   });
 
-  const getLoyaltyReasonLabel = (value?: string | null) => {
-    const normalized = normalizeEnumKey(value);
-    if (t.has(`loyaltyReasons.${normalized}`)) {
-      return t(`loyaltyReasons.${normalized}`);
-    }
-    return translateEnumValue(value, tEnums);
-  };
-
   const switchLocale = (targetLocale: "en" | "ar") => {
     const segments = pathname.split("/").filter(Boolean);
     if (!segments.length) {
@@ -571,9 +513,7 @@ export default function ProfilePage() {
   };
 
   const typedLocale: "en" | "ar" = locale === "ar" || locale === "en" ? locale : "en";
-  const pointsRows: PointsLogItem[] = Array.isArray(pointsQuery.data?.data) ? pointsQuery.data.data : [];
   const profilePatient = patientQuery.data ?? patient ?? null;
-  const currentPointsBalance = patientQuery.data?.total_points ?? patientQuery.data?.points ?? patient?.points ?? 0;
   const handleLocaleChange = (value: string) => {
     const nextLocale: "en" | "ar" = value === "ar" ? "ar" : "en";
     switchLocale(nextLocale);
@@ -592,7 +532,6 @@ export default function ProfilePage() {
           <TabsTrigger value="personal">{t("tabs.personal")}</TabsTrigger>
           <TabsTrigger value="medical">{t("tabs.medical")}</TabsTrigger>
           <TabsTrigger value="security">{t("tabs.security")}</TabsTrigger>
-          <TabsTrigger value="loyalty">{t("tabs.loyalty")}</TabsTrigger>
           <TabsTrigger value="appearance">{t("tabs.appearance")}</TabsTrigger>
         </TabsList>
 
@@ -686,18 +625,6 @@ export default function ProfilePage() {
             t={t}
             tCommon={tCommon}
             onSubmit={(values) => changePassword.mutate(values)}
-          />
-        </TabsContent>
-
-        <TabsContent value="loyalty">
-          <ProfilePointsTab
-            isLoading={pointsQuery.isLoading && !pointsQuery.data}
-            locale={locale}
-            pointsBalance={currentPointsBalance}
-            pointsRows={pointsRows}
-            t={t}
-            tCommon={tCommon}
-            getLoyaltyReasonLabel={getLoyaltyReasonLabel}
           />
         </TabsContent>
 

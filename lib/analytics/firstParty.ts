@@ -1,8 +1,9 @@
 import type { AnalyticsServiceKind } from "@/lib/public-service-categories";
 import type { AnalyticsEventPayload, AnalyticsEventType } from "@/lib/api/analytics";
+import { API_BASE_URL } from "@/lib/env";
 import { isAnalyticsAllowed } from "./consent";
 
-const ANALYTICS_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/analytics/events`;
+const ANALYTICS_ENDPOINT = `${API_BASE_URL}/analytics/events`;
 const SHOULD_LOG_FIRST_PARTY_EVENTS = process.env.NODE_ENV !== "production";
 
 // Phase 1: first-party events were logged to console only.

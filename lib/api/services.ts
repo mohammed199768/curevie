@@ -1,18 +1,18 @@
 import { apiClient, publicApiClient } from "./client";
-import { ApiListResponse, LabTestItem, PackageItem, ServiceItem } from "./types";
+import { ApiListResponse, ServiceItem, ServiceKind } from "./types";
 
 export interface ServicesQuery {
   page?: number;
   limit?: number;
   search?: string;
-  service_kind?: "MEDICAL" | "RADIOLOGY";
+  service_kind?: ServiceKind;
   category_id?: string;
 }
 
-export interface PackagesQuery {
-  page?: number;
-  limit?: number;
-  search?: string;
+/** GET /services/counts: what a public visitor can order, grouped by kind and admin category. */
+export interface PublicCatalogCounts {
+  services: Array<{ service_kind: ServiceKind | null; category_id: string | null; count: number }>;
+  packages: number;
 }
 
 export const servicesApi = {
@@ -22,16 +22,6 @@ export const servicesApi = {
   listPublic: (params?: ServicesQuery) =>
     publicApiClient.get<ApiListResponse<ServiceItem>>("/services", { params }),
 
-  listLab: (params?: { page?: number; limit?: number; search?: string; is_active?: boolean }) =>
-    apiClient.get<ApiListResponse<LabTestItem>>("/lab", { params }),
-
-  listLabPublic: (params?: { page?: number; limit?: number; search?: string; is_active?: boolean }) =>
-    publicApiClient.get<ApiListResponse<LabTestItem>>("/lab", { params }),
-
-  listPackages: (params?: PackagesQuery) =>
-    apiClient.get<ApiListResponse<PackageItem>>("/lab/packages", { params }),
-
-  listPackagesPublic: (params?: PackagesQuery) =>
-    publicApiClient.get<ApiListResponse<PackageItem>>("/lab/packages", { params }),
+  publicCounts: () =>
+    publicApiClient.get<{ data: PublicCatalogCounts }>("/services/counts"),
 };
-

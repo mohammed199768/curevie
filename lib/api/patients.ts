@@ -1,10 +1,11 @@
 import { apiClient } from "./client";
-import { ApiListResponse, PatientUser, PointsLogItem } from "./types";
+import { PatientUser } from "./types";
 
 export interface UpdateProfilePayload {
   full_name?: string;
   phone?: string;
   address?: string;
+  area_id?: string | null;
   gender?: string;
   date_of_birth?: string;
 }
@@ -27,8 +28,4 @@ export const patientsApi = {
     apiClient.put<PatientUser>(`/patients/${id}/avatar`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-
-  pointsLog: (id: string, params?: { page?: number; limit?: number }) =>
-    apiClient.get<ApiListResponse<PointsLogItem>>(`/patients/${id}/points-log`, { params }),
 };
-

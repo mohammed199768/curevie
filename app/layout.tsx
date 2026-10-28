@@ -37,7 +37,8 @@ export default async function RootLayout({
   const requestedLocale = await getLocale().catch(() => defaultLocale);
   const locale = hasLocale(locales, requestedLocale) ? requestedLocale : defaultLocale;
   const isArabic = locale === "ar";
-  const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-TT2L23SLLH";
+  // No fallback id: local and staging builds must never report into the production property.
+  const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || undefined;
 
   return (
     <html lang={locale} dir={isArabic ? "rtl" : "ltr"} suppressHydrationWarning>

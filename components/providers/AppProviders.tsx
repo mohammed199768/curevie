@@ -5,11 +5,21 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Toaster } from "sonner";
+import { restoreSession } from "@/lib/session";
 
 interface AppProvidersProps {
   children: ReactNode;
+}
+
+/** Restores the patient session from the refresh cookie once per page load. */
+function SessionBootstrap() {
+  useEffect(() => {
+    void restoreSession();
+  }, []);
+
+  return null;
 }
 
 export function AppProviders({ children }: AppProvidersProps) {
@@ -32,10 +42,10 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
+        <SessionBootstrap />
         {children}
         <Toaster richColors closeButton position="top-right" />
       </QueryClientProvider>
     </ThemeProvider>
   );
 }
-

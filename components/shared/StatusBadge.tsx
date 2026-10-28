@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 
 interface StatusBadgeProps {
   value?: string | null;
+  /** Overrides the generic enum label (e.g. patient-friendly case status wording). */
+  label?: string;
   className?: string;
 }
 
@@ -40,14 +42,13 @@ const statusClasses: Record<string, string> = {
   UNAVAILABLE: "bg-red-100 text-red-800 border-red-200 dark:bg-red-500/20 dark:text-red-300",
 };
 
-export function StatusBadge({ value, className }: StatusBadgeProps) {
+export function StatusBadge({ value, label, className }: StatusBadgeProps) {
   const tEnums = useTranslations("enums");
   const normalized = (value || "UNKNOWN").toUpperCase();
-  const label = translateEnumValue(normalized, tEnums);
 
   return (
     <Badge variant="outline" className={cn(statusClasses[normalized] ?? "", className)}>
-      {label}
+      {label || translateEnumValue(normalized, tEnums)}
     </Badge>
   );
 }

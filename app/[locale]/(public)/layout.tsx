@@ -7,6 +7,7 @@ import { ConsentBanner } from "@/components/analytics/ConsentBanner";
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
 import { getConsent, hasDecided, initPixel, onPublicPageView, type ConsentState } from "@/lib/analytics";
+import { isTrackingPath } from "@/lib/analytics/redact";
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   const locale = useLocale();
@@ -27,7 +28,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!pathname || !hasDecided()) {
+    // Guest tracking pages carry a secret token in the URL; they are never reported to analytics.
+    if (!pathname || isTrackingPath(pathname) || !hasDecided()) {
       return;
     }
 
@@ -45,7 +47,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   }, [locale, pathname]);
 
   const handleConsentAccepted = (state: ConsentState) => {
-    if (!pathname) {
+    if (!pathname || isTrackingPath(pathname)) {
       return;
     }
 

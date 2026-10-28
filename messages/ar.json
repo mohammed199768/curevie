@@ -109,7 +109,11 @@
     "dateOfBirth": "تاريخ الميلاد",
     "registering": "جارٍ التسجيل...",
     "registerButton": "إنشاء الحساب",
-    "alreadyHaveAccount": "لديك حساب بالفعل؟"
+    "alreadyHaveAccount": "لديك حساب بالفعل؟",
+    "rateLimited": "محاولات كثيرة. يرجى الانتظار 15 دقيقة ثم المحاولة مرة أخرى.",
+    "emailExists": "هذا البريد الإلكتروني مسجّل بالفعل.",
+    "area": "المنطقة",
+    "addressPlaceholder": "الشارع، البناية، الطابق"
   },
   "dashboard": {
     "welcome": "مرحبًا بعودتك",
@@ -117,7 +121,7 @@
     "pending": "قيد الانتظار",
     "completed": "مكتملة",
     "recentRequests": "أحدث الطلبات",
-    "points": "نقاط الولاء"
+    "vipMember": "عضو VIP — يُطبَّق خصمك تلقائيًا."
   },
   "requests": {
     "title": "طلباتي",
@@ -126,225 +130,6 @@
     "bookFirst": "احجز خدمتك الأولى",
     "status": "الحالة",
     "search": "ابحث في الطلبات"
-  },
-  "requestDetail": {
-    "chatSendError": "فشل في إرسال الرسالة.",
-    "notFound": "الطلب غير موجود.",
-    "title": "الطلب رقم #{id}",
-    "serviceType": "نوع الخدمة",
-    "createdAt": "تاريخ الإنشاء",
-    "scheduledAt": "الموعد المجدول",
-    "assignedProvider": "مقدم الخدمة المعيّن",
-    "pendingValue": "قيد الانتظار",
-    "tabs": {
-      "overview": "نظرة عامة",
-      "reports": "التقارير",
-      "chat": "المحادثة",
-      "billing": "الفواتير"
-    },
-    "timelineTitle": "الخط الزمني للطلب",
-    "timelineSubtitle": "تابع طلبك خطوة بخطوة مع صورة أوضح لما يحدث الآن وما سيأتي لاحقًا.",
-    "timelineTrackerEyebrow": "طلبك — مباشر",
-    "timelineCurrentMoment": "ما الذي يحدث الآن",
-    "timelineNextCheckpoint": "ما الذي يأتي بعد ذلك",
-    "timelineJourneyMap": "خريطة الرحلة",
-    "timelineJourneyProgress": "تم إنجاز {percent}% من الرحلة",
-    "timelineReachedAt": "تم الوصول في {time}",
-    "timelineWaiting": "بانتظار هذه الخطوة",
-    "timelineStageHistory": "سجل الأنشطة الكامل",
-    "timelineStagePending": "سيتم تفعيل هذه المرحلة تلقائيًا عند تقدم الطلب.",
-    "timelineJourneyDoneTitle": "اكتملت الرحلة بالكامل",
-    "timelineJourneyDoneDescription": "أنهى الطلب رحلته بالكامل وأصبح تقريرك النهائي متاحًا.",
-    "timelineCreated": "تم إنشاء الطلب",
-    "timelineScheduled": "تمت الجدولة",
-    "timelineInProgress": "بدأت الخدمة",
-    "timelineCompleted": "اكتملت الخدمة",
-    "timelineClosed": "تم إغلاق التقرير",
-    "timelineLatestUpdate": "آخر تحديث",
-    "timelineLatestBadge": "الأحدث",
-    "timelineLiveFeed": "سجل النشاط المباشر",
-    "timelineEmpty": "كل إجراء جديد على طلبك سيظهر هنا بالترتيب.",
-    "timelineStage": {
-      "completed": "مكتمل",
-      "current": "المرحلة الحالية",
-      "upcoming": "القادم"
-    },
-    "timelineHints": {
-      "received": "قمنا بتسجيل طلبك وتجهيزه للمراجعة.",
-      "assigned": "تمت مطابقة مقدم خدمة ويتم تنظيم الزيارة.",
-      "inProgress": "يعمل مقدم الخدمة حاليًا على طلبك.",
-      "completed": "انتهت الخدمة ويتم الآن إنهاء الملاحظات السريرية.",
-      "closed": "تم إغلاق طلبك بالكامل وأصبح التقرير النهائي جاهزًا."
-    },
-    "timelineRoles": {
-      "you": "أنت",
-      "admin": "الإدارة",
-      "provider": "مقدم الرعاية",
-      "system": "النظام"
-    },
-    "timelineRooms": {
-      "providerPatient": "محادثة مباشرة مع مقدم الخدمة",
-      "patientCare": "غرفة تنسيق الرعاية",
-      "careTeam": "غرفة فريق الرعاية",
-      "doctorAdmin": "غرفة الطبيب والإدارة",
-      "generic": "محادثة الطلب"
-    },
-    "timelineReportStates": {
-      "draft": "مسودة",
-      "submitted": "مُرسل",
-      "approved": "مُعتمد",
-      "rejected": "مرفوض"
-    },
-    "timelineEvents": {
-      "updateTitle": "تم تحديث الطلب",
-      "updateDescription": "تم تسجيل نشاط جديد على طلبك.",
-      "packageTasksGeneratedTitle": "تم إعداد خطة الرعاية",
-      "packageTasksGeneratedDescription": "أنشأ النظام مسار عمل الباقة ليبدأ الفريق الطبي بتنسيق تفاصيل الخدمة.",
-      "taskAssignedTitle": "تم تعيين مقدم خدمة",
-      "taskAssignedDescription": "تم إسناد مقدم خدمة إلى طلبك ويمكنه متابعة الخطوة التالية.",
-      "taskAcceptedTitle": "أكد مقدم الخدمة التعيين",
-      "taskAcceptedDescription": "قبل مقدم الخدمة المعيّن المهمة وهو جاهز للمتابعة.",
-      "taskSubmittedTitle": "تم إرسال تحديث لمهمة",
-      "taskSubmittedDescription": "تم إرسال إحدى مهام الطلب بالحالة {status}.",
-      "statusAssignedDescription": "انتقل طلبك من الانتظار إلى مرحلة تعيين مقدم خدمة.",
-      "statusInProgressDescription": "بدأت الزيارة وأصبح التنسيق المباشر نشطًا الآن.",
-      "statusCompletedTitle": "اكتملت الخدمة",
-      "statusCompletedDescription": "أنهى مقدم الخدمة الطلب والمراجعة النهائية جارية.",
-      "statusClosedDescription": "تم إغلاق الطلب وأصبح تقريرك النهائي جاهزًا للمراجعة.",
-      "paymentRecordedTitle": "تم تسجيل دفعة",
-      "paymentRecordedDescription": "تمت إضافة سجل دفعة إلى هذا الطلب وهو بانتظار التأكيد عند الحاجة.",
-      "paymentApprovedTitle": "تم اعتماد الدفعة",
-      "paymentApprovedDescription": "تمت مراجعة سجل الدفع الخاص بك واعتماده.",
-      "finalReportUpdatedTitle": "تم تحديث التقرير النهائي",
-      "finalReportUpdatedDescription": "تم تحديث التقرير النهائي وأصبح الآن {status}.",
-      "subReportUpdatedTitle": "تم تحديث ملاحظة طبية",
-      "subReportUpdatedDescription": "قام مقدم خدمة بتحديث تقرير داعم ووضعه بالحالة {status}.",
-      "finalReportApprovedTitle": "تم اعتماد التقرير النهائي",
-      "finalReportApprovedDescription": "اعتمدت الإدارة التقرير النهائي وقرّبت الطلب من الإغلاق.",
-      "finalReportConfirmedTitle": "أكد الطبيب المسؤول التقرير النهائي",
-      "finalReportConfirmedDescription": "أكمل الطبيب المسؤول التأكيد الطبي للتقرير النهائي.",
-      "chatFromYouTitle": "أرسلت رسالة",
-      "chatFromYouDescription": "أرسلت رسالة جديدة في {room}.",
-      "chatFromProviderTitle": "أرسل مقدم الخدمة رسالة",
-      "chatFromProviderDescription": "أضاف مقدم الخدمة رسالة جديدة في {room}.",
-      "chatFromAdminTitle": "أرسلت الإدارة رسالة",
-      "chatFromAdminDescription": "أضافت الإدارة رسالة في {room}.",
-      "chatGenericTitle": "نشاط جديد في المحادثة",
-      "chatGenericDescription": "تمت إضافة رسالة جديدة في {room}.",
-      "orderAddedTitle": "تمت إضافة خدمة إضافية",
-      "orderAddedDescription": "أضاف فريق الرعاية طلبًا جديدًا حتى يتمكن الطلب من المرور عبر الخطوات الطبية المطلوبة.",
-      "workflowAdvancedTitle": "الطلب تقدّم للأمام",
-      "workflowAdvancedDescription": "انتقل طلبك إلى الخطوة التالية.",
-      "requestClosedTitle": "تم إغلاق الطلب",
-      "requestClosedDescription": "أغلقت الإدارة الطلب ونشرت حزمة التقرير النهائي.",
-      "publishedTitle": "تم نشر التقرير",
-      "publishedDescription": "تم نشر تقريرك النهائي وأصبح جاهزًا للتنزيل."
-    },
-    "status": {
-      "pendingTitle": "تم استلام الطلب",
-      "pendingDescription": "تم استلام طلبك وهو بانتظار المراجعة.",
-      "acceptedTitle": "تم قبول الطلب",
-      "acceptedDescription": "تم قبول طلبك والجدولة جارية.",
-      "assignedTitle": "تم تعيين مقدم خدمة",
-      "assignedDescription": "تم تعيين مقدم خدمة وسيتواصل معك عند الحاجة.",
-      "inProgressTitle": "الخدمة قيد التنفيذ",
-      "inProgressDescription": "يعمل فريق الرعاية حاليًا على الطلب.",
-      "completedTitle": "اكتملت الخدمة — جارٍ إعداد التقرير",
-      "completedDescription": "الخدمة اكتملت وتقريرك النهائي في الطريق.",
-      "closedTitle": "التقرير جاهز",
-      "closedDescription": "تقريرك النهائي متاح الآن.",
-      "cancelledTitle": "تم إلغاء الطلب",
-      "cancelledDescription": "تم إلغاء هذا الطلب. تواصل مع الدعم إذا كنت بحاجة إلى مساعدة."
-    },
-    "reportTitle": "التقرير الطبي النهائي",
-    "reportPendingTitle": "التقرير قيد الانتظار",
-    "reportPendingDescription": "سيظهر تقريرك هنا بعد إغلاق الطلب.",
-    "reportReadyTitle": "التقرير متاح",
-    "reportReadyDescription": "يمكنك مراجعة تفاصيل التقرير وتنزيل ملف PDF.",
-    "downloadError": "فشل في تنزيل التقرير.",
-    "downloadPdf": "تنزيل PDF",
-    "openStoredPdf": "فتح ملف PDF المخزن",
-    "openPdf": "فتح PDF",
-    "reportDetailsTitle": "تفاصيل التقرير",
-    "providerFallback": "مقدم الخدمة",
-    "summary": "ملخص الأعراض",
-    "findings": "النتائج",
-    "diagnosis": "التشخيص",
-    "treatmentPlan": "خطة العلاج",
-    "recommendations": "التوصيات",
-    "procedures": "الإجراءات",
-    "allergies": "الحساسيات",
-    "labNotes": "ملاحظات المختبر",
-    "imagingNotes": "ملاحظات الأشعة",
-    "nurseNotes": "ملاحظات التمريض",
-    "generalNotes": "ملاحظات عامة",
-    "updatedAt": "آخر تحديث:",
-    "reportHidden": "ستظهر تفاصيل التقرير هنا بمجرد إغلاق الطلب.",
-    "labResultsTitle": "نتائج المختبر",
-    "noFlag": "—",
-    "cultureResult": "نتيجة الزرع",
-    "cultureAntibiotic": "المضاد الحيوي",
-    "cultureInterpretation": "النتيجة",
-    "cultureStatus": {
-      "NO_GROWTH": "لا يوجد نمو",
-      "GROWTH": "تم اكتشاف نمو",
-      "CONTAMINATED": "ملوّث",
-      "PENDING": "قيد الانتظار"
-    },
-    "chatTitle": "محادثة الرعاية المباشرة",
-    "chatSubtitle": "يمكن لمقدم الخدمة مراسلتك هنا بعد بدء الخدمة.",
-    "chatNotAvailableYet": "ستصبح المحادثة متاحة عند بدء الخدمة",
-    "chatClosed": "هذه المحادثة مغلقة",
-    "chatStatusClosed": "مغلق",
-    "chatLive": "مباشر",
-    "chatEmpty": "لا توجد رسائل بعد",
-    "chatTypeMessage": "اكتب رسالة",
-    "chatSend": "إرسال",
-    "chatRetry": "حاول مرة أخرى",
-    "chatYou": "أنت",
-    "chatCareProvider": "مقدم الرعاية",
-    "chatAttachmentReady": "المرفق جاهز للإرسال",
-    "chatMessageHint": "اضغط Enter للإرسال و Shift + Enter لسطر جديد",
-    "chatOpenAttachment": "فتح المرفق",
-    "chatShareLocation": "مشاركة الموقع",
-    "chatLocationNotSupported": "مشاركة الموقع غير مدعومة في هذا المتصفح",
-    "chatLocationPermissionDenied": "تم رفض إذن الموقع",
-    "chatLocationFailed": "فشل في مشاركة الموقع",
-    "chatLocationMessagePrefix": "موقع مشترك",
-    "chatLocationSent": "تم إرسال الموقع",
-    "chatLocationShared": "موقع مشترك",
-    "chatViewLocation": "عرض الموقع",
-    "chatGetDirections": "الحصول على الاتجاهات",
-    "attachment": "مرفق",
-    "billingTitle": "ملخص الفاتورة",
-    "finalAmount": "المبلغ النهائي:",
-    "paidAmount": "المدفوع:",
-    "remainingAmount": "المتبقي:",
-    "paymentStatus": "حالة الدفع:",
-    "viewInvoice": "عرض الفاتورة",
-    "invoiceHiddenTitle": "الفاتورة غير متاحة بعد",
-    "invoiceHiddenDescription": "ستظهر تفاصيل الفاتورة بمجرد اعتمادها لعرض المريض.",
-    "requestNumberLabel": "رقم الطلب",
-    "serviceCategory": "الفئة",
-    "currentStage": "المرحلة الحالية",
-    "scheduledPending": "لم تتم الجدولة بعد",
-    "requestNotesTitle": "ملاحظاتك على الطلب",
-    "packageEyebrow": "باقة الرعاية",
-    "packageHeroDescriptionFallback": "تجمع هذه الباقة عدة خطوات رعاية في طلب منسق واحد للفريق الطبي.",
-    "packageSummaryTitle": "نظرة عامة على الباقة",
-    "packageSummaryDescription": "إليك كل ما تتضمنه هذه الباقة حتى تتمكن من فهم الزيارة بوضوح قبل بدايتها.",
-    "packageIncludedItems": "العناصر المشمولة",
-    "packageMedicalServices": "الخدمات الطبية وخدمات الأشعة",
-    "packageLabTestsCount": "فحوصات المختبر المشمولة",
-    "packageReadyForCare": "جاهزة للرعاية المنسقة",
-    "packageReadyForCareDescription": "تبقى جميع خطوات الباقة مرتبطة ضمن طلب واحد لتظل رحلة الرعاية الخاصة بك منظمة.",
-    "packageContents": "محتويات الباقة",
-    "includedConsultationsScans": "الاستشارات والفحوصات المشمولة",
-    "packageIncludedServicesDescription": "الاستشارات والإجراءات والأشعة المرتبطة بالفعل بهذه الباقة.",
-    "noPackageServices": "لا توجد خدمات طبية أو أشعة مرتبطة بهذه الباقة.",
-    "includedLabTests": "فحوصات المختبر المشمولة",
-    "packageIncludedLabTestsDescription": "فحوصات المختبر التي تُعد جزءًا من هذه الباقة بالفعل.",
-    "noPackageLabTests": "لا توجد فحوصات مختبر مرتبطة بهذه الباقة."
   },
   "chatPage": {
     "adminOnlyBadge": "صندوق الوارد",
@@ -399,7 +184,10 @@
     "getDirections": "الاتجاهات",
     "typeMessage": "اكتب رسالة",
     "file": "ملف",
-    "send": "إرسال"
+    "send": "إرسال",
+    "attachmentFailed": "تعذّر تنزيل المرفق.",
+    "attachmentTooLarge": "الملف كبير جدًا. الحد الأقصى 25 ميغابايت.",
+    "removeAttachment": "إزالة المرفق"
   },
   "enums": {
     "UNKNOWN": "غير معروف",
@@ -448,7 +236,11 @@
     "other": "أخرى",
     "TRIAGE": "فرز",
     "WAITING_SUB_REPORTS": "بانتظار التقارير الداعمة",
-    "DOCTOR_REVIEW": "مراجعة الطبيب"
+    "DOCTOR_REVIEW": "مراجعة الطبيب",
+    "NURSING": "تمريض",
+    "CARD": "بطاقة",
+    "INSURANCE": "تأمين",
+    "CLICK": "كليك"
   },
   "dashboardPage": {
     "viewAll": "عرض الكل",
@@ -501,12 +293,17 @@
     "tryAgain": "حاول مرة أخرى",
     "providerLabel": "مقدم الخدمة",
     "pendingAssignment": "بانتظار التعيين",
-    "viewDetails": "عرض التفاصيل"
+    "viewDetails": "عرض التفاصيل",
+    "moreItems": "+{count} أخرى",
+    "totalLabel": "الإجمالي",
+    "orderAgain": "اطلب مجددًا"
   },
   "invoicesPage": {
     "title": "فواتيري",
     "empty": "لا توجد فواتير بعد.",
-    "viewDetails": "عرض التفاصيل"
+    "viewDetails": "عرض التفاصيل",
+    "description": "تظهر الفواتير هنا بعد مراجعة الطلب وإغلاقه.",
+    "remaining": "المتبقي: {amount}"
   },
   "invoiceDetailPage": {
     "notFound": "الفاتورة غير موجودة.",
@@ -514,13 +311,12 @@
     "service": "الخدمة",
     "date": "التاريخ",
     "original": "الأصلي",
-    "couponDiscount": "خصم الكوبون",
-    "pointsDiscount": "خصم النقاط",
     "total": "الإجمالي",
     "paid": "المدفوع",
     "remaining": "المتبقي",
-    "method": "الطريقة",
-    "downloadPdf": "تنزيل PDF"
+    "downloadPdf": "تنزيل PDF",
+    "payments": "الدفعات",
+    "viewOrder": "عرض الطلب"
   },
   "notificationsPage": {
     "title": "الإشعارات",
@@ -556,7 +352,7 @@
       },
       "CASE_CREATED": {
         "title": "وصلنا طلبك",
-        "body": "تم استلام طلب {service}. سنُعلمك بالخطوات التالية."
+        "body": "وصل طلبك إلينا، وسنبقيك على اطلاع بالخطوات التالية."
       },
       "CASE_ASSIGNED": {
         "title": "تم تعيين مقدم خدمة",
@@ -582,43 +378,24 @@
         "title": "تم سداد الفاتورة بالكامل",
         "body": "تم سداد فاتورة الحالة بالكامل."
       },
-      "POINTS_EARNED": {
-        "title": "تم كسب نقاط",
-        "body": "لقد ربحت {points} نقطة. الرصيد الحالي: {totalPoints} نقطة."
-      },
       "REPORT_PUBLISHED": {
         "title": "تقريرك جاهز",
         "body": "تمت مراجعة تقريرك الطبي وأصبح متاحاً للتحميل."
       }
-    }
+    },
+    "previous": "السابق",
+    "next": "التالي"
   },
   "newRequestPage": {
     "title": "طلب جديد",
     "medical": "طبي",
     "radiology": "أشعة",
-    "lab": "مختبر",
     "comprehensivePackages": "باقات شاملة",
-    "labTests": "فحوصات المختبر",
-    "labPackages": "باقات المختبر",
-    "labPackage": "باقة مختبر",
-    "labPanels": "لوحات المختبر",
-    "labPanel": "لوحة مختبر",
-    "individualTest": "فحص منفرد",
-    "testPanel": "لوحة فحوصات",
     "noServices": "لا توجد خدمات حالياً. يرجى تحديث الصفحة والمحاولة مجدداً.",
-    "noLabPanels": "لا توجد لوحات مخبرية حالياً. يرجى تحديث الصفحة والمحاولة مجدداً.",
-    "noLabPackages": "لا توجد حزم مختبر حالياً. يرجى تحديث الصفحة والمحاولة مجدداً.",
     "noComprehensivePackages": "لا توجد باقات رعاية حالياً. يرجى تحديث الصفحة والمحاولة مجدداً.",
     "requestSubmitted": "تم إرسال الطلب",
     "packageContents": "محتويات الباقة",
-    "panelTests": "فحوصات اللوحة",
     "includedConsultations": "الاستشارات والفحوصات المشمولة",
-    "includedLabTests": "فحوصات المختبر المشمولة",
-    "noLabTestsInPackage": "لا توجد فحوصات مختبر في هذه الباقة.",
-    "unit": "الوحدة",
-    "reference": "المرجع",
-    "testsCount": "{count} فحص",
-    "panelsCount": "{count} لوحة",
     "servicesCount": "{count} خدمة",
     "notesPlaceholder": "ملاحظات",
     "reviewBeforeSubmit": "مراجعة أخيرة",
@@ -639,28 +416,10 @@
     "reviewHint": "لن نرسل طلبك إلا بعد تأكيدك.",
     "notProvided": "غير متوفر"
   },
-  "labCatalog": {
-    "labPanels": "لوحات المختبر",
-    "labPanel": "لوحة مختبر",
-    "labPackages": "باقات المختبر",
-    "labPackage": "باقة مختبر",
-    "createLabPanel": "إنشاء لوحة مختبر",
-    "createLabPackage": "إنشاء باقة مختبر",
-    "editLabPanel": "تعديل لوحة المختبر",
-    "editLabPackage": "تعديل باقة المختبر",
-    "panelTests": "فحوصات اللوحة",
-    "packageContents": "محتويات الباقة",
-    "sampleTypes": "أنواع العينات",
-    "turnaroundHours": "مدة الإنجاز (ساعات)",
-    "selectTests": "اختر الفحوصات",
-    "selectPanels": "اختر اللوحات",
-    "radiology": "الأشعة",
-    "individualTest": "فحص منفرد",
-    "testPanel": "لوحة فحوصات"
-  },
   "homeExperience": {
     "hero": {
       "eyebrow": "رعاية صحية منزلية — قريبًا",
+      "eyebrowLive": "رعاية صحية منزلية في عمّان",
       "titleLineOne": "الرعاية الصحية",
       "titleLineTwo": "تصل",
       "titleAccent": "إليك.",
@@ -698,7 +457,8 @@
           "2": "كل خدمة مصممة للتقديم في المنزل، وليست مجرد نقل لخدمة المستشفى.",
           "3": "كل زيارة تنتهي بتقرير طبي رقمي متاح للتحميل."
         }
-      }
+      },
+      "requestCtaLive": "احجز زيارة منزلية"
     },
     "categories": {
       "eyebrow": "خدماتنا",
@@ -805,7 +565,7 @@
     "selectedCount": "محدد",
     "completeRequest": "متابعة",
     "minSelectionError": "يرجى اختيار خدمة واحدة على الأقل",
-    "maxSelectionHint": "يمكن اختيار 5 خدمات كحد أقصى",
+    "maxSelectionHint": "يمكنك اختيار {max} عناصر كحد أقصى",
     "otherCategory": "أخرى",
     "actions": {
       "startRequest": "الحجز قريبًا",
@@ -814,7 +574,8 @@
       "goToDashboard": "الذهاب إلى لوحة التحكم",
       "requestThis": "اطلب هذا الخيار",
       "signInForThis": "سجّل الدخول لهذا الخيار",
-      "backHome": "العودة للرئيسية"
+      "backHome": "العودة للرئيسية",
+      "orderNow": "احجز الآن"
     },
     "guestRequest": {
       "title": "احجز كضيف",
@@ -862,17 +623,14 @@
       "priceOnRequest": "السعر عند الطلب",
       "curatedFor home delivery": "محسن للرعاية المنزلية",
       "curatedForHome": "محسن للرعاية المنزلية",
-      "labTest": "فحص مخبري",
-      "labBundle": "باقة مخبرية",
-      "comprehensiveBundle": "باقة رعاية",
       "price": "السعر التقريبي",
       "defaultDescription": "هذه الخدمة متاحة للزيارة المنزلية عبر كيرفي.",
       "serviceMode": "خدمة منزلية",
       "openForBooking": "متاح عند الإطلاق",
-      "unit": "الوحدة",
-      "referenceRange": "النطاق السريري",
       "includedServices": "الخدمات المشمولة",
-      "includedTests": "الفحوصات المرتبطة",
+      "includedServicesCount": "{count, plural, one {تشمل خدمة واحدة} two {تشمل خدمتين} few {تشمل # خدمات} many {تشمل # خدمة} other {تشمل # خدمة}}",
+      "moreServices": "+{count} أخرى",
+      "youSave": "توفّر {amount}",
       "preview": "تفاصيل الخدمة",
       "requestReady": "مخطط للإطلاق",
       "searchPlaceholder": "ابحث في هذه الفئة"
@@ -936,6 +694,11 @@
         "subtitle": "عدة خدمات في طلب واحد منسق.",
         "story": "عندما تحتاج إلى أكثر من خدمة — كل شيء منسق معاً وبسيط."
       }
+    },
+    "bottomBandLive": {
+      "eyebrow": "احجز زيارة منزلية",
+      "title": "نحن جاهزون عندما تكون جاهزًا.",
+      "copy": "اختر ما تحتاجه وأرسل طلبك خلال دقيقة، وسنتصل بك لتأكيد الزيارة."
     }
   },
   "footer": {
@@ -1205,9 +968,9 @@
     "pageOf": "صفحة {page} من {total}",
     "toggleTheme": "تبديل المظهر",
     "patientFallback": "مريض",
-    "pointsBalance": "{count} نقطة",
     "english": "الإنجليزية",
-    "arabic": "العربية"
+    "arabic": "العربية",
+    "validationError": "بعض البيانات غير صحيحة. راجع النموذج وحاول مرة أخرى."
   },
   "testimonials": {
     "title": "قصص حقيقية من مرضانا",
@@ -1261,7 +1024,9 @@
       "DOCTOR": "زيارة طبيب",
       "LAB": "فحوصات المختبر",
       "IMAGING": "الأشعة"
-    }
+    },
+    "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
+    "downloadSickLeave": "تنزيل الإجازة المرضية"
   },
   "profilePage": {
     "title": "ملفي الصحي",
@@ -1269,13 +1034,11 @@
       "personal": "المعلومات الشخصية",
       "medical": "المعلومات الصحية",
       "security": "كلمة المرور والأمان",
-      "loyalty": "نقاط الولاء",
       "appearance": "الشاشة"
     },
     "personalTitle": "المعلومات الشخصية",
     "medicalTitle": "المعلومات الصحية",
     "securityTitle": "كلمة المرور والأمان",
-    "loyaltyTitle": "نقاط الولاء",
     "appearanceTitle": "إعدادات الشاشة",
     "fullName": "الاسم الكامل",
     "phone": "رقم الهاتف",
@@ -1288,9 +1051,7 @@
     "currentPassword": "كلمة المرور الحالية",
     "newPassword": "كلمة المرور الجديدة",
     "confirmPassword": "تأكيد كلمة المرور الجديدة",
-    "currentPointsBalance": "رصيد النقاط الحالي",
     "standardMember": "الفئة القياسية",
-    "noPointsHistory": "لا يوجد سجل نشاط حتى الآن.",
     "profileUpdated": "تم تحديث الملف",
     "profileUpdateFailed": "ما قدرنا نحدّث الملف",
     "medicalUpdated": "تم تحديث المعلومات الصحية",
@@ -1308,11 +1069,258 @@
       "confirmPasswordMin": "أكّد كلمة المرور الجديدة من فضلك",
       "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين"
     },
-    "loyaltyReasons": {
-      "REQUEST_COMPLETED": "رحلة رعاية ناجحة",
-      "POINTS_EARNED": "مكافأة التفاعل",
-      "POINTS_REDEEMED": "تم استبدال المكافأة",
-      "INVOICE_PAID": "تسوية الحساب"
+    "area": "المنطقة",
+    "passwordUpdatedRelogin": "تم تغيير كلمة المرور. يرجى تسجيل الدخول مرة أخرى.",
+    "validationError": "بعض البيانات غير صحيحة. راجع النموذج وحاول مرة أخرى."
+  },
+  "orders": {
+    "reference": "الطلب {reference}",
+    "caseStatus": {
+      "PENDING": "بانتظار التأكيد",
+      "ACCEPTED": "تم التأكيد",
+      "IN_PROGRESS": "قيد التنفيذ",
+      "COMPLETED": "مكتمل",
+      "CLOSED": "مغلق",
+      "CANCELLED": "ملغي"
+    },
+    "caseStatusHint": {
+      "PENDING": "استلمنا طلبك ونرتّب مقدم الخدمة المناسب.",
+      "ACCEPTED": "تم تعيين فريق الرعاية ويجري تحديد موعد الزيارة.",
+      "IN_PROGRESS": "بدأ فريق الرعاية العمل على طلبك.",
+      "COMPLETED": "اكتملت جميع الخدمات ونراجع النتائج.",
+      "CLOSED": "تمت المراجعة وأُغلق الطلب. فاتورتك وتقريرك متاحان.",
+      "CANCELLED": "تم إلغاء هذا الطلب."
+    },
+    "serviceStatus": {
+      "PENDING": "بانتظار التعيين",
+      "ASSIGNED": "تم تعيين مقدم الخدمة",
+      "ACCEPTED": "قبِلها مقدم الخدمة",
+      "IN_PROGRESS": "قيد التنفيذ",
+      "COMPLETED": "مكتملة",
+      "CANCELLED": "ملغاة"
+    },
+    "paymentStatus": {
+      "PENDING": "غير مدفوعة",
+      "PARTIAL": "مدفوعة جزئيًا",
+      "PAID": "مدفوعة",
+      "CANCELLED": "ملغاة"
+    },
+    "paymentMethods": {
+      "CASH": "نقدًا",
+      "CARD": "بطاقة",
+      "INSURANCE": "تأمين",
+      "CLICK": "كليك",
+      "OTHER": "أخرى"
+    },
+    "itemTypes": {
+      "SERVICE": "خدمة",
+      "PACKAGE": "باقة"
+    },
+    "itemTypesPlural": {
+      "SERVICE": "الخدمات",
+      "PACKAGE": "الباقات"
+    },
+    "serviceKinds": {
+      "MEDICAL": "خدمة طبية",
+      "NURSING": "خدمة تمريضية",
+      "RADIOLOGY": "أشعة",
+      "LAB": "فحص مخبري"
+    },
+    "appointmentTypes": {
+      "INITIAL": "زيارة",
+      "FOLLOW_UP": "متابعة"
+    },
+    "area": {
+      "label": "المنطقة",
+      "placeholder": "اختر منطقتك",
+      "loading": "جارٍ تحميل المناطق...",
+      "loadError": "تعذّر تحميل المناطق. حدّث الصفحة وحاول مرة أخرى.",
+      "none": "غير محددة"
+    },
+    "tracking": {
+      "linkTitle": "رابط تتبع طلبك",
+      "linkHint": "احفظ هذا الرابط الآن. يظهر مرة واحدة فقط، وهو الطريقة الوحيدة لمتابعة الطلب بدون حساب.",
+      "copy": "نسخ الرابط",
+      "copied": "تم نسخ الرابط",
+      "copyFailed": "تعذّر نسخ الرابط. حدّده وانسخه يدويًا.",
+      "open": "فتح صفحة التتبع"
+    },
+    "timeline": {
+      "cancelledWithReason": "تم إلغاء هذا الطلب: {reason}",
+      "itemsReached": "{count} من {total} عناصر"
+    },
+    "errors": {
+      "ITEM_INACTIVE": "أحد العناصر المختارة لم يعد متاحًا. أزله وحاول مرة أخرى.",
+      "ITEM_INACTIVE_NAMED": "\"{item}\" لم يعد متاحًا. أزله وحاول مرة أخرى.",
+      "ITEM_NOT_FOUND": "أحد العناصر المختارة لم يعد موجودًا. أزله وحاول مرة أخرى.",
+      "VIP_ONLY": "أحد العناصر المختارة متاح لأعضاء VIP فقط.",
+      "VIP_ONLY_NAMED": "\"{item}\" متاح لأعضاء VIP فقط.",
+      "INVALID_AREA": "لا نخدم المنطقة المختارة حاليًا. يرجى اختيار منطقة أخرى.",
+      "ADDRESS_REQUIRED": "يرجى إدخال عنوان الزيارة.",
+      "VALIDATION_ERROR": "بعض البيانات غير صحيحة. راجع النموذج وحاول مرة أخرى.",
+      "CASE_IN_PROGRESS": "بدأ العمل على هذا الطلب بالفعل. يرجى التواصل مع الدعم لإلغائه.",
+      "INVALID_CASE_STATUS": "لم يعد بالإمكان تعديل هذا الطلب.",
+      "REFUND_REQUIRED": "تم تسجيل دفعات لهذا الطلب. يرجى التواصل مع الدعم لإلغائه.",
+      "ALREADY_RATED": "لقد قيّمت هذه الخدمة مسبقًا.",
+      "ALREADY_CLAIMED": "هذا الطلب مرتبط بحساب آخر بالفعل.",
+      "INVALID_SERVICE_STATUS": "لا يمكن تحديث هذه الخدمة في حالتها الحالية.",
+      "NOT_FOUND": "لم نتمكن من العثور على هذا الطلب.",
+      "CHAT_CLOSED": "هذه المحادثة مغلقة.",
+      "EMPTY_MESSAGE": "اكتب رسالة أو أرفق ملفًا.",
+      "RATE_LIMITED": "محاولات كثيرة. يرجى الانتظار قليلًا ثم المحاولة مرة أخرى.",
+      "GENERIC": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "orderForm": {
+    "title": "طلب جديد",
+    "subtitle": "اختر الخدمات التي تحتاجها وأخبرنا أين نأتي إليك، والباقي علينا.",
+    "backToOrders": "طلباتي",
+    "catalogTitle": "اختر ما تحتاجه",
+    "catalogDescription": "أضف خدمات (طبية أو تمريضية أو أشعة أو فحوصات مخبرية) وباقات إلى طلب واحد.",
+    "serviceKinds": {
+      "ALL": "الكل",
+      "MEDICAL": "طبية",
+      "NURSING": "تمريض",
+      "RADIOLOGY": "أشعة",
+      "LAB": "فحوصات مخبرية"
+    },
+    "searchPlaceholder": "ابحث في الخدمات",
+    "catalogLoadError": "تعذّر تحميل هذا القسم من الخدمات.",
+    "catalogEmpty": "لا توجد نتائج مطابقة لبحثك.",
+    "vipOnly": "VIP",
+    "priceOnRequest": "يُحدَّد السعر بعد الطلب",
+    "includedServices": "{count, plural, one {تشمل خدمة واحدة} two {تشمل خدمتين} few {تشمل # خدمات} many {تشمل # خدمة} other {تشمل # خدمة}}",
+    "moreServices": "+{count} أخرى",
+    "youSave": "توفّر {amount}",
+    "add": "إضافة",
+    "added": "مضاف",
+    "remove": "إزالة",
+    "selectedTitle": "طلبك",
+    "selectedEmpty": "لم تختر أي عنصر بعد.",
+    "maxItems": "يمكنك طلب حتى {max} عناصر في المرة الواحدة.",
+    "unavailable": "لم يعد متاحًا",
+    "unavailableNotice": "بعض عناصر طلبك السابق لم تعد متاحة ولن تُضاف إلى الطلب.",
+    "estimatedTotal": "الإجمالي التقديري",
+    "orderTotal": "إجمالي الطلب",
+    "priceNote": "تحسب كيورفي الأسعار النهائية عند إنشاء الطلب.",
+    "vipPriceNote": "يُطبَّق خصم VIP الخاص بك تلقائيًا عند إنشاء الطلب.",
+    "visitTitle": "تفاصيل الزيارة",
+    "address": "عنوان الزيارة",
+    "addressPlaceholder": "الشارع، البناية، الطابق",
+    "addressHint": "اتركه فارغًا لاستخدام العنوان المحفوظ في ملفك.",
+    "scheduledFor": "الوقت المفضل (اختياري)",
+    "scheduledForHint": "سنؤكد معك الموعد الدقيق.",
+    "scheduledInPast": "اختر وقتًا في المستقبل.",
+    "notes": "ملاحظات (اختياري)",
+    "notesPlaceholder": "أي معلومات يحتاجها فريق الرعاية",
+    "submit": "تأكيد الطلب",
+    "submitting": "جارٍ إرسال الطلب...",
+    "success": "تم إرسال طلبك.",
+    "itemsRequired": "أضف عنصرًا واحدًا على الأقل إلى طلبك.",
+    "areaRequired": "يرجى اختيار منطقتك.",
+    "addressRequired": "يرجى إدخال عنوان الزيارة.",
+    "guest": {
+      "successTitle": "تم إرسال طلبك",
+      "successDescription": "سنتصل بك لتأكيد الزيارة. استخدم الرابط أدناه لمتابعة طلبك."
+    }
+  },
+  "trackPage": {
+    "metaTitle": "تتبع طلبك | كيورفي",
+    "title": "تتبع الطلب",
+    "createdAt": "تم الطلب في {date}",
+    "refresh": "تحديث",
+    "notFoundTitle": "الطلب غير موجود",
+    "notFoundDescription": "رابط التتبع غير صالح، أو أن الطلب أُضيف إلى حساب بالفعل.",
+    "loadError": "تعذّر تحميل هذا الطلب الآن.",
+    "backHome": "العودة للرئيسية",
+    "preferredTime": "الوقت المفضل",
+    "noPreferredTime": "سيتم التأكيد",
+    "total": "الإجمالي",
+    "itemsTitle": "العناصر المطلوبة",
+    "provider": "مقدم الخدمة: {name}",
+    "appointmentsTitle": "المواعيد",
+    "noAppointments": "لم يُحدَّد موعد بعد. سنتواصل معك لتأكيد الوقت.",
+    "claimTitle": "أضف هذا الطلب إلى حسابك",
+    "claimDescription": "احتفظ بجميع طلباتك وتقاريرك وفواتيرك في مكان واحد.",
+    "claimButton": "إضافة إلى حسابي",
+    "claiming": "جارٍ الإضافة...",
+    "claimed": "تمت إضافة الطلب إلى حسابك.",
+    "loginToClaim": "سجّل الدخول لإضافته",
+    "registerToClaim": "إنشاء حساب"
+  },
+  "orderDetail": {
+    "notFound": "الطلب غير موجود.",
+    "backToOrders": "طلباتي",
+    "createdAt": "تم الطلب في {date}",
+    "openChat": "محادثة فريق الرعاية",
+    "orderAgain": "اطلب مجددًا",
+    "address": "عنوان الزيارة",
+    "preferredTime": "الوقت المفضل",
+    "noPreferredTime": "سيتم التأكيد",
+    "total": "الإجمالي",
+    "notes": "ملاحظاتك",
+    "itemsTitle": "العناصر المطلوبة",
+    "itemsDescription": "{count, plural, =0 {لا توجد عناصر نشطة} one {عنصر نشط واحد} two {عنصران نشطان} few {# عناصر نشطة} many {# عنصرًا نشطًا} other {# عنصر نشط}}",
+    "chat": "محادثة",
+    "awaitingProvider": "نقوم بتعيين مقدم خدمة لهذا العنصر.",
+    "downloads": {
+      "notAvailable": "هذا الملف غير متاح بعد.",
+      "failed": "فشل التنزيل. يرجى المحاولة مرة أخرى."
+    },
+    "rating": {
+      "rate": "قيّم الخدمة",
+      "title": "كيف كانت زيارتك؟",
+      "descriptionWithProvider": "{service} مع {provider}",
+      "stars": "{count, plural, one {نجمة واحدة} two {نجمتان} few {# نجوم} many {# نجمة} other {# نجمة}}",
+      "commentPlaceholder": "أخبرنا المزيد (اختياري)",
+      "cancel": "إلغاء",
+      "submit": "إرسال التقييم",
+      "success": "شكرًا لتقييمك.",
+      "yourRating": "تقييمك: {rating}/5"
+    },
+    "report": {
+      "title": "التقرير الطبي",
+      "description": "يتوفر تقريرك والإجازة المرضية (إن وجدت) بعد نشرهما.",
+      "availableAfterClose": "سيتوفر تقريرك بعد مراجعة الطلب وإغلاقه.",
+      "download": "تنزيل التقرير",
+      "sickLeave": "تنزيل الإجازة المرضية",
+      "notReady": "لم يُنشر تقريرك بعد."
+    },
+    "files": {
+      "title": "ملفات من مقدم الخدمة",
+      "types": {
+        "PDF": "مستند PDF",
+        "IMAGE": "صورة"
+      },
+      "sickLeave": "إجازة مرضية",
+      "download": "تنزيل"
+    },
+    "invoice": {
+      "title": "الفاتورة",
+      "estimate": "المبلغ المطلوب دفعه. تُتاح الفاتورة الكاملة عند إغلاق الطلب.",
+      "released": "فاتورة هذا الطلب.",
+      "none": "لا توجد فاتورة لهذا الطلب.",
+      "original": "المجموع الفرعي",
+      "final": "الإجمالي",
+      "paymentStatus": "الدفع",
+      "paid": "المدفوع",
+      "remaining": "المتبقي",
+      "adjustments": "التعديلات",
+      "adjustmentTypes": {
+        "DISCOUNT": "خصم",
+        "SURCHARGE": "رسوم إضافية"
+      },
+      "payments": "الدفعات",
+      "downloadPdf": "تنزيل الفاتورة PDF"
+    },
+    "cancel": {
+      "button": "إلغاء الطلب",
+      "title": "هل تريد إلغاء هذا الطلب؟",
+      "description": "يمكنك الإلغاء قبل أن يبدأ فريق الرعاية العمل. لا يمكن التراجع عن ذلك.",
+      "reasonPlaceholder": "السبب (اختياري)",
+      "keep": "الإبقاء على الطلب",
+      "confirm": "إلغاء الطلب",
+      "success": "تم إلغاء طلبك."
     }
   }
 }

@@ -1,58 +1,69 @@
 "use client";
 
-const SOCKET_IO_CDN = "https://cdn.socket.io/4.7.5/socket.io.min.js";
-const DEFAULT_API_BASE_URL = "http://localhost:5000/api/v1";
+import { io, type Socket } from "socket.io-client";
+import { handleSessionExpired, refreshAccessToken } from "@/lib/api/client";
+import { API_ORIGIN } from "@/lib/env";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
-export type AppSocket = {
-  connected?: boolean;
-  emit: (event: string, payload?: unknown) => void;
-  on: (event: string, handler: (...args: unknown[]) => void) => void;
-  disconnect: () => void;
-};
+export type AppSocket = Socket;
 
-type SocketFactory = (url: string, opts?: unknown) => AppSocket;
+const AUTH_ERROR_PATTERN = /(authentication required|invalid token|token revoked)/i;
+const MAX_AUTH_RETRIES = 3;
 
-let socketIoFactoryPromise: Promise<SocketFactory | null> | null = null;
-
-export function getSocketUrl() {
-  return (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_BASE_URL)
-    .trim()
-    .replace(/\/api\/v1\/?$/, "")
-    .replace(/\/$/, "");
-}
-
-export function loadSocketFactory() {
-  if (typeof window === "undefined") {
-    return Promise.resolve<SocketFactory | null>(null);
-  }
-
-  const currentWindow = window as Window & { io?: SocketFactory };
-  if (currentWindow.io) {
-    return Promise.resolve(currentWindow.io);
-  }
-
-  if (!socketIoFactoryPromise) {
-    socketIoFactoryPromise = new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = SOCKET_IO_CDN;
-      script.async = true;
-      script.onload = () => resolve((window as Window & { io?: SocketFactory }).io || null);
-      script.onerror = () => resolve(null);
-      document.head.appendChild(script);
-    });
-  }
-
-  return socketIoFactoryPromise;
-}
-
-export async function connectAppSocket(accessToken: string) {
-  const factory = await loadSocketFactory();
-  if (!factory) {
-    return null;
-  }
-
-  return factory(getSocketUrl(), {
-    auth: { token: accessToken },
+/**
+ * Opens the realtime connection to the API origin. The handshake always reads the latest in-memory
+ * access token, and when the server drops the socket because the token expired (or rejects the
+ * handshake), the token is refreshed and the socket reconnects with the new one.
+ */
+export function createAppSocket(): AppSocket {
+  const socket = io(API_ORIGIN, {
+    path: "/socket.io",
     transports: ["websocket", "polling"],
+    autoConnect: false,
+    withCredentials: true,
+    auth: (callback) => callback({ token: useAuthStore.getState().accessToken || "" }),
   });
+
+  let refreshing = false;
+  let consecutiveAuthFailures = 0;
+
+  socket.on("connect", () => {
+    consecutiveAuthFailures = 0;
+  });
+
+  const refreshAndReconnect = async () => {
+    if (refreshing) return;
+    // Stop retrying (REST keeps working with its own fallback refetch) if the server keeps rejecting fresh tokens.
+    if (consecutiveAuthFailures >= MAX_AUTH_RETRIES) return;
+    consecutiveAuthFailures += 1;
+    refreshing = true;
+
+    try {
+      await refreshAccessToken();
+      if (!socket.connected) {
+        socket.connect();
+      }
+    } catch {
+      socket.disconnect();
+      handleSessionExpired();
+    } finally {
+      refreshing = false;
+    }
+  };
+
+  socket.on("disconnect", (reason) => {
+    // "io server disconnect" is what the backend does when the access token expires.
+    // socket.io does not reconnect on its own in that case.
+    if (reason === "io server disconnect") {
+      void refreshAndReconnect();
+    }
+  });
+
+  socket.on("connect_error", (error) => {
+    if (AUTH_ERROR_PATTERN.test(error?.message || "")) {
+      void refreshAndReconnect();
+    }
+  });
+
+  return socket;
 }

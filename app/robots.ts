@@ -1,31 +1,17 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo";
 
-const dashboardDisallowPaths = [
-  "/en/dashboard",
-  "/en/requests",
-  "/en/invoices",
-  "/en/reports",
-  "/en/chat",
-  "/en/notifications",
-  "/en/profile",
-  "/ar/dashboard",
-  "/ar/requests",
-  "/ar/invoices",
-  "/ar/reports",
-  "/ar/chat",
-  "/ar/notifications",
-  "/ar/profile",
-];
-
+// Account pages are not blocked here on purpose: they carry `noindex`, and Google can only
+// honour that tag on pages it is allowed to crawl (blocking them yields "Indexed, though
+// blocked by robots.txt"). Tracking links hold a private token and are never linked
+// publicly, so they stay blocked outright.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: dashboardDisallowPaths,
+      disallow: ["/en/track/", "/ar/track/"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
   };
 }

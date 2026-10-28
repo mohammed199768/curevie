@@ -1,86 +1,70 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import type { PatientUser } from "@/lib/api/types";
 
 export interface Patient {
   id: string;
   full_name: string;
   email: string;
   phone: string;
+  secondary_phone?: string | null;
   gender?: string | null;
   date_of_birth?: string | null;
   address?: string | null;
+  area_id?: string | null;
   avatar_url?: string | null;
-  points: number;
+  is_vip?: boolean;
+  vip_discount?: number | string | null;
   role: "PATIENT";
 }
 
 interface AuthState {
   patient: Patient | null;
+  /** Short-lived access token. Kept in memory only; the refresh token lives in an httpOnly cookie. */
   accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
+  /** True once the session restore attempt (POST /auth/refresh on page load) has finished. */
   hydrated: boolean;
-  setAuth: (patient: Patient, accessToken: string, refreshToken?: string | null) => void; // FIX: F14 — keep the refresh token optional because it now lives in an httpOnly cookie.
-  setTokens: (accessToken: string, refreshToken?: string | null) => void; // FIX: F14 — let refresh flows update only the access token while keeping cookie-based refresh opaque to JS.
+  setAuth: (patient: Patient, accessToken: string) => void;
+  setAccessToken: (accessToken: string) => void;
   patchPatient: (patientPatch: Partial<Patient>) => void;
   logout: () => void;
   setHydrated: (value: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
+export function toPatient(user: PatientUser): Patient {
+  return {
+    id: user.id,
+    full_name: user.full_name,
+    email: user.email,
+    phone: user.phone || "",
+    secondary_phone: user.secondary_phone ?? null,
+    gender: user.gender ?? null,
+    date_of_birth: user.date_of_birth ?? null,
+    address: user.address ?? null,
+    area_id: user.area_id ?? null,
+    avatar_url: user.avatar_url ?? null,
+    is_vip: Boolean(user.is_vip),
+    vip_discount: user.vip_discount ?? null,
+    role: "PATIENT",
+  };
+}
+
+export const useAuthStore = create<AuthState>()((set) => ({
+  patient: null,
+  accessToken: null,
+  isAuthenticated: false,
+  hydrated: false,
+  setAuth: (patient, accessToken) => set({ patient, accessToken, isAuthenticated: true, hydrated: true }),
+  setAccessToken: (accessToken) => set({ accessToken }),
+  patchPatient: (patientPatch) =>
+    set((state) => ({
+      patient: state.patient ? { ...state.patient, ...patientPatch } : state.patient,
+    })),
+  logout: () =>
+    set({
       patient: null,
       accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
-      hydrated: false,
-      setAuth: (patient, accessToken, refreshToken = null) => { // FIX: F14 — default the JS-visible refresh token to null under the cookie architecture.
-        if (typeof window !== "undefined") {
-          localStorage.setItem("access_token", accessToken);
-          localStorage.removeItem("refresh_token"); // FIX: F14 — clear any stale refresh token because the browser cookie now owns refresh state.
-        }
-
-        set({ patient, accessToken, refreshToken, isAuthenticated: true }); // FIX: F14 — persist only the access token while keeping refresh state null in the store.
-      },
-      setTokens: (accessToken, refreshToken = null) => { // FIX: F14 — let refresh flows update only the access token while the cookie stores the refresh token.
-        if (typeof window !== "undefined") {
-          localStorage.setItem("access_token", accessToken); // FIX: F14 — persist the refreshed access token for header attachment.
-          localStorage.removeItem("refresh_token"); // FIX: F14 — clear any stale JS-managed refresh token after refresh succeeds.
-        }
-
-        set({ accessToken, refreshToken, isAuthenticated: true }); // FIX: F14 — keep Zustand access-token state in sync after a refresh cycle.
-      },
-      patchPatient: (patientPatch) =>
-        set((state) => ({
-          patient: state.patient ? { ...state.patient, ...patientPatch } : state.patient,
-        })),
-      logout: () => {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token"); // FIX: F14 — remove any stale refresh token key left from the old storage model.
-        }
-
-        set({
-          patient: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        });
-      },
-      setHydrated: (value) => set({ hydrated: value }),
     }),
-    {
-      name: "curevie-patient-auth",
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        patient: state.patient,
-        accessToken: state.accessToken,
-        isAuthenticated: state.isAuthenticated,
-      }), // FIX: F14 — persist only the patient identity and access token because refresh lives in the cookie.
-      onRehydrateStorage: () => (state) => {
-        state?.setHydrated(true);
-      },
-    },
-  ),
-);
+  setHydrated: (value) => set({ hydrated: value }),
+}));

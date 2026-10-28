@@ -8,16 +8,17 @@ import { useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AreaSelect } from "@/components/orders/AreaSelect";
 import { I18nDatePicker } from "@/components/shared/I18nDatePicker";
-import { AMMAN_DISTRICT_KEYS, getDistrictLabel } from "@/lib/amman-districts";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { getApiError, getValidationErrors } from "@/lib/utils/apiError"; // FIX: F12 — map backend registration errors into field-level form feedback.
+import { getSafeRedirectPath } from "@/lib/utils/safe-redirect";
 
 const schema = z
   .object({
@@ -27,7 +28,8 @@ const schema = z
     confirm_password: z.string().min(8),
     phone: z.string().min(7),
     secondary_phone: z.string().max(30).optional().or(z.literal("")),
-    address: z.string().min(1, "Please select your district"),
+    area_id: z.string().optional(),
+    address: z.string().trim().max(300).optional(),
     gender: z.enum(["male", "female"]),
     date_of_birth: z.string().optional(),
   })
@@ -66,6 +68,7 @@ export default function RegisterPage() {
       confirm_password: "",
       phone: "",
       secondary_phone: "",
+      area_id: "",
       address: "",
       gender: "male",
       date_of_birth: "",
@@ -82,8 +85,7 @@ export default function RegisterPage() {
               <form
                 className="grid gap-4 md:grid-cols-2"
                 onSubmit={form.handleSubmit(async (values) => {
-                  const redirectParam = searchParams.get("redirect");
-                  const redirectPath = redirectParam?.startsWith("/") ? redirectParam : undefined;
+                  const redirectPath = getSafeRedirectPath(searchParams.get("redirect"));
                   try { // FIX: F12 — catch backend registration failures so field errors can be surfaced inline.
                     await register({
                       full_name: values.full_name,
@@ -91,21 +93,24 @@ export default function RegisterPage() {
                       password: values.password,
                       phone: values.phone,
                       secondary_phone: values.secondary_phone || undefined,
-                      address: values.address,
+                      address: values.address?.trim() || undefined,
+                      area_id: values.area_id || undefined,
                       gender: values.gender,
                       date_of_birth: values.date_of_birth || undefined,
                       redirectTo: redirectPath,
                     });
                   } catch (error) { // FIX: F12 — map backend registration codes into react-hook-form errors when possible.
-                    const { code } = getApiError(error); // FIX: F12 — inspect the backend registration code before setting field state.
-                    if (code === "EMAIL_EXISTS") { // FIX: F12 — pin duplicate-email failures directly to the email field.
-                      form.setError("email", { message: "Email already registered" }); // FIX: F12 — show the duplicate-email backend result next to the email input.
-                    } // FIX: F12 — keep duplicate-email handling scoped to the relevant form field.
-                    if (code === "VALIDATION_ERROR") { // FIX: F12 — convert backend validation details into field-level messages.
-                      Object.entries(getValidationErrors(error)).forEach(([field, message]) => { // FIX: F12 — apply every backend validation message to its matching form field.
-                        form.setError(field as keyof Values, { message }); // FIX: F12 — surface server validation feedback inline instead of only in a toast.
-                      });
-                    } // FIX: F12 — keep validation error mapping limited to backend validation responses.
+                    const apiError = getApiError(error);
+                    if (apiError.code === "EMAIL_EXISTS") {
+                      form.setError("email", { message: t("emailExists") });
+                      return;
+                    }
+                    const fieldErrors = apiError.code === "VALIDATION_ERROR" ? getValidationErrors(error) : {};
+                    const knownFields = Object.keys(form.getValues());
+                    const inline = Object.entries(fieldErrors).filter(([field]) => knownFields.includes(field));
+                    inline.forEach(([field, message]) => form.setError(field as keyof Values, { message }));
+                    // Anything that cannot be attached to a field (rate limit, server error...) still reaches the user.
+                    if (!inline.length) toast.error(apiError.error);
                   }
                 })}
               >
@@ -131,23 +136,19 @@ export default function RegisterPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
+                <FormField control={form.control} name="area_id" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("area")} <span className="text-xs text-muted-foreground">({t("optional")})</span></FormLabel>
+                    <FormControl>
+                      <AreaSelect value={field.value} onChange={field.onChange} allowEmpty />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
                 <FormField control={form.control} name="address" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("address")}</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="h-10">
-                          <SelectValue placeholder={t("selectDistrict")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {AMMAN_DISTRICT_KEYS.map((key) => (
-                          <SelectItem key={key} value={getDistrictLabel(key, locale)}>
-                            {getDistrictLabel(key, locale)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>{t("address")} <span className="text-xs text-muted-foreground">({t("optional")})</span></FormLabel>
+                    <FormControl><Input className="h-10" placeholder={t("addressPlaceholder")} {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

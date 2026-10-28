@@ -26,6 +26,8 @@ import {
   SUPPORT_LOCATION_MAP_URL,
 } from "@/lib/contact";
 import { onContactChannelClick } from "@/lib/analytics";
+import { contactApi } from "@/lib/api/contact";
+import { BOOKINGS_ENABLED } from "@/lib/launch";
 import { cn } from "@/lib/utils";
 
 type ContactFormState = {
@@ -172,7 +174,7 @@ export function PublicContactExperience() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
@@ -180,8 +182,27 @@ export function PublicContactExperience() {
       return;
     }
 
-    setIsSubmitting(false);
-    setPrelaunchOpen(true);
+    if (!BOOKINGS_ENABLED) {
+      setIsSubmitting(false);
+      setPrelaunchOpen(true);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await contactApi.submit({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || undefined,
+        message: form.message.trim(),
+      });
+      setForm(INITIAL_FORM);
+      toast.success(t("success"));
+    } catch {
+      toast.error(t("error"));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -561,7 +582,7 @@ export function PublicContactExperience() {
           </div>
         </div>
       </section>
-      <PrelaunchNoticeDialog open={prelaunchOpen} onOpenChange={setPrelaunchOpen} />
+      {BOOKINGS_ENABLED ? null : <PrelaunchNoticeDialog open={prelaunchOpen} onOpenChange={setPrelaunchOpen} />}
     </div>
   );
 }

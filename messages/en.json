@@ -109,7 +109,11 @@
     "dateOfBirth": "Date of Birth",
     "registering": "Registering...",
     "registerButton": "Create Account",
-    "alreadyHaveAccount": "Already have an account?"
+    "alreadyHaveAccount": "Already have an account?",
+    "rateLimited": "Too many attempts. Please wait 15 minutes and try again.",
+    "emailExists": "This email is already registered.",
+    "area": "Area",
+    "addressPlaceholder": "Street, building, floor"
   },
   "dashboard": {
     "welcome": "Welcome back",
@@ -117,7 +121,7 @@
     "pending": "Pending",
     "completed": "Completed",
     "recentRequests": "Recent Requests",
-    "points": "Loyalty Points"
+    "vipMember": "VIP member — your discount is applied automatically."
   },
   "requests": {
     "title": "My Requests",
@@ -126,225 +130,6 @@
     "bookFirst": "Book your first service",
     "status": "Status",
     "search": "Search requests"
-  },
-  "requestDetail": {
-    "chatSendError": "Failed to send message.",
-    "notFound": "Request not found.",
-    "title": "Request #{id}",
-    "serviceType": "Service type",
-    "createdAt": "Created at",
-    "scheduledAt": "Scheduled at",
-    "assignedProvider": "Assigned provider",
-    "pendingValue": "Pending",
-    "tabs": {
-      "overview": "Overview",
-      "reports": "Reports",
-      "chat": "Chat",
-      "billing": "Billing"
-    },
-    "timelineTitle": "Request Timeline",
-    "timelineSubtitle": "Follow your request step by step with a clearer story of what is happening now and what comes next.",
-    "timelineTrackerEyebrow": "Your request — live",
-    "timelineCurrentMoment": "What is happening now",
-    "timelineNextCheckpoint": "What comes next",
-    "timelineJourneyMap": "Journey map",
-    "timelineJourneyProgress": "{percent}% of the journey is complete",
-    "timelineReachedAt": "Reached on {time}",
-    "timelineWaiting": "Waiting for this step",
-    "timelineStageHistory": "Full activity history",
-    "timelineStagePending": "This stage will unlock automatically when your request moves forward.",
-    "timelineJourneyDoneTitle": "Request fully completed",
-    "timelineJourneyDoneDescription": "The request finished its full journey and your final report is available.",
-    "timelineCreated": "Request created",
-    "timelineScheduled": "Scheduled",
-    "timelineInProgress": "Service started",
-    "timelineCompleted": "Service completed",
-    "timelineClosed": "Report closed",
-    "timelineLatestUpdate": "Latest update",
-    "timelineLatestBadge": "Latest",
-    "timelineLiveFeed": "Live activity feed",
-    "timelineEmpty": "Every new action on your request appears here in order.",
-    "timelineStage": {
-      "completed": "Completed",
-      "current": "Current stage",
-      "upcoming": "Coming next"
-    },
-    "timelineHints": {
-      "received": "We logged your request and prepared it for review.",
-      "assigned": "A provider has been matched and the visit is being organized.",
-      "inProgress": "The provider is actively working on your request.",
-      "completed": "The service is done and the clinical notes are being finalized.",
-      "closed": "Your request is fully closed and the final report is ready."
-    },
-    "timelineRoles": {
-      "you": "You",
-      "admin": "Admin",
-      "provider": "Care provider",
-      "system": "System"
-    },
-    "timelineRooms": {
-      "providerPatient": "Direct provider chat",
-      "patientCare": "Care coordination room",
-      "careTeam": "Care team room",
-      "doctorAdmin": "Doctor and admin room",
-      "generic": "Request chat"
-    },
-    "timelineReportStates": {
-      "draft": "draft",
-      "submitted": "submitted",
-      "approved": "approved",
-      "rejected": "rejected"
-    },
-    "timelineEvents": {
-      "updateTitle": "Request updated",
-      "updateDescription": "A new activity was recorded on your request.",
-      "packageTasksGeneratedTitle": "Your care plan was prepared",
-      "packageTasksGeneratedDescription": "The system generated the package workflow so the medical team can start coordinating service details.",
-      "taskAssignedTitle": "A provider was assigned",
-      "taskAssignedDescription": "A provider has been attached to your request and can continue the next step.",
-      "taskAcceptedTitle": "Provider confirmed the assignment",
-      "taskAcceptedDescription": "Your assigned provider accepted the task and is ready to proceed.",
-      "taskSubmittedTitle": "A task update was submitted",
-      "taskSubmittedDescription": "One of the request tasks was submitted with status {status}.",
-      "statusAssignedDescription": "Your request has moved from waiting to an assigned provider stage.",
-      "statusInProgressDescription": "The visit has started and direct coordination is now active.",
-      "statusCompletedTitle": "Service completed",
-      "statusCompletedDescription": "The provider finished the request and the final review is underway.",
-      "statusClosedDescription": "The request was closed and your final report is ready to review.",
-      "paymentRecordedTitle": "Payment was recorded",
-      "paymentRecordedDescription": "A payment entry was added to this request and is waiting for confirmation if needed.",
-      "paymentApprovedTitle": "Payment approved",
-      "paymentApprovedDescription": "Your payment record has been reviewed and approved.",
-      "finalReportUpdatedTitle": "Final report updated",
-      "finalReportUpdatedDescription": "The final report was updated and is now {status}.",
-      "subReportUpdatedTitle": "Medical note updated",
-      "subReportUpdatedDescription": "A provider updated a supporting report and marked it as {status}.",
-      "finalReportApprovedTitle": "Final report approved",
-      "finalReportApprovedDescription": "Admin approved the final report and moved the request closer to closure.",
-      "finalReportConfirmedTitle": "Lead doctor confirmed the final report",
-      "finalReportConfirmedDescription": "The lead doctor completed the medical confirmation for your final report.",
-      "chatFromYouTitle": "You sent a message",
-      "chatFromYouDescription": "You sent a new message in {room}.",
-      "chatFromProviderTitle": "Provider sent a message",
-      "chatFromProviderDescription": "Your provider added a new message in {room}.",
-      "chatFromAdminTitle": "Admin sent a message",
-      "chatFromAdminDescription": "Admin added a message in {room}.",
-      "chatGenericTitle": "New chat activity",
-      "chatGenericDescription": "A new message was added in {room}.",
-      "orderAddedTitle": "An additional service was added",
-      "orderAddedDescription": "The care team added a new order so the request can move through the required medical steps.",
-      "workflowAdvancedTitle": "Request moving forward",
-      "workflowAdvancedDescription": "Your request has moved to the next step.",
-      "requestClosedTitle": "Request closed",
-      "requestClosedDescription": "Admin closed the request and published the final report package.",
-      "publishedTitle": "Report published",
-      "publishedDescription": "Your final report was published and is ready to download."
-    },
-    "status": {
-      "pendingTitle": "Request received",
-      "pendingDescription": "Your request has been received and is waiting for review.",
-      "acceptedTitle": "Request accepted",
-      "acceptedDescription": "Your request has been accepted and scheduling is in progress.",
-      "assignedTitle": "Provider assigned",
-      "assignedDescription": "A provider has been assigned and will contact you if needed.",
-      "inProgressTitle": "Service in progress",
-      "inProgressDescription": "Your care team is currently working on the request.",
-      "completedTitle": "Service done — report being prepared",
-      "completedDescription": "The service is complete and your final report is on its way.",
-      "closedTitle": "Report ready",
-      "closedDescription": "Your final report is available now.",
-      "cancelledTitle": "Request cancelled",
-      "cancelledDescription": "This request has been cancelled. Contact support if you need help."
-    },
-    "reportTitle": "Final Medical Report",
-    "reportPendingTitle": "Report pending",
-    "reportPendingDescription": "Your report will appear here after the request is closed.",
-    "reportReadyTitle": "Report available",
-    "reportReadyDescription": "You can review the report details and download the PDF.",
-    "downloadError": "Failed to download report.",
-    "downloadPdf": "Download PDF",
-    "openStoredPdf": "Open stored PDF",
-    "openPdf": "Open PDF",
-    "reportDetailsTitle": "Report Details",
-    "providerFallback": "Provider",
-    "summary": "Symptoms summary",
-    "findings": "Findings",
-    "diagnosis": "Diagnosis",
-    "treatmentPlan": "Treatment plan",
-    "recommendations": "Recommendations",
-    "procedures": "Procedures",
-    "allergies": "Allergies",
-    "labNotes": "Lab notes",
-    "imagingNotes": "Imaging notes",
-    "nurseNotes": "Nurse notes",
-    "generalNotes": "General notes",
-    "updatedAt": "Updated at:",
-    "reportHidden": "The report details will appear here once the request is closed.",
-    "labResultsTitle": "Lab Results",
-    "noFlag": "—",
-    "cultureResult": "Culture Result",
-    "cultureAntibiotic": "Antibiotic",
-    "cultureInterpretation": "Result",
-    "cultureStatus": {
-      "NO_GROWTH": "No Growth",
-      "GROWTH": "Growth Detected",
-      "CONTAMINATED": "Contaminated",
-      "PENDING": "Pending"
-    },
-    "chatTitle": "Direct Care Chat",
-    "chatSubtitle": "Your provider can message you here once the service begins.",
-    "chatNotAvailableYet": "Chat will be available when the service starts",
-    "chatClosed": "This conversation is closed",
-    "chatStatusClosed": "Closed",
-    "chatLive": "Live",
-    "chatEmpty": "No messages yet",
-    "chatTypeMessage": "Type a message",
-    "chatSend": "Send",
-    "chatRetry": "Try again",
-    "chatYou": "You",
-    "chatCareProvider": "Care provider",
-    "chatAttachmentReady": "Attachment ready to send",
-    "chatMessageHint": "Enter to send, Shift + Enter for a new line",
-    "chatOpenAttachment": "Open attachment",
-    "chatShareLocation": "Share location",
-    "chatLocationNotSupported": "Location sharing is not supported in this browser",
-    "chatLocationPermissionDenied": "Location permission was denied",
-    "chatLocationFailed": "Failed to share location",
-    "chatLocationMessagePrefix": "Shared location",
-    "chatLocationSent": "Location sent",
-    "chatLocationShared": "Shared location",
-    "chatViewLocation": "View location",
-    "chatGetDirections": "Get directions",
-    "attachment": "Attachment",
-    "billingTitle": "Invoice Summary",
-    "finalAmount": "Final amount:",
-    "paidAmount": "Paid:",
-    "remainingAmount": "Remaining:",
-    "paymentStatus": "Payment status:",
-    "viewInvoice": "View Invoice",
-    "invoiceHiddenTitle": "Invoice not available yet",
-    "invoiceHiddenDescription": "Billing details will appear once the invoice is approved for patient view.",
-    "requestNumberLabel": "Request number",
-    "serviceCategory": "Category",
-    "currentStage": "Current stage",
-    "scheduledPending": "Not scheduled yet",
-    "requestNotesTitle": "Your request notes",
-    "packageEyebrow": "Care package",
-    "packageHeroDescriptionFallback": "This package groups multiple care steps into one coordinated request for the medical team.",
-    "packageSummaryTitle": "Package overview",
-    "packageSummaryDescription": "Here is everything included in this package so you can understand the visit clearly before it starts.",
-    "packageIncludedItems": "Included items",
-    "packageMedicalServices": "Medical & imaging services",
-    "packageLabTestsCount": "Included lab tests",
-    "packageReadyForCare": "Ready for coordinated care",
-    "packageReadyForCareDescription": "All package steps stay linked under one request so your care journey remains organized.",
-    "packageContents": "Package Contents",
-    "includedConsultationsScans": "Included Consultations & Scans",
-    "packageIncludedServicesDescription": "Consultations, procedures, and imaging already attached to this package.",
-    "noPackageServices": "No medical or imaging services are linked to this package.",
-    "includedLabTests": "Included Lab Tests",
-    "packageIncludedLabTestsDescription": "Lab tests that are already part of this package.",
-    "noPackageLabTests": "No lab tests are linked to this package."
   },
   "chatPage": {
     "adminOnlyBadge": "Inbox",
@@ -399,7 +184,10 @@
     "getDirections": "Directions",
     "typeMessage": "Type a message",
     "file": "File",
-    "send": "Send"
+    "send": "Send",
+    "attachmentFailed": "Couldn't download the attachment.",
+    "attachmentTooLarge": "The file is too large. The maximum size is 25 MB.",
+    "removeAttachment": "Remove attachment"
   },
   "enums": {
     "UNKNOWN": "Unknown",
@@ -448,7 +236,11 @@
     "other": "Other",
     "TRIAGE": "Triage",
     "WAITING_SUB_REPORTS": "Waiting for Sub-Reports",
-    "DOCTOR_REVIEW": "Doctor Review"
+    "DOCTOR_REVIEW": "Doctor Review",
+    "NURSING": "Nursing",
+    "CARD": "Card",
+    "INSURANCE": "Insurance",
+    "CLICK": "CliQ"
   },
   "dashboardPage": {
     "viewAll": "View all",
@@ -501,12 +293,17 @@
     "tryAgain": "Try again",
     "providerLabel": "Provider",
     "pendingAssignment": "Pending assignment",
-    "viewDetails": "View details"
+    "viewDetails": "View details",
+    "moreItems": "+{count} more",
+    "totalLabel": "Total",
+    "orderAgain": "Order again"
   },
   "invoicesPage": {
     "title": "My Invoices",
     "empty": "No invoices yet.",
-    "viewDetails": "View details"
+    "viewDetails": "View details",
+    "description": "Invoices are available here once an order is reviewed and closed.",
+    "remaining": "Remaining: {amount}"
   },
   "invoiceDetailPage": {
     "notFound": "Invoice not found.",
@@ -514,13 +311,12 @@
     "service": "Service",
     "date": "Date",
     "original": "Original",
-    "couponDiscount": "Coupon Discount",
-    "pointsDiscount": "Points Discount",
     "total": "Total",
     "paid": "Paid",
     "remaining": "Remaining",
-    "method": "Method",
-    "downloadPdf": "Download PDF"
+    "downloadPdf": "Download PDF",
+    "payments": "Payments",
+    "viewOrder": "View order"
   },
   "notificationsPage": {
     "title": "Notifications",
@@ -556,7 +352,7 @@
       },
       "CASE_CREATED": {
         "title": "Request received",
-        "body": "Your {service} request is with us. We'll keep you updated on next steps."
+        "body": "Your request is with us. We'll keep you updated on next steps."
       },
       "CASE_ASSIGNED": {
         "title": "Provider assigned",
@@ -582,43 +378,24 @@
         "title": "Invoice paid in full",
         "body": "Your case invoice has been paid in full."
       },
-      "POINTS_EARNED": {
-        "title": "Points earned",
-        "body": "You earned {points} points. Current balance: {totalPoints} points."
-      },
       "REPORT_PUBLISHED": {
         "title": "Your report is ready",
         "body": "Your medical report has been reviewed and is ready to download."
       }
-    }
+    },
+    "previous": "Previous",
+    "next": "Next"
   },
   "newRequestPage": {
     "title": "New Request",
     "medical": "Medical",
     "radiology": "Radiology",
-    "lab": "Lab",
     "comprehensivePackages": "Comprehensive Packages",
-    "labTests": "Lab Tests",
-    "labPackages": "Lab Packages",
-    "labPackage": "Lab Package",
-    "labPanels": "Lab Panels",
-    "labPanel": "Lab Panel",
-    "individualTest": "Individual Test",
-    "testPanel": "Test Panel",
     "noServices": "No services right now. Please refresh and try again.",
-    "noLabPanels": "No lab panels right now. Please refresh and try again.",
-    "noLabPackages": "No lab packages right now. Please refresh and try again.",
     "noComprehensivePackages": "No care packages right now. Please refresh and try again.",
     "requestSubmitted": "Request submitted",
     "packageContents": "Package Contents",
-    "panelTests": "Panel Tests",
     "includedConsultations": "Included Consultations & Scans",
-    "includedLabTests": "Included Lab Tests",
-    "noLabTestsInPackage": "No lab tests in this package.",
-    "unit": "Unit",
-    "reference": "Reference",
-    "testsCount": "{count} tests",
-    "panelsCount": "{count} panels",
     "servicesCount": "{count} services",
     "notesPlaceholder": "Notes",
     "reviewBeforeSubmit": "One last check",
@@ -639,28 +416,10 @@
     "reviewHint": "We'll only send your request after you confirm below.",
     "notProvided": "Not provided"
   },
-  "labCatalog": {
-    "labPanels": "Lab Panels",
-    "labPanel": "Lab Panel",
-    "labPackages": "Lab Packages",
-    "labPackage": "Lab Package",
-    "createLabPanel": "Create Lab Panel",
-    "createLabPackage": "Create Lab Package",
-    "editLabPanel": "Edit Lab Panel",
-    "editLabPackage": "Edit Lab Package",
-    "panelTests": "Panel Tests",
-    "packageContents": "Package Contents",
-    "sampleTypes": "Sample Types",
-    "turnaroundHours": "Turnaround (hours)",
-    "selectTests": "Select Tests",
-    "selectPanels": "Select Panels",
-    "radiology": "Radiology",
-    "individualTest": "Individual Test",
-    "testPanel": "Test Panel"
-  },
   "homeExperience": {
     "hero": {
       "eyebrow": "Home healthcare — launching soon",
+      "eyebrowLive": "Home healthcare in Amman",
       "titleLineOne": "Healthcare that",
       "titleLineTwo": "comes",
       "titleAccent": "to you.",
@@ -698,7 +457,8 @@
           "2": "Every service is built for home delivery, not adapted from a hospital setting.",
           "3": "Every completed visit ends with a downloadable digital medical report."
         }
-      }
+      },
+      "requestCtaLive": "Book a home visit"
     },
     "categories": {
       "eyebrow": "Our services",
@@ -805,7 +565,7 @@
     "selectedCount": "selected",
     "completeRequest": "Continue",
     "minSelectionError": "Please select at least one service",
-    "maxSelectionHint": "Maximum 5 services can be selected",
+    "maxSelectionHint": "You can select up to {max} items",
     "otherCategory": "Other",
     "actions": {
       "startRequest": "Booking opens soon",
@@ -814,7 +574,8 @@
       "goToDashboard": "Go to dashboard",
       "requestThis": "Request this option",
       "signInForThis": "Sign in for this option",
-      "backHome": "Back to home"
+      "backHome": "Back to home",
+      "orderNow": "Book now"
     },
     "guestRequest": {
       "title": "Book as a guest",
@@ -862,17 +623,14 @@
       "priceOnRequest": "Price on request",
       "curatedFor home delivery": "Optimized for home care",
       "curatedForHome": "Optimized for home care",
-      "labTest": "Lab test",
-      "labBundle": "Lab package",
-      "comprehensiveBundle": "Care package",
       "price": "Estimated price",
       "defaultDescription": "This service is available for a home visit through Curevie.",
       "serviceMode": "Home Service",
       "openForBooking": "Available at launch",
-      "unit": "Unit",
-      "referenceRange": "Clinical range",
       "includedServices": "Included services",
-      "includedTests": "Associated tests",
+      "includedServicesCount": "{count, plural, one {Includes # service} other {Includes # services}}",
+      "moreServices": "+{count} more",
+      "youSave": "You save {amount}",
       "preview": "Service details",
       "requestReady": "Planned for launch",
       "searchPlaceholder": "Search this category"
@@ -936,6 +694,11 @@
         "subtitle": "Multiple services bundled into one coordinated request.",
         "story": "For when you need more than one service — everything handled together, simply."
       }
+    },
+    "bottomBandLive": {
+      "eyebrow": "Book a home visit",
+      "title": "Ready when you are.",
+      "copy": "Select what you need and place your order in a minute. We'll call you to confirm the visit."
     }
   },
   "footer": {
@@ -1205,9 +968,9 @@
     "pageOf": "Page {page} of {total}",
     "toggleTheme": "Toggle theme",
     "patientFallback": "Patient",
-    "pointsBalance": "{count} pts",
     "english": "English",
-    "arabic": "Arabic"
+    "arabic": "Arabic",
+    "validationError": "Some details are invalid. Check the form and try again."
   },
   "testimonials": {
     "title": "Real stories from our patients",
@@ -1261,7 +1024,9 @@
       "DOCTOR": "Doctor visit",
       "LAB": "Lab Tests",
       "IMAGING": "Radiology"
-    }
+    },
+    "downloadFailed": "The download failed. Please try again.",
+    "downloadSickLeave": "Download sick leave"
   },
   "profilePage": {
     "title": "My Health Profile",
@@ -1269,13 +1034,11 @@
       "personal": "Personal Info",
       "medical": "Health Info",
       "security": "Password & Security",
-      "loyalty": "Loyalty Points",
       "appearance": "Display"
     },
     "personalTitle": "Personal Info",
     "medicalTitle": "Health Info",
     "securityTitle": "Password & Security",
-    "loyaltyTitle": "Loyalty Points",
     "appearanceTitle": "Display Settings",
     "fullName": "Full Name",
     "phone": "Phone Number",
@@ -1288,9 +1051,7 @@
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
-    "currentPointsBalance": "Active points balance",
     "standardMember": "Standard Tier",
-    "noPointsHistory": "No activity recorded yet.",
     "profileUpdated": "Profile updated",
     "profileUpdateFailed": "Couldn't update profile",
     "medicalUpdated": "Health info updated",
@@ -1308,11 +1069,258 @@
       "confirmPasswordMin": "Please confirm your new password",
       "passwordsDoNotMatch": "Passwords don't match"
     },
-    "loyaltyReasons": {
-      "REQUEST_COMPLETED": "Care Visit Completed",
-      "POINTS_EARNED": "Points Earned",
-      "POINTS_REDEEMED": "Points Redeemed",
-      "INVOICE_PAID": "Invoice Paid"
+    "area": "Area",
+    "passwordUpdatedRelogin": "Password changed. Please log in again.",
+    "validationError": "Some details are invalid. Check the form and try again."
+  },
+  "orders": {
+    "reference": "Order {reference}",
+    "caseStatus": {
+      "PENDING": "Waiting for confirmation",
+      "ACCEPTED": "Confirmed",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CLOSED": "Closed",
+      "CANCELLED": "Cancelled"
+    },
+    "caseStatusHint": {
+      "PENDING": "We received your order and are arranging the right provider.",
+      "ACCEPTED": "Your care team is assigned and the visit is being scheduled.",
+      "IN_PROGRESS": "Your care team has started working on your order.",
+      "COMPLETED": "All services are done. We are reviewing the results.",
+      "CLOSED": "Reviewed and closed. Your invoice and report are available.",
+      "CANCELLED": "This order was cancelled."
+    },
+    "serviceStatus": {
+      "PENDING": "Waiting for assignment",
+      "ASSIGNED": "Provider assigned",
+      "ACCEPTED": "Accepted by provider",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "paymentStatus": {
+      "PENDING": "Unpaid",
+      "PARTIAL": "Partially paid",
+      "PAID": "Paid",
+      "CANCELLED": "Cancelled"
+    },
+    "paymentMethods": {
+      "CASH": "Cash",
+      "CARD": "Card",
+      "INSURANCE": "Insurance",
+      "CLICK": "CliQ",
+      "OTHER": "Other"
+    },
+    "itemTypes": {
+      "SERVICE": "Service",
+      "PACKAGE": "Package"
+    },
+    "itemTypesPlural": {
+      "SERVICE": "Services",
+      "PACKAGE": "Packages"
+    },
+    "serviceKinds": {
+      "MEDICAL": "Medical service",
+      "NURSING": "Nursing service",
+      "RADIOLOGY": "Radiology",
+      "LAB": "Lab test"
+    },
+    "appointmentTypes": {
+      "INITIAL": "Visit",
+      "FOLLOW_UP": "Follow-up"
+    },
+    "area": {
+      "label": "Area",
+      "placeholder": "Select your area",
+      "loading": "Loading areas...",
+      "loadError": "Couldn't load areas. Refresh and try again.",
+      "none": "Not specified"
+    },
+    "tracking": {
+      "linkTitle": "Your tracking link",
+      "linkHint": "Save this link now. It is shown only once and it is the only way to follow this order without an account.",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "copyFailed": "Couldn't copy the link. Select it and copy it manually.",
+      "open": "Open tracking page"
+    },
+    "timeline": {
+      "cancelledWithReason": "This order was cancelled: {reason}",
+      "itemsReached": "{count} of {total} items"
+    },
+    "errors": {
+      "ITEM_INACTIVE": "One of the selected items is no longer available. Remove it and try again.",
+      "ITEM_INACTIVE_NAMED": "\"{item}\" is no longer available. Remove it and try again.",
+      "ITEM_NOT_FOUND": "One of the selected items no longer exists. Remove it and try again.",
+      "VIP_ONLY": "One of the selected items is available to VIP members only.",
+      "VIP_ONLY_NAMED": "\"{item}\" is available to VIP members only.",
+      "INVALID_AREA": "We don't serve the selected area yet. Please choose another area.",
+      "ADDRESS_REQUIRED": "Please enter the visit address.",
+      "VALIDATION_ERROR": "Some details are invalid. Check the form and try again.",
+      "CASE_IN_PROGRESS": "Work on this order has already started. Please contact support to cancel it.",
+      "INVALID_CASE_STATUS": "This order can no longer be changed.",
+      "REFUND_REQUIRED": "Payments were recorded for this order. Please contact support to cancel it.",
+      "ALREADY_RATED": "You already rated this service.",
+      "ALREADY_CLAIMED": "This order already belongs to an account.",
+      "INVALID_SERVICE_STATUS": "This service can't be updated in its current state.",
+      "NOT_FOUND": "We couldn't find this order.",
+      "CHAT_CLOSED": "This conversation is closed.",
+      "EMPTY_MESSAGE": "Write a message or attach a file.",
+      "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
+      "GENERIC": "Something went wrong. Please try again."
+    }
+  },
+  "orderForm": {
+    "title": "New order",
+    "subtitle": "Pick the services you need, tell us where to come, and we'll take it from there.",
+    "backToOrders": "My orders",
+    "catalogTitle": "Choose what you need",
+    "catalogDescription": "Add services (medical, nursing, radiology or lab tests) and packages to one order.",
+    "serviceKinds": {
+      "ALL": "All",
+      "MEDICAL": "Medical",
+      "NURSING": "Nursing",
+      "RADIOLOGY": "Radiology",
+      "LAB": "Lab tests"
+    },
+    "searchPlaceholder": "Search the catalog",
+    "catalogLoadError": "We couldn't load this part of the catalog.",
+    "catalogEmpty": "Nothing matches your search.",
+    "vipOnly": "VIP",
+    "priceOnRequest": "Price confirmed after ordering",
+    "includedServices": "{count, plural, one {Includes # service} other {Includes # services}}",
+    "moreServices": "+{count} more",
+    "youSave": "You save {amount}",
+    "add": "Add",
+    "added": "Added",
+    "remove": "Remove",
+    "selectedTitle": "Your order",
+    "selectedEmpty": "No items selected yet.",
+    "maxItems": "You can order up to {max} items at once.",
+    "unavailable": "No longer available",
+    "unavailableNotice": "Some items from your previous order are no longer available. They will not be included.",
+    "estimatedTotal": "Estimated total",
+    "orderTotal": "Order total",
+    "priceNote": "Final prices are calculated by Curevie when the order is created.",
+    "vipPriceNote": "Your VIP discount is applied automatically when the order is created.",
+    "visitTitle": "Visit details",
+    "address": "Visit address",
+    "addressPlaceholder": "Street, building, floor",
+    "addressHint": "Leave empty to use the address saved on your profile.",
+    "scheduledFor": "Preferred time (optional)",
+    "scheduledForHint": "We'll confirm the exact time with you.",
+    "scheduledInPast": "Choose a time in the future.",
+    "notes": "Notes (optional)",
+    "notesPlaceholder": "Anything the care team should know",
+    "submit": "Place order",
+    "submitting": "Placing order...",
+    "success": "Your order was placed.",
+    "itemsRequired": "Add at least one item to your order.",
+    "areaRequired": "Please select your area.",
+    "addressRequired": "Please enter the visit address.",
+    "guest": {
+      "successTitle": "Your order was placed",
+      "successDescription": "We'll call you to confirm the visit. Use the link below to follow your order."
+    }
+  },
+  "trackPage": {
+    "metaTitle": "Track your order | Curevie",
+    "title": "Order tracking",
+    "createdAt": "Placed on {date}",
+    "refresh": "Refresh",
+    "notFoundTitle": "Order not found",
+    "notFoundDescription": "This tracking link is invalid, or the order was already added to an account.",
+    "loadError": "We couldn't load this order right now.",
+    "backHome": "Back to home",
+    "preferredTime": "Preferred time",
+    "noPreferredTime": "To be confirmed",
+    "total": "Total",
+    "itemsTitle": "Ordered items",
+    "provider": "Provider: {name}",
+    "appointmentsTitle": "Appointments",
+    "noAppointments": "No appointment scheduled yet. We'll contact you to confirm the time.",
+    "claimTitle": "Add this order to your account",
+    "claimDescription": "Keep all your orders, reports, and invoices in one place.",
+    "claimButton": "Add to my account",
+    "claiming": "Adding...",
+    "claimed": "The order was added to your account.",
+    "loginToClaim": "Log in to add it",
+    "registerToClaim": "Create an account"
+  },
+  "orderDetail": {
+    "notFound": "Order not found.",
+    "backToOrders": "My orders",
+    "createdAt": "Placed on {date}",
+    "openChat": "Chat with care team",
+    "orderAgain": "Order again",
+    "address": "Visit address",
+    "preferredTime": "Preferred time",
+    "noPreferredTime": "To be confirmed",
+    "total": "Total",
+    "notes": "Your notes",
+    "itemsTitle": "Ordered items",
+    "itemsDescription": "{count, plural, =0 {No active items} one {# active item} other {# active items}}",
+    "chat": "Chat",
+    "awaitingProvider": "We are assigning a provider for this item.",
+    "downloads": {
+      "notAvailable": "This file is not available yet.",
+      "failed": "The download failed. Please try again."
+    },
+    "rating": {
+      "rate": "Rate this service",
+      "title": "How was your visit?",
+      "descriptionWithProvider": "{service} with {provider}",
+      "stars": "{count, plural, one {# star} other {# stars}}",
+      "commentPlaceholder": "Tell us more (optional)",
+      "cancel": "Cancel",
+      "submit": "Submit rating",
+      "success": "Thank you for your rating.",
+      "yourRating": "Your rating: {rating}/5"
+    },
+    "report": {
+      "title": "Medical report",
+      "description": "Your report and sick leave (if any) are available once published.",
+      "availableAfterClose": "Your report will be available after the order is reviewed and closed.",
+      "download": "Download report",
+      "sickLeave": "Download sick leave",
+      "notReady": "Your report is not published yet."
+    },
+    "files": {
+      "title": "Files from your provider",
+      "types": {
+        "PDF": "PDF document",
+        "IMAGE": "Image"
+      },
+      "sickLeave": "Sick leave",
+      "download": "Download"
+    },
+    "invoice": {
+      "title": "Invoice",
+      "estimate": "The amount you will pay. The full invoice is released when the order is closed.",
+      "released": "Your invoice for this order.",
+      "none": "No invoice for this order.",
+      "original": "Subtotal",
+      "final": "Total",
+      "paymentStatus": "Payment",
+      "paid": "Paid",
+      "remaining": "Remaining",
+      "adjustments": "Adjustments",
+      "adjustmentTypes": {
+        "DISCOUNT": "Discount",
+        "SURCHARGE": "Surcharge"
+      },
+      "payments": "Payments",
+      "downloadPdf": "Download invoice PDF"
+    },
+    "cancel": {
+      "button": "Cancel order",
+      "title": "Cancel this order?",
+      "description": "You can cancel before the care team starts working. This can't be undone.",
+      "reasonPlaceholder": "Reason (optional)",
+      "keep": "Keep order",
+      "confirm": "Cancel order",
+      "success": "Your order was cancelled."
     }
   }
 }

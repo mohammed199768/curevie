@@ -188,7 +188,8 @@ export function triggerBlobDownload(blob: Blob, fileName: string): void {
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  // Revoking synchronously can cancel the download in some browsers.
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
 export function localePath(pathname: string, locale: string): string {

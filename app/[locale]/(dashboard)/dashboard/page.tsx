@@ -5,9 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { casesApi, type PatientCase } from "@/lib/api/cases";
+import { casesApi, type CaseListRow } from "@/lib/api/cases";
+import { CaseStatusBadge } from "@/components/orders/CaseStatusBadge";
 import { AppPreloader } from "@/components/shared/AppPreloader";
-import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { formatDateTime } from "@/lib/utils";
 
@@ -22,19 +22,21 @@ export default function DashboardPage() {
     total: number;
     in_progress: number;
     completed: number;
-    recent: PatientCase[];
+    recent: CaseListRow[];
   }>({
-    queryKey: ["dashboard", "cases-stats"],
+    queryKey: ["cases", "list", "dashboard-stats"],
     queryFn: async () => {
-      const result = await casesApi.list({ limit: 100 });
-      const cases = result.data?.data ?? [];
+      // Counts come from the server totals of status-filtered lists (no client-side filtering).
+      const [latest, active, closed] = await Promise.all([
+        casesApi.list({ page: 1, limit: 3 }),
+        casesApi.list({ page: 1, limit: 1, status: ["PENDING", "ACCEPTED", "IN_PROGRESS", "COMPLETED"] }),
+        casesApi.list({ page: 1, limit: 1, status: ["CLOSED"] }),
+      ]);
       return {
-        total: cases.length,
-        in_progress: cases.filter((c) =>
-          ["PENDING", "ACCEPTED", "IN_PROGRESS", "COMPLETED"].includes(c.status)
-        ).length,
-        completed: cases.filter((c) => c.status === "CLOSED").length,
-        recent: cases.slice(0, 3),
+        total: latest.total,
+        in_progress: active.total,
+        completed: closed.total,
+        recent: latest.cases,
       };
     },
     staleTime: 30_000,
@@ -55,7 +57,7 @@ export default function DashboardPage() {
       <Card className="rounded-2xl border-primary/20 bg-gradient-to-r from-primary/15 to-secondary/10">
         <CardContent className="p-6">
           <h2 className="text-2xl font-bold">{t("welcome")} {patient?.full_name}</h2>
-          <p className="mt-3 text-sm">{t("points")}: {patient?.points || 0}</p>
+          {patient?.is_vip ? <p className="mt-3 text-sm font-medium text-primary">{t("vipMember")}</p> : null}
         </CardContent>
       </Card>
 
@@ -78,11 +80,11 @@ export default function DashboardPage() {
               statsRecent.map((item) => (
                 <div key={item.id} className="flex items-center justify-between rounded-xl border p-3 text-sm">
                   <div>
-                    <p className="font-semibold">{item.services?.[0]?.service_name || `#${item.id.slice(0, 8)}`}</p>
-                    <p className="text-xs text-muted-foreground">{formatDateTime(item.created_at)}</p>
+                    <p className="font-semibold">{item.item_names?.[0] || `#${item.id.slice(0, 8).toUpperCase()}`}</p>
+                    <p className="text-xs text-muted-foreground">{formatDateTime(item.created_at, "dd/MM/yyyy, HH:mm", locale)}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <StatusBadge value={item.status} />
+                    <CaseStatusBadge status={item.status} />
                     <Button asChild size="sm" variant="outline"><Link href={`/${locale}/requests/${item.id}`}>{tPage("view")}</Link></Button>
                   </div>
                 </div>

@@ -7,6 +7,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   Check,
@@ -20,17 +21,24 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GuestServiceRequestDialog } from "@/components/services/GuestServiceRequestDialog";
 import { PrelaunchInlineNotice, PrelaunchNoticeDialog } from "@/components/shared/PrelaunchNotice";
-import { translateEnumValue } from "@/lib/i18n";
+import { MAX_CASE_ITEMS } from "@/lib/api/cases";
+import { BOOKINGS_ENABLED } from "@/lib/launch";
+import { formatCurrency } from "@/lib/formatting";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { cn } from "@/lib/utils";
 import {
   buildAuthRedirectHref,
+  buildNewRequestHref,
   fetchPublicServiceCategoryCatalog,
+  getCatalogEntryTypeLabel,
   getLocalPublicServiceCategoryCatalog,
   getPublicServiceCategory,
   getPublicServiceCategoryAnalyticsKind,
+  isOrderableCatalogEntry,
   PUBLIC_SERVICE_CATEGORIES,
+  toCatalogItemRef,
   type PublicServiceCategoryTranslationKey,
   type PublicServiceCategorySlug,
 } from "@/lib/public-service-categories";
@@ -59,12 +67,13 @@ const categoryTitleFallbacks: Record<PublicServiceCategoryTranslationKey, string
   carePrograms: "Care Programs",
 };
 const STORAGE_KEY = "curevie_selected_services";
+const INCLUDED_SERVICES_PREVIEW = 3;
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
   const locale = useLocale();
   const t = useTranslations("serviceExplorer");
   const tExplorer = useTranslations("serviceExplorer");
-  const tNewRequest = useTranslations("newRequestPage");
-  const tEnums = useTranslations("enums");
+  const tOrders = useTranslations("orders");
+  const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isArabic = locale === "ar";
   const eyebrowClass = isArabic
@@ -94,7 +103,8 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const dataQuery = useQuery({
     queryKey: ["public-category-explorer", slug, locale],
     queryFn: () => fetchPublicServiceCategoryCatalog(slug, locale),
-    initialData: () => getLocalPublicServiceCategoryCatalog(slug, locale),
+    // Before launch the local seed is shown instantly; once ordering is live only real items are listed.
+    initialData: BOOKINGS_ENABLED ? undefined : () => getLocalPublicServiceCategoryCatalog(slug, locale),
     initialDataUpdatedAt: 0,
     staleTime: 10 * 60 * 1000,
   });
@@ -115,13 +125,18 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   }, [dataQuery.data?.entries]);
 
   const filteredEntries = entries;
+  const selectedEntries = useMemo(
+    () => entries.filter((entry) => selectedEntryIds.has(entry.id) && isOrderableCatalogEntry(entry)),
+    [entries, selectedEntryIds],
+  );
+  const preSelectedEntryIds = useMemo(() => selectedEntries.map((entry) => entry.id), [selectedEntries]);
   const toggleEntry = (entryId: string) => {
     setSelectedEntryIds((prev) => {
       const next = new Set(prev);
       if (next.has(entryId)) {
         next.delete(entryId);
       } else {
-        if (next.size >= 5) return prev;
+        if (next.size >= MAX_CASE_ITEMS) return prev;
         next.add(entryId);
       }
       if (typeof window !== "undefined") {
@@ -131,12 +146,19 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
     });
   };
 
+  const clearSelection = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    setSelectedEntryIds(new Set());
+  };
+
   const handleGuestRequestOpenChange = (open: boolean) => {
     setGuestRequestOpen(open);
 
-    if (!open && typeof window !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY);
-      setSelectedEntryIds(new Set());
+    // Before launch the dialog is only an announcement, so the selection is reset when it closes.
+    if (!open && !BOOKINGS_ENABLED) {
+      clearSelection();
     }
   };
 
@@ -201,15 +223,24 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const CategoryIcon = categoryIcons[category.translationKey];
   const secondaryHref = isAuthenticated
     ? `/${locale}/dashboard`
-    : buildAuthRedirectHref(locale, category.defaultRequestPreset, "register");
+    : buildAuthRedirectHref(locale, selectedEntries.map(toCatalogItemRef), "register");
 
   const categoryTitle = resolveCategoryTitle(category.translationKey);
   const categorySubtitle = t(`categories.${category.translationKey}.subtitle`);
   const categoryStory = t(`categories.${category.translationKey}.story`);
   const canOpenGuestRequest = filteredEntries.length > 0 && !dataQuery.isLoading;
+  const startRequestLabel = BOOKINGS_ENABLED ? t("actions.orderNow") : t("actions.startRequest");
 
   const openGuestRequestDialog = () => {
     if (!canOpenGuestRequest) return;
+
+    // Logged-in patients order from their dashboard so the order lands on their account.
+    if (BOOKINGS_ENABLED && isAuthenticated) {
+      const items = selectedEntries.map(toCatalogItemRef);
+      clearSelection();
+      router.push(buildNewRequestHref(locale, items));
+      return;
+    }
 
     if (!guestRequestOpen) {
       onGuestRequestDialogOpen({
@@ -281,7 +312,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                     onClick={openGuestRequestDialog}
                     disabled={!canOpenGuestRequest}
                   >
-                    {t("actions.startRequest")}
+                    {startRequestLabel}
                   </Button>
                   <Button asChild variant="outline" className="min-h-12 rounded-full border-white/15 bg-white/10 px-6 text-sm font-semibold text-white hover:bg-white/15">
                     <Link href={secondaryHref}>
@@ -289,7 +320,9 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                     </Link>
                   </Button>
                 </div>
-                <PrelaunchInlineNotice className="mt-5 border-white/15 bg-white/10 text-white shadow-none [&_p]:text-white/75 [&_p.font-semibold]:text-white [&_a]:bg-white [&_a]:text-[#104d49]" />
+                {BOOKINGS_ENABLED ? null : (
+                  <PrelaunchInlineNotice className="mt-5 border-white/15 bg-white/10 text-white shadow-none [&_p]:text-white/75 [&_p.font-semibold]:text-white [&_a]:bg-white [&_a]:text-[#104d49]" />
+                )}
 
                 <div
                   className="relative mt-6 w-full"
@@ -383,21 +416,16 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
           <section data-catalog-grid className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {filteredEntries.map((entry) => {
               const isSelected = selectedEntryIds.has(entry.id);
-              const typeLabel = entry.type === "service"
-                ? translateEnumValue(entry.serviceKind, tEnums)
-                : entry.type === "panel"
-                  ? tNewRequest("labPanel")
-                  : entry.type === "lab"
-                    ? t("labels.labTest")
-                    : entry.packageScope === "LAB_ONLY"
-                      ? tNewRequest("labPackage")
-                      : t("labels.comprehensiveBundle");
+              const isSelectable = !BOOKINGS_ENABLED || isOrderableCatalogEntry(entry);
+              const typeLabel = getCatalogEntryTypeLabel(entry, tOrders);
 
               return (
                 <motion.article
                   key={entry.id}
                   data-catalog-card
-                  onClick={() => toggleEntry(entry.id)}
+                  onClick={() => {
+                    if (isSelectable) toggleEntry(entry.id);
+                  }}
                   whileHover={{ y: -7, scale: 1.008 }}
                   transition={{ type: "spring", stiffness: 220, damping: 20 }}
                   className="h-full cursor-pointer"
@@ -437,15 +465,42 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                         {entry.name}
                       </h3>
 
+                      {entry.type === "package" && entry.includedServices.length ? (
+                        <div className="space-y-0.5 text-[11px] leading-4 text-gray-500">
+                          <p className="font-semibold text-gray-600">
+                            {t("labels.includedServicesCount", { count: entry.servicesCount })}
+                          </p>
+                          <ul className="list-disc space-y-0.5 ps-4">
+                            {entry.includedServices.slice(0, INCLUDED_SERVICES_PREVIEW).map((name, index) => (
+                              <li key={`${entry.id}-${index}`} className="line-clamp-1">{name}</li>
+                            ))}
+                          </ul>
+                          {entry.includedServices.length > INCLUDED_SERVICES_PREVIEW ? (
+                            <p>{t("labels.moreServices", { count: entry.includedServices.length - INCLUDED_SERVICES_PREVIEW })}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {BOOKINGS_ENABLED && entry.price !== null ? (
+                        <p className="text-xs font-semibold text-gray-600">{formatCurrency(entry.price, locale)}</p>
+                      ) : null}
+
+                      {BOOKINGS_ENABLED && entry.type === "package" && entry.savings !== null ? (
+                        <span className="w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          {t("labels.youSave", { amount: formatCurrency(entry.savings, locale) })}
+                        </span>
+                      ) : null}
+
                       <div className="flex-1" />
 
                       <button
                         type="button"
+                        disabled={!isSelectable}
                         onClick={(event) => {
                           event.stopPropagation();
                           toggleEntry(entry.id);
                         }}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                        className="flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                         style={{
                           backgroundColor: isSelected ? "#16a34a" : category.theme.base,
                         }}
@@ -480,10 +535,14 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
                 <div className={cn(eyebrowClass)} style={{ color: category.theme.muted }}>
-                  {t("bottomBand.eyebrow")}
+                  {BOOKINGS_ENABLED ? t("bottomBandLive.eyebrow") : t("bottomBand.eyebrow")}
                 </div>
-                <h2 className="mt-3 text-2xl font-semibold text-[#12312d]">{t("bottomBand.title")}</h2>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-[#617672]">{t("bottomBand.copy")}</p>
+                <h2 className="mt-3 text-2xl font-semibold text-[#12312d]">
+                  {BOOKINGS_ENABLED ? t("bottomBandLive.title") : t("bottomBand.title")}
+                </h2>
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-[#617672]">
+                  {BOOKINGS_ENABLED ? t("bottomBandLive.copy") : t("bottomBand.copy")}
+                </p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
@@ -493,8 +552,8 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   onClick={openGuestRequestDialog}
                   disabled={!canOpenGuestRequest}
                 >
-                  {t("actions.startRequest")}
-                  <ArrowRight className="h-4 w-4" />
+                  {startRequestLabel}
+                  <ArrowRight className="h-4 w-4 rtl:rotate-180" />
                 </Button>
                 <Button asChild variant="outline" className="min-h-11 rounded-full border-[#dbe6e0] bg-white px-5 text-sm font-semibold text-[#12312d] hover:bg-white">
                   <Link href={`/${locale}`}>{t("actions.backHome")}</Link>
@@ -517,9 +576,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
             {selectedEntryIds.size} {tExplorer("selectedCount")}
           </span>
           <Button
-            onClick={() => {
-              setGuestRequestOpen(true);
-            }}
+            onClick={openGuestRequestDialog}
             className="shrink-0 rounded-full px-6 py-2.5 text-sm font-semibold text-white"
             style={{ backgroundColor: category.theme.base }}
           >
@@ -528,10 +585,23 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         </div>
       </div>
 
-      <PrelaunchNoticeDialog
-        open={guestRequestOpen}
-        onOpenChange={handleGuestRequestOpenChange}
-      />
+      {BOOKINGS_ENABLED ? (
+        <GuestServiceRequestDialog
+          open={guestRequestOpen}
+          onOpenChange={handleGuestRequestOpenChange}
+          entries={filteredEntries}
+          preSelectedEntryIds={preSelectedEntryIds}
+          serviceSlug={slug}
+          categoryTitle={categoryTitle}
+          categoryTheme={category.theme}
+          onOrderCreated={clearSelection}
+        />
+      ) : (
+        <PrelaunchNoticeDialog
+          open={guestRequestOpen}
+          onOpenChange={handleGuestRequestOpenChange}
+        />
+      )}
     </div>
   );
 }

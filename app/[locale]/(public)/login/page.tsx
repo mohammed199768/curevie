@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useAuthStore } from "@/lib/stores/auth.store";
+import { getSafeRedirectPath } from "@/lib/utils/safe-redirect";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
@@ -48,7 +49,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (hydrated && isAuthenticated && accessToken) {
-      router.replace(`/${locale}/dashboard`);
+      const redirectParam = new URLSearchParams(window.location.search).get("redirect");
+      router.replace(getSafeRedirectPath(redirectParam) || `/${locale}/dashboard`);
     }
   }, [accessToken, hydrated, isAuthenticated, locale, router]);
 
@@ -64,8 +66,7 @@ export default function LoginPage() {
                 onSubmit={form.handleSubmit(async (values) => {
                   const redirectParam =
                     typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null;
-                  const redirectPath = redirectParam?.startsWith("/") ? redirectParam : undefined;
-                  await login({ ...values, redirectTo: redirectPath });
+                  await login({ ...values, redirectTo: getSafeRedirectPath(redirectParam) });
                 })}
               >
                 <FormField

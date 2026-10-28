@@ -115,10 +115,6 @@ export function DashboardSidebar({ locale }: DashboardSidebarProps) {
               <p className="truncate text-xs text-muted-foreground">{patient?.email || "-"}</p>
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span />
-            <span className="text-xs text-muted-foreground">{tCommon("pointsBalance", { count: patient?.points || 0 })}</span>
-          </div>
         </div>
 
         <Button variant="outline" className="w-full justify-start gap-2" onClick={logout}>
