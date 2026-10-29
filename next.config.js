@@ -5,10 +5,8 @@ const withNextIntl = createNextIntlPlugin("./i18n.ts");
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   compress: true,
-  images: {
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 3600,
-  },
+  // Images are pre-sized WebP and API media is cached by nginx; Vercel image optimization is not used.
+  images: { unoptimized: true },
   reactStrictMode: true,
   experimental: {
     optimizePackageImports: [
