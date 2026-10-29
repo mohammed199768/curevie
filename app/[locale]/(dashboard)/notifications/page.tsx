@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  Bell,
   CheckCheck,
   ChevronLeft,
   ChevronRight,
@@ -17,8 +16,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState, IconBubble, Shimmer, appButton } from "@/components/app/ui";
 import { notificationsApi } from "@/lib/api/notifications";
 import type { ApiListResponse, NotificationItem } from "@/lib/api/types";
 import { translateNotificationContent } from "@/lib/i18n";
@@ -30,19 +28,19 @@ const LIMIT = 20;
 type NotificationsResponse = ApiListResponse<NotificationItem>;
 
 function getIcon(type: string) {
-  if (type.startsWith("REQUEST") || type.startsWith("CASE")) {
-    return <Activity className="h-5 w-5 text-blue-500" />;
+  if (type.startsWith("REQUEST") || type.startsWith("CASE") || type.startsWith("APPOINTMENT")) {
+    return <IconBubble icon={Activity} tone="teal" />;
   }
   if (type.startsWith("PAYMENT") || type.startsWith("INVOICE")) {
-    return <CreditCard className="h-5 w-5 text-green-500" />;
+    return <IconBubble icon={CreditCard} tone="sage" />;
   }
   if (type.startsWith("REPORT")) {
-    return <FileText className="h-5 w-5 text-purple-500" />;
+    return <IconBubble icon={FileText} tone="sky" />;
   }
-  if (type.startsWith("POINTS")) {
-    return <Star className="h-5 w-5 text-yellow-500" />;
+  if (type.startsWith("POINTS") || type.startsWith("VIP") || type.startsWith("SERVICE_RATED")) {
+    return <IconBubble icon={Star} tone="amber" />;
   }
-  return <Megaphone className="h-5 w-5 text-muted-foreground" />;
+  return <IconBubble icon={Megaphone} tone="stone" />;
 }
 
 function groupByDate(
@@ -81,11 +79,11 @@ function groupByDate(
 
 function NotificationSkeleton() {
   return (
-    <div className="flex gap-3 border-b px-4 py-3">
-      <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+    <div className="flex gap-3 border-b border-[var(--app-card-border)] px-4 py-4 last:border-0">
+      <Shimmer className="h-11 w-11 shrink-0 rounded-2xl" />
       <div className="flex-1 space-y-2">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/3" />
+        <Shimmer className="h-4 w-3/4" />
+        <Shimmer className="h-3 w-1/3" />
       </div>
     </div>
   );
@@ -94,6 +92,7 @@ function NotificationSkeleton() {
 export default function NotificationsPage() {
   const locale = useLocale();
   const t = useTranslations("notificationsPage");
+  const tApp = useTranslations("app.notifications");
   const tEnums = useTranslations("enums");
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -199,113 +198,90 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6" dir={isRtl ? "rtl" : "ltr"}>
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Bell className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-bold">{t("title")}</h1>
-          {unreadCount > 0 ? (
-            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
-              {unreadCount}
-            </span>
-          ) : null}
-        </div>
-
-        {unreadCount > 0 ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-primary"
-            onClick={() => markAllMutation.mutate()}
-            disabled={markAllMutation.isPending}
-          >
-            <CheckCheck className="me-1 h-3.5 w-3.5" />
-            {t("markAllAsRead")}
-          </Button>
-        ) : null}
-      </div>
-
-      <div className="mb-4 w-fit rounded-lg bg-muted p-1">
-        <div className="flex gap-1">
+    <div className="mx-auto max-w-2xl space-y-4" dir={isRtl ? "rtl" : "ltr"}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-[#e9efed] p-1 dark:bg-white/5" role="tablist">
           {(["all", "unread"] as const).map((tabKey) => (
             <button
               key={tabKey}
+              type="button"
+              role="tab"
+              aria-selected={tab === tabKey}
               onClick={() => {
                 setTab(tabKey);
                 setPage(1);
               }}
               className={cn(
-                "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
-                tab === tabKey
-                  ? "bg-background text-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground"
+                "inline-flex min-h-10 items-center justify-center rounded-xl px-5 text-[14px] font-semibold transition-colors",
+                tab === tabKey ? "bg-card text-[#104d49] shadow-sm dark:text-teal-50" : "text-muted-foreground hover:text-foreground",
               )}
             >
               {t(tabKey)}
+              {tabKey === "unread" && unreadCount > 0 ? (
+                <span className="ms-1.5 rounded-full bg-[#104d49] px-1.5 py-0.5 text-[11px] font-bold text-white">{unreadCount}</span>
+              ) : null}
             </button>
           ))}
         </div>
+
+        {unreadCount > 0 ? (
+          <button
+            type="button"
+            className="app-press inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-[14px] font-semibold text-[#104d49] hover:bg-[#e6f0ee] disabled:opacity-50 dark:text-teal-200 dark:hover:bg-white/5"
+            onClick={() => markAllMutation.mutate()}
+            disabled={markAllMutation.isPending}
+          >
+            <CheckCheck className="h-4 w-4" />
+            {t("markAllAsRead")}
+          </button>
+        ) : null}
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-background">
-        {isLoading ? (
-          Array.from({ length: 5 }).map((_, index) => (
+      {isLoading ? (
+        <div className="app-card overflow-hidden">
+          {Array.from({ length: 5 }).map((_, index) => (
             <NotificationSkeleton key={index} />
-          ))
-        ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-              <Bell className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-            <p className="text-sm font-medium text-muted-foreground">
-              {tab === "unread" ? t("emptyUnread") : t("empty")}
-            </p>
-          </div>
-        ) : (
-          groups.map(({ label, items }) => (
-            <div key={label}>
-              <div className="sticky top-0 z-10 bg-muted/50 px-4 py-2 text-xs font-semibold text-muted-foreground">
-                {label}
-              </div>
+          ))}
+        </div>
+      ) : notifications.length === 0 ? (
+        <EmptyState
+          illustration="no-notifications"
+          title={tab === "unread" ? t("emptyUnread") : t("empty")}
+          description={tApp("emptyDescription")}
+        />
+      ) : (
+        <div className="space-y-5">
+          {groups.map(({ label, items }) => (
+            <section key={label} className="space-y-2">
+              <h2 className="px-1 text-[13px] font-bold text-muted-foreground">{label}</h2>
+              <div className="app-card divide-y divide-[var(--app-card-border)] overflow-hidden">
+                {items.map((notification) => {
+                  const localized = translateNotificationContent(notification, t, tEnums);
+                  const title = localized.title || notification.title;
+                  const body = localized.body || notification.body;
 
-              {items.map((notification) => {
-                const localized = translateNotificationContent(notification, t, tEnums);
-                const title = localized.title || notification.title;
-                const body = localized.body || notification.body;
-
-                return (
-                  <button
-                    key={notification.id}
-                    onClick={() => {
-                      void handleClick(notification);
-                    }}
-                    className={cn(
-                      "w-full border-b px-4 py-3.5 text-start transition-colors last:border-0 hover:bg-accent",
-                      !notification.is_read && "bg-primary/5"
-                    )}
-                  >
-                    <div className="flex gap-3">
-                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                        {getIcon(notification.type)}
-                      </div>
+                  return (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => {
+                        void handleClick(notification);
+                      }}
+                      className={cn(
+                        "flex w-full gap-3 px-4 py-4 text-start transition-colors hover:bg-[#f7faf9] dark:hover:bg-white/5",
+                        !notification.is_read && "bg-[#f2f8f6] dark:bg-teal-500/[0.07]",
+                      )}
+                    >
+                      {getIcon(notification.type)}
 
                       <div className="min-w-0 flex-1">
-                        <p
-                          className={cn(
-                            "text-sm leading-snug",
-                            !notification.is_read
-                              ? "font-semibold"
-                              : "text-muted-foreground"
-                          )}
-                        >
+                        <p className={cn("text-[15px] leading-6", !notification.is_read ? "font-bold text-foreground" : "font-medium text-foreground/85")}>
                           {title}
                         </p>
                         {body && body !== title ? (
-                          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                            {body}
-                          </p>
+                          <p className="mt-0.5 line-clamp-2 text-[14px] leading-6 text-muted-foreground">{body}</p>
                         ) : null}
-                        <p className="mt-1 text-[11px] text-muted-foreground">
+                        <p className="mt-1 text-[12.5px] text-muted-foreground">
                           {formatDistanceToNow(new Date(notification.created_at), {
                             addSuffix: true,
                             locale: dateFnsLocale,
@@ -314,52 +290,42 @@ export default function NotificationsPage() {
                       </div>
 
                       {!notification.is_read ? (
-                        <div className="mt-2 shrink-0">
-                          <span className="block h-2 w-2 rounded-full bg-primary" />
-                        </div>
+                        <span className="mt-2 block h-2.5 w-2.5 shrink-0 rounded-full bg-[#86ab62]" aria-hidden="true" />
                       ) : null}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ))
-        )}
-      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
 
       {totalPages > 1 ? (
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <Button
-            variant="outline"
-            size="sm"
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            className={cn(appButton.secondary, "min-h-11 px-4")}
             onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
             disabled={page === 1}
           >
-            {isRtl ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
+            {isRtl ? <ChevronRight /> : <ChevronLeft />}
             {t("previous")}
-          </Button>
+          </button>
 
-          <span className="text-sm text-muted-foreground">
+          <span className="text-[13px] text-muted-foreground">
             {page} / {totalPages}
           </span>
 
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
+            className={cn(appButton.secondary, "min-h-11 px-4")}
             onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
             disabled={page >= totalPages}
           >
             {t("next")}
-            {isRtl ? (
-              <ChevronLeft className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </Button>
+            {isRtl ? <ChevronLeft /> : <ChevronRight />}
+          </button>
         </div>
       ) : null}
     </div>

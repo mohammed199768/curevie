@@ -26,13 +26,10 @@ import {
 } from "@/lib/api/cases";
 import { downloadProtectedFile } from "@/lib/download";
 import { getOrderItemTypeLabel } from "@/lib/order-items";
+import { getCaseReference } from "@/lib/order-stage";
 import { cn, formatDateTime } from "@/lib/utils";
+import { AppCard, EmptyState, ListSkeleton, appButton } from "@/components/app/ui";
 import { ServiceStatusBadge } from "@/components/orders/CaseStatusBadge";
-import { AppPreloader } from "@/components/shared/AppPreloader";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 type ReportFilter = "ALL" | "DOCTOR" | "LAB" | "IMAGING";
 
@@ -47,7 +44,6 @@ type ReportsArchiveItem = {
   providersLabel: string;
 };
 
-const REPORT_FILTERS: ReportFilter[] = ["ALL", "DOCTOR", "LAB", "IMAGING"];
 const MAX_CASE_PAGES = 10;
 
 function getServiceFilter(service: CaseServiceLine): Exclude<ReportFilter, "ALL"> {
@@ -115,16 +111,17 @@ function FilterButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+        "app-press inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-[14px] font-semibold transition-colors",
         active
-          ? "border-sky-600 bg-sky-600 text-white"
-          : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+          ? "bg-[#104d49] text-white"
+          : "bg-card text-foreground ring-1 ring-[var(--app-card-border)] hover:bg-[#f3f7f5] dark:hover:bg-white/5",
       )}
     >
       <Icon className="h-4 w-4" />
       <span>{label}</span>
-      <span className={cn("rounded-full px-2 py-0.5 text-xs", active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600")}>
+      <span className={cn("rounded-full px-2 py-0.5 text-[12px] font-bold", active ? "bg-white/20" : "bg-[#f1f5f4] text-muted-foreground dark:bg-white/10")}>
         {count}
       </span>
     </button>
@@ -224,249 +221,197 @@ export default function ReportsPage() {
   };
 
   const downloadIcon = (key: string) =>
-    pendingDownload === key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />;
+    pendingDownload === key ? <Loader2 className="animate-spin" /> : <Download />;
 
   return (
-    <div className="space-y-5">
-      <Card className="overflow-hidden rounded-[28px] border-slate-200/80 bg-gradient-to-br from-sky-50 via-white to-emerald-50 shadow-sm">
-        <CardHeader className="space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-2xl font-semibold text-slate-900">{tPage("title")}</CardTitle>
-              <CardDescription className="max-w-3xl text-sm text-slate-600">{tPage("description")}</CardDescription>
-            </div>
-            <p className="max-w-xl text-sm text-slate-500">{tPage("searchHint")}</p>
-          </div>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <p className="hidden px-1 text-[26px] font-bold text-foreground md:block">{tPage("title")}</p>
+      <p className="px-1 text-[14px] leading-6 text-muted-foreground">{tPage("description")}</p>
 
-          <div className="relative max-w-xl">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              placeholder={tPage("searchPlaceholder")}
-              className="h-11 rounded-2xl border-slate-200 bg-white/90 px-10 text-sm shadow-sm"
+      <div className="relative">
+        <Search className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={searchValue}
+          onChange={(event) => setSearchValue(event.target.value)}
+          placeholder={tPage("searchPlaceholder")}
+          className="h-[52px] w-full rounded-2xl border border-[var(--app-card-border)] bg-card pe-4 ps-12 text-[16px] shadow-sm outline-none ring-[#86ab62] placeholder:text-muted-foreground focus:ring-2"
+        />
+      </div>
+
+      <div className="-mx-4 overflow-x-auto px-4 no-scrollbar md:mx-0 md:px-0">
+        <div className="flex w-max gap-2 pb-1">
+          {filterOptions.map((filter) => (
+            <FilterButton
+              key={filter.key}
+              active={activeFilter === filter.key}
+              count={filterCounts[filter.key]}
+              icon={filter.icon}
+              label={tPage(`filters.${filter.key}`)}
+              onClick={() => setActiveFilter(filter.key)}
             />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {filterOptions.map((filter) => (
-              <FilterButton
-                key={filter.key}
-                active={activeFilter === filter.key}
-                count={filterCounts[filter.key]}
-                icon={filter.icon}
-                label={tPage(`filters.${filter.key}`)}
-                onClick={() => setActiveFilter(filter.key)}
-              />
-            ))}
-          </div>
-        </CardHeader>
-      </Card>
+          ))}
+        </div>
+      </div>
 
       {historyQuery.isLoading ? (
-        <AppPreloader variant="page" title={tPage("title")} description={tPage("description")} blockCount={4} />
+        <ListSkeleton rows={3} />
       ) : historyQuery.isError ? (
-        <Card className="rounded-[24px] border-red-200 bg-red-50">
-          <CardContent className="p-6 text-sm text-red-700">{tPage("loadError")}</CardContent>
-        </Card>
+        <AppCard className="p-6 text-[15px] text-rose-700 dark:text-rose-300">{tPage("loadError")}</AppCard>
       ) : filteredItems.length ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredItems.map((item) => {
             const isExpanded = expandedCaseId === item.caseId;
-            const categoryBadges =
-              activeFilter === "ALL" ? item.categories : item.categories.filter((category) => category === activeFilter);
             const files = item.view.provider_files;
-            const reference = `#${item.caseId.slice(0, 8).toUpperCase()}`;
+            const reference = getCaseReference(item.caseId);
 
             return (
-              <Card key={item.caseId} className="rounded-[26px] border-slate-200/80 shadow-sm">
-                <CardContent className="p-0">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedCaseId(isExpanded ? null : item.caseId)}
-                    className="w-full text-start"
-                  >
-                    <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                          {categoryBadges.map((category) => (
-                            <Badge
-                              key={`${item.caseId}-${category}`}
-                              variant="outline"
-                              className="rounded-full border-slate-300 bg-slate-50 px-3 py-1 text-[11px] uppercase tracking-wide text-slate-600"
-                            >
-                              {tPage(`filters.${category}`)}
-                            </Badge>
-                          ))}
-                          <Badge
-                            variant="outline"
-                            className="rounded-full border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] tracking-wide text-emerald-700"
-                          >
-                            {tPage("servicesCount", { count: item.services.length })}
-                          </Badge>
-                        </div>
-
-                        <div>
-                          <h2 className="text-lg font-semibold text-slate-900">
-                            {item.services.map((service) => service.item_name).join(" + ") || tPage("title")}
-                          </h2>
-                          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                            <span>{tPage("caseLabel")} {reference}</span>
-                            <span>{tPage("providedBy")}: {item.providersLabel}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3 text-sm text-slate-500 md:text-end">
-                        <div className="space-y-1">
-                          <p className="font-medium text-slate-800">{formatDateTime(item.occurredAt, "dd/MM/yyyy, HH:mm", locale)}</p>
-                          <p>{tPage("publishedAt")}: {formatDateTime(item.report.published_at || item.occurredAt, "dd/MM/yyyy, HH:mm", locale)}</p>
-                        </div>
-                        {isExpanded ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
-                      </div>
+              <AppCard key={item.caseId} className="overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setExpandedCaseId(isExpanded ? null : item.caseId)}
+                  aria-expanded={isExpanded}
+                  className="flex w-full items-start gap-3 p-4 text-start hover:bg-[#fafcfb] dark:hover:bg-white/[0.03]"
+                >
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e8f1fb] text-[#1d5fa8] dark:bg-sky-500/15 dark:text-sky-200">
+                    <FileText className="h-6 w-6" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 text-[16px] font-bold leading-6 text-foreground">
+                      {item.services.map((service) => service.item_name).join(" + ") || tPage("title")}
+                    </p>
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">
+                      {tPage("caseLabel")} {reference} · {formatDateTime(item.occurredAt, "dd/MM/yyyy", locale)}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {item.categories.map((category) => (
+                        <span key={`${item.caseId}-${category}`} className="rounded-full bg-[#f1f5f4] px-2.5 py-1 text-[12px] font-semibold text-[#3d5a54] dark:bg-white/5 dark:text-slate-200">
+                          {tPage(`filters.${category}`)}
+                        </span>
+                      ))}
+                      {item.report.has_sick_leave ? (
+                        <span className="rounded-full bg-[#fff4e0] px-2.5 py-1 text-[12px] font-semibold text-[#8a5200] dark:bg-amber-500/15 dark:text-amber-200">
+                          {tPage("sickLeave")}
+                        </span>
+                      ) : null}
                     </div>
-                  </button>
-
+                  </div>
                   {isExpanded ? (
-                    <div className="border-t border-slate-200/80 bg-slate-50/70 p-5">
-                      <div className="mb-4 flex flex-wrap gap-2">
-                        {item.report.has_pdf ? (
-                          <Button
-                            variant="outline"
-                            disabled={pendingDownload === `report-${item.caseId}`}
-                            onClick={() =>
-                              void runDownload(`report-${item.caseId}`, () => casesApi.downloadReportPdf(item.caseId), `case-report-${item.caseId.slice(0, 8)}.pdf`)
-                            }
-                          >
-                            {downloadIcon(`report-${item.caseId}`)}
-                            {tPage("downloadPdf")}
-                          </Button>
-                        ) : null}
-                        {item.report.has_sick_leave ? (
-                          <Button
-                            variant="outline"
-                            disabled={pendingDownload === `sick-${item.caseId}`}
-                            onClick={() =>
-                              void runDownload(`sick-${item.caseId}`, () => casesApi.downloadSickLeavePdf(item.caseId), `sick-leave-${item.caseId.slice(0, 8)}.pdf`)
-                            }
-                          >
-                            {downloadIcon(`sick-${item.caseId}`)}
-                            {tPage("downloadSickLeave")}
-                          </Button>
-                        ) : null}
-                        <Button variant="ghost" onClick={() => setExpandedCaseId(null)}>
-                          {tPage("hideDetails")}
-                        </Button>
-                      </div>
-
-                      <div className="space-y-5">
-                        <section className="space-y-3 rounded-[22px] border border-slate-200 bg-white p-4">
-                          <div className="flex items-center gap-2 text-slate-900">
-                            <Stethoscope className="h-4 w-4 text-sky-600" />
-                            <h3 className="font-semibold">{tPage("includedServices")}</h3>
-                          </div>
-                          <p className="text-sm text-slate-500">{tPage("includedServicesDescription")}</p>
-
-                          <div className="grid gap-3 lg:grid-cols-2">
-                            {item.services.map((service) => (
-                              <div key={service.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
-                                <div className="flex flex-wrap items-start justify-between gap-2">
-                                  <div>
-                                    <p className="font-medium text-slate-900">{service.item_name}</p>
-                                    <p className="text-xs text-slate-500">{getOrderItemTypeLabel({ type: service.item_type, serviceKind: service.service_kind }, tOrders)}</p>
-                                  </div>
-                                  <ServiceStatusBadge status={service.status} />
-                                </div>
-
-                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                  <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
-                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{tPage("providedBy")}</p>
-                                    <p className="mt-1 text-sm text-slate-700">{service.provider_name || "-"}</p>
-                                  </div>
-                                  <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
-                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{tPage("completedAt")}</p>
-                                    <p className="mt-1 text-sm text-slate-700">
-                                      {service.completed_at ? formatDateTime(service.completed_at, "dd/MM/yyyy, HH:mm", locale) : "-"}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </section>
-
-                        <section className="space-y-3 rounded-[22px] border border-slate-200 bg-white p-4">
-                          <div className="flex items-center gap-2 text-slate-900">
-                            <FileText className="h-4 w-4 text-emerald-600" />
-                            <h3 className="font-semibold">{tPage("sourceFiles")}</h3>
-                          </div>
-                          <p className="text-sm text-slate-500">{tPage("sourceFilesDescription")}</p>
-
-                          {files.length ? (
-                            <div className="space-y-3">
-                              {files.map((file: CaseProviderFile) => (
-                                <div
-                                  key={file.id}
-                                  className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white/85 p-3 sm:flex-row sm:items-center sm:justify-between"
-                                >
-                                  <div className="space-y-1">
-                                    <div className="flex flex-wrap gap-2">
-                                      <Badge variant="outline" className="rounded-full border-slate-300 bg-slate-50 px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-slate-600">
-                                        {file.file_type}
-                                      </Badge>
-                                      {file.is_sick_leave ? (
-                                        <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] tracking-wide text-amber-700">
-                                          {tPage("sickLeave")}
-                                        </Badge>
-                                      ) : null}
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-900">{file.original_name || file.service_name || "-"}</p>
-                                    <p className="text-xs text-slate-500">
-                                      {file.service_name ? `${file.service_name} · ` : ""}
-                                      {tPage("uploadedAt")}: {formatDateTime(file.created_at, "dd/MM/yyyy, HH:mm", locale)}
-                                    </p>
-                                  </div>
-
-                                  <Button
-                                    variant="outline"
-                                    className="rounded-xl"
-                                    disabled={pendingDownload === `file-${file.id}`}
-                                    onClick={() =>
-                                      void runDownload(`file-${file.id}`, () => casesApi.downloadProviderFile(file), file.original_name || `file-${file.id.slice(0, 8)}`)
-                                    }
-                                  >
-                                    {downloadIcon(`file-${file.id}`)}
-                                    {tPage("viewFile")}
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-slate-500">{tPage("noSourceFiles")}</p>
-                          )}
-                        </section>
-                      </div>
-                    </div>
+                    <ChevronUp className="mt-1 h-5 w-5 shrink-0 text-muted-foreground" />
                   ) : (
-                    <div className="flex items-center justify-end border-t border-slate-200/70 px-5 py-3 text-sm text-slate-500">
-                      <span>
-                        {REPORT_FILTERS.filter((filter) => filter !== "ALL" && item.categories.includes(filter))
-                          .map((filter) => tPage(`filters.${filter}`))
-                          .join(" | ")}
-                      </span>
-                    </div>
+                    <ChevronDown className="mt-1 h-5 w-5 shrink-0 text-muted-foreground" />
                   )}
-                </CardContent>
-              </Card>
+                </button>
+
+                <div className="grid grid-cols-1 gap-2 px-4 pb-4 sm:grid-cols-2">
+                  {item.report.has_pdf ? (
+                    <button
+                      type="button"
+                      className={cn(appButton.primary, "min-h-12")}
+                      disabled={pendingDownload === `report-${item.caseId}`}
+                      onClick={() =>
+                        void runDownload(`report-${item.caseId}`, () => casesApi.downloadReportPdf(item.caseId), `case-report-${item.caseId.slice(0, 8)}.pdf`)
+                      }
+                    >
+                      {downloadIcon(`report-${item.caseId}`)}
+                      {tPage("downloadPdf")}
+                    </button>
+                  ) : null}
+                  {item.report.has_sick_leave ? (
+                    <button
+                      type="button"
+                      className={cn(appButton.secondary, "min-h-12")}
+                      disabled={pendingDownload === `sick-${item.caseId}`}
+                      onClick={() =>
+                        void runDownload(`sick-${item.caseId}`, () => casesApi.downloadSickLeavePdf(item.caseId), `sick-leave-${item.caseId.slice(0, 8)}.pdf`)
+                      }
+                    >
+                      {downloadIcon(`sick-${item.caseId}`)}
+                      {tPage("downloadSickLeave")}
+                    </button>
+                  ) : null}
+                </div>
+
+                {isExpanded ? (
+                  <div className="space-y-4 border-t border-[var(--app-card-border)] bg-[#f8fbfa] p-4 dark:bg-white/[0.02]">
+                    <p className="text-[13px] text-muted-foreground">
+                      {tPage("providedBy")}: <span className="font-semibold text-foreground">{item.providersLabel}</span>
+                      {" · "}
+                      {tPage("publishedAt")}: {formatDateTime(item.report.published_at || item.occurredAt, "dd/MM/yyyy, HH:mm", locale)}
+                    </p>
+
+                    <section className="space-y-2">
+                      <h3 className="flex items-center gap-2 text-[15px] font-bold text-foreground">
+                        <Stethoscope className="h-4 w-4 text-[#5a7a50]" />
+                        {tPage("includedServices")}
+                      </h3>
+                      <div className="space-y-2">
+                        {item.services.map((service) => (
+                          <div key={service.id} className="rounded-2xl bg-card p-3.5 ring-1 ring-[var(--app-card-border)]">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-[15px] font-semibold text-foreground">{service.item_name}</p>
+                                <p className="text-[13px] text-muted-foreground">
+                                  {getOrderItemTypeLabel({ type: service.item_type, serviceKind: service.service_kind }, tOrders)}
+                                  {service.provider_name ? ` · ${service.provider_name}` : ""}
+                                </p>
+                              </div>
+                              <ServiceStatusBadge status={service.status} />
+                            </div>
+                            <p className="mt-2 text-[13px] text-muted-foreground">
+                              {tPage("completedAt")}: {service.completed_at ? formatDateTime(service.completed_at, "dd/MM/yyyy, HH:mm", locale) : "-"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="space-y-2">
+                      <h3 className="flex items-center gap-2 text-[15px] font-bold text-foreground">
+                        <FileText className="h-4 w-4 text-[#5a7a50]" />
+                        {tPage("sourceFiles")}
+                      </h3>
+                      {files.length ? (
+                        <div className="space-y-2">
+                          {files.map((file: CaseProviderFile) => (
+                            <div key={file.id} className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-[var(--app-card-border)]">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-[14px] font-semibold text-foreground">{file.original_name || file.service_name || "-"}</p>
+                                <p className="truncate text-[12.5px] text-muted-foreground">
+                                  {file.is_sick_leave ? `${tPage("sickLeave")} · ` : ""}
+                                  {file.service_name ? `${file.service_name} · ` : ""}
+                                  {formatDateTime(file.created_at, "dd/MM/yyyy", locale)}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                aria-label={tPage("viewFile")}
+                                className="app-press inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-[#e6f0ee] px-4 text-[14px] font-semibold text-[#104d49] disabled:opacity-50 dark:bg-teal-500/15 dark:text-teal-100"
+                                disabled={pendingDownload === `file-${file.id}`}
+                                onClick={() =>
+                                  void runDownload(`file-${file.id}`, () => casesApi.downloadProviderFile(file), file.original_name || `file-${file.id.slice(0, 8)}`)
+                                }
+                              >
+                                {downloadIcon(`file-${file.id}`)}
+                                {tPage("viewFile")}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[14px] text-muted-foreground">{tPage("noSourceFiles")}</p>
+                      )}
+                    </section>
+                  </div>
+                ) : null}
+              </AppCard>
             );
           })}
         </div>
       ) : (
-        <Card className="rounded-[24px] border-dashed border-slate-300 bg-slate-50">
-          <CardContent className="p-8 text-center text-sm text-slate-500">
-            {historyQuery.data?.length ? tPage("emptyFiltered") : tPage("empty")}
-          </CardContent>
-        </Card>
+        <EmptyState
+          illustration="empty-orders"
+          title={historyQuery.data?.length ? tPage("emptyFiltered") : tPage("empty")}
+        />
       )}
     </div>
   );

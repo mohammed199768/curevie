@@ -70,7 +70,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   const isAuthPage = pathname?.endsWith("/login") || pathname?.endsWith("/register");
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 dark:bg-background md:pb-0">
+    <div className={isAuthPage ? "min-h-screen bg-[var(--app-bg)]" : "min-h-screen bg-gray-50 pb-24 dark:bg-background md:pb-0"}>
       <Navbar />
       <main>{children}</main>
       {!isAuthPage && <Footer locale={locale} />}

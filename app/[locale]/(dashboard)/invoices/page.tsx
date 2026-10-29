@@ -3,22 +3,25 @@
 import Link from "next/link";
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { motion, useReducedMotion } from "framer-motion";
+import { Receipt } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { AppCard, EmptyState, ForwardChevron, ListSkeleton, PageIntro, appButton } from "@/components/app/ui";
 import { PaymentStatusBadge } from "@/components/orders/CaseStatusBadge";
-import { AppPreloader } from "@/components/shared/AppPreloader";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { casesApi } from "@/lib/api/cases";
 import { formatCurrency } from "@/lib/formatting";
-import { formatDateTime } from "@/lib/utils";
+import { getCaseReference, isolateLtr } from "@/lib/order-stage";
+import { cn, formatDateTime } from "@/lib/utils";
 
 const PAGE_SIZE = 9;
 
 export default function InvoicesPage() {
   const locale = useLocale();
   const tPage = useTranslations("invoicesPage");
+  const tNav = useTranslations("nav");
   const tOrders = useTranslations("orders");
   const tCommon = useTranslations("common");
+  const reduceMotion = useReducedMotion();
   const [page, setPage] = useState(1);
 
   // Invoices are released to patients when the case is closed; the list rows already carry the totals.
@@ -31,66 +34,97 @@ export default function InvoicesPage() {
   const rows = query.data?.cases || [];
   const totalPages = Math.max(1, Math.ceil(Number(query.data?.total || 0) / PAGE_SIZE));
 
-  if (query.isLoading) {
-    return <AppPreloader variant="page" title={tPage("title")} description={tCommon("loading")} blockCount={6} />;
-  }
-
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">{tPage("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{tPage("description")}</p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <PageIntro title={tPage("title")} description={tPage("description")} className="hidden md:flex" />
+      <p className="px-1 text-[14px] leading-6 text-muted-foreground md:hidden">{tPage("description")}</p>
 
-      {query.isError && !query.data ? (
-        <Card className="rounded-2xl">
-          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5 text-sm">
-            <span className="text-destructive">{tCommon("error")}</span>
-            <Button variant="outline" onClick={() => void query.refetch()}>{tCommon("retry")}</Button>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {rows.length ? (
-          rows.map((item) => {
-            const reference = `#${item.id.slice(0, 8).toUpperCase()}`;
+      {query.isLoading ? (
+        <ListSkeleton rows={4} />
+      ) : query.isError && !query.data ? (
+        <AppCard className="flex flex-wrap items-center justify-between gap-3 p-5">
+          <span className="text-[15px] text-rose-700 dark:text-rose-300">{tCommon("error")}</span>
+          <button type="button" className={cn(appButton.secondary, "min-h-11")} onClick={() => void query.refetch()}>
+            {tCommon("retry")}
+          </button>
+        </AppCard>
+      ) : rows.length ? (
+        <div className={cn("grid grid-cols-1 gap-3 transition-opacity md:grid-cols-2", query.isFetching && query.isPlaceholderData && "opacity-60")}>
+          {rows.map((item, index) => {
+            const reference = getCaseReference(item.id);
             const itemNames = (item.item_names || []).filter(Boolean);
+            const remaining = item.remaining_amount !== null ? Number(item.remaining_amount) : 0;
+            const due = remaining > 0 && item.payment_status !== "PAID" && item.payment_status !== "CANCELLED";
 
             return (
-              <Card key={item.id} className="rounded-2xl shadow-lg">
-                <CardContent className="space-y-3 p-5">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold">{tOrders("reference", { reference })}</p>
-                    {item.payment_status ? <PaymentStatusBadge status={item.payment_status} /> : null}
+              <motion.div
+                key={item.id}
+                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: Math.min(index, 6) * 0.04 }}
+                className="min-w-0"
+              >
+                <Link
+                  href={`/${locale}/invoices/${item.id}`}
+                  className="app-press app-card block overflow-hidden hover:shadow-[var(--app-shadow-lg)]"
+                >
+                  <div className="flex items-start gap-3 p-4 pb-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e6f0ee] text-[#104d49] dark:bg-teal-500/15 dark:text-teal-100">
+                      <Receipt className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-bold text-foreground">{itemNames.join("، ") || tCommon("service")}</p>
+                      <p className="mt-0.5 text-[13px] text-muted-foreground">
+                        {tOrders("reference", { reference: isolateLtr(reference) })} · {formatDateTime(item.updated_at || item.created_at, "dd/MM/yyyy", locale)}
+                      </p>
+                    </div>
+                    <ForwardChevron className="mt-2 shrink-0 text-muted-foreground/60" />
                   </div>
-                  <p className="line-clamp-2 text-sm">{itemNames.join("، ") || tCommon("service")}</p>
-                  <p className="text-3xl font-bold">{formatCurrency(item.final_amount ?? 0, locale)}</p>
-                  <div className="space-y-1 text-xs text-muted-foreground">
-                    {item.remaining_amount !== null && Number(item.remaining_amount) > 0 ? (
-                      <p>{tPage("remaining", { amount: formatCurrency(item.remaining_amount, locale) })}</p>
-                    ) : null}
-                    <p>{formatDateTime(item.updated_at || item.created_at, "dd/MM/yyyy, HH:mm", locale)}</p>
+                  <div className="flex items-end justify-between gap-3 px-4 pb-4">
+                    <div>
+                      <p className="text-[24px] font-bold leading-none tabular-nums text-foreground">{formatCurrency(item.final_amount ?? 0, locale)}</p>
+                      {due ? (
+                        <p className="mt-1.5 text-[13px] font-semibold text-[#8a5200] dark:text-amber-200">
+                          {tPage("remaining", { amount: formatCurrency(item.remaining_amount, locale) })}
+                        </p>
+                      ) : null}
+                    </div>
+                    {item.payment_status ? <PaymentStatusBadge status={item.payment_status} size="md" /> : null}
                   </div>
-                  <Button asChild variant="outline" className="w-full">
-                    <Link href={`/${locale}/invoices/${item.id}`}>{tPage("viewDetails")}</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+                </Link>
+              </motion.div>
             );
-          })
-        ) : (
-          <p className="text-sm text-muted-foreground">{tPage("empty")}</p>
-        )}
-      </div>
+          })}
+        </div>
+      ) : (
+        <EmptyState
+          illustration="empty-orders"
+          title={tPage("empty")}
+          description={tPage("description")}
+          action={
+            <Link href={`/${locale}/requests`} className={appButton.secondary}>
+              {tNav("requests")}
+            </Link>
+          }
+        />
+      )}
 
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" disabled={page <= 1} onClick={() => setPage((v) => Math.max(1, v - 1))}>{tCommon("prev")}</Button>
-        <p className="text-sm text-muted-foreground">{tCommon("pageOf", { page, total: totalPages })}</p>
-        <Button variant="outline" disabled={page >= totalPages} onClick={() => setPage((v) => Math.min(totalPages, v + 1))}>
-          {tCommon("next")}
-        </Button>
-      </div>
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-between gap-2">
+          <button type="button" className={cn(appButton.secondary, "min-h-11 px-4")} disabled={page <= 1} onClick={() => setPage((v) => Math.max(1, v - 1))}>
+            {tCommon("prev")}
+          </button>
+          <p className="text-[13px] text-muted-foreground">{tCommon("pageOf", { page, total: totalPages })}</p>
+          <button
+            type="button"
+            className={cn(appButton.secondary, "min-h-11 px-4")}
+            disabled={page >= totalPages}
+            onClick={() => setPage((v) => Math.min(totalPages, v + 1))}
+          >
+            {tCommon("next")}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

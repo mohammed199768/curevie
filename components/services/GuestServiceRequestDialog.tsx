@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Illustration } from "@/components/app/ui";
 import { AreaSelect } from "@/components/orders/AreaSelect";
 import { TrackingLinkCard } from "@/components/orders/TrackingLinkCard";
 import { Badge } from "@/components/ui/badge";
@@ -270,6 +271,9 @@ export function GuestServiceRequestDialog({
           <div className="px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
             {createdOrder ? (
               <div className="space-y-4">
+                <div className="flex justify-center">
+                  <Illustration name="order-placed" className="h-36 w-auto" sizes="160px" />
+                </div>
                 <TrackingLinkCard token={createdOrder.tracking_token} reference={createdOrder.case.reference} />
                 {createdOrder.case.invoice ? (
                   <div className="flex items-center justify-between rounded-2xl border border-[#dbe7e2] bg-white px-4 py-3 text-sm">

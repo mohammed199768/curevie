@@ -1322,5 +1322,166 @@
       "confirm": "Cancel order",
       "success": "Your order was cancelled."
     }
+  },
+  "app": {
+    "back": "Back",
+    "greeting": "Welcome back",
+    "greetingFallback": "to Curevie",
+    "tabBarLabel": "Main navigation",
+    "tabs": {
+      "home": "Home",
+      "orders": "Orders",
+      "new": "New order",
+      "invoices": "Invoices",
+      "profile": "Account"
+    },
+    "stepOf": "Stage {current} of {total}",
+    "allDone": "Complete",
+    "stages": {
+      "RECEIVED": "Order received",
+      "ASSIGNED": "Provider assigned",
+      "ACCEPTED": "Accepted · on the way",
+      "IN_PROGRESS": "Visit in progress",
+      "COMPLETED": "Service completed",
+      "CLOSED": "Order closed"
+    },
+    "stageHints": {
+      "RECEIVED": "We're arranging the right provider for your order.",
+      "ASSIGNED": "We picked your provider and are waiting for them to confirm.",
+      "ACCEPTED": "Your provider confirmed the visit and will arrive at the agreed time.",
+      "IN_PROGRESS": "Your care team has started working on your order.",
+      "COMPLETED": "All services are done. We're reviewing the results.",
+      "CLOSED": "Reviewed and closed. Your invoice and report are available."
+    },
+    "cliq": {
+      "title": "Pay via CliQ",
+      "subtitle": "Transfer instantly from your banking app.",
+      "amountToPay": "Amount to pay",
+      "payRemaining": "Pay the remaining balance of your order via CliQ. Our team will confirm the amount with you.",
+      "alias": "CliQ alias",
+      "beneficiary": "Beneficiary",
+      "bank": "Bank",
+      "reference": "Order reference for the transfer note",
+      "referenceHint": "Write the order reference in the transfer note so we can match your payment quickly.",
+      "copy": "Copy",
+      "copiedShort": "Copied",
+      "copied": "Copied to clipboard",
+      "copyFailed": "Couldn't copy. Please copy it manually.",
+      "confirmation": "Curevie confirms the payment once it is received, then it appears on your invoice."
+    },
+    "home": {
+      "heroTitle": "What do you need today?",
+      "heroSubtitle": "Doctors, nurses, lab tests and radiology, right at your door.",
+      "heroCta": "Order now",
+      "servicesTitle": "Our services",
+      "quick": {
+        "MEDICAL": "Doctor visit",
+        "NURSING": "Home nursing",
+        "LAB": "Lab tests",
+        "RADIOLOGY": "Home radiology",
+        "PACKAGE": "Care packages"
+      },
+      "activeTitle": "Your current order",
+      "trackOrder": "Track order",
+      "statActive": "Active",
+      "statTotal": "All orders",
+      "statDone": "Done",
+      "emptyTitle": "No orders yet",
+      "emptyDescription": "Book a doctor, a nurse or a lab test and we'll come to you.",
+      "vip": "VIP member",
+      "vipDiscount": "{percent}% off, applied automatically to your orders",
+      "itemsCount": "{count, plural, =0 {No items} one {# item} other {# items}}"
+    },
+    "orders": {
+      "unpaidAmount": "Due {amount}",
+      "viewOrder": "View order"
+    },
+    "newOrder": {
+      "steps": {
+        "what": "Services",
+        "where": "Where & when",
+        "review": "Review"
+      },
+      "stepTitles": {
+        "what": "What do you need?",
+        "where": "Where and when should we come?",
+        "review": "Review and confirm"
+      },
+      "stepOf": "Step {current} of {total}",
+      "itemsCount": "{count, plural, =0 {No items} one {# item} other {# items}}",
+      "continue": "Continue",
+      "back": "Back",
+      "emptyCart": "Pick at least one service to continue.",
+      "areaChoose": "Choose your area",
+      "areaSearch": "Search your area",
+      "areaNoResults": "No area matches your search.",
+      "areaSheetTitle": "Which area are you in?",
+      "change": "Change",
+      "whenTitle": "When would you like the visit?",
+      "asap": "As soon as possible",
+      "asapHint": "We'll call you to confirm the time",
+      "pickTime": "Pick a time",
+      "pickTimeHint": "Choose the day and hour",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "timeTitle": "Preferred time",
+      "noSlots": "No times left on this day. Pick another day.",
+      "timeRequired": "Pick a visit time or choose \"As soon as possible\".",
+      "whereTitle": "Visit address",
+      "notesTitle": "Notes for the care team",
+      "reviewItems": "Selected services",
+      "reviewVisit": "Visit details",
+      "edit": "Edit",
+      "subtotal": "Subtotal",
+      "vipDiscount": "VIP discount ({percent}%)",
+      "savedAddress": "Address saved on your profile",
+      "successTitle": "Your order is confirmed!",
+      "successDescription": "We'll contact you shortly to confirm the visit. You can follow your order live.",
+      "trackOrder": "Track my order",
+      "backHome": "Back to home",
+      "selectedCount": "{count} selected",
+      "viewSelected": "View selected"
+    },
+    "detail": {
+      "progressTitle": "Order progress",
+      "careTeam": "Your care team",
+      "awaitingTeam": "Your provider will appear here once assigned.",
+      "call": "Call",
+      "visitTitle": "Visit details",
+      "paymentTitle": "Payment summary",
+      "appointments": "Appointments",
+      "moreActions": "More actions",
+      "reviews": "{count, plural, one {# review} other {# reviews}}"
+    },
+    "invoices": {
+      "amountDue": "Remaining",
+      "issuedOn": "Issued {date}",
+      "total": "Invoice total"
+    },
+    "notifications": {
+      "emptyDescription": "We'll let you know here about every update on your orders."
+    },
+    "profile": {
+      "accountSection": "My account",
+      "moreSection": "More",
+      "changePhoto": "Change photo",
+      "savePhoto": "Save photo",
+      "selectedPhoto": "Selected photo: {name}",
+      "themeTitle": "Appearance"
+    },
+    "auth": {
+      "headline": "Healthcare that comes home",
+      "subline": "Book a doctor, a nurse or lab tests and follow everything in one place.",
+      "accountSection": "Sign-in details",
+      "contactSection": "Contact & address",
+      "personalSection": "About you",
+      "secure": "Your data is protected and encrypted"
+    },
+    "chat": {
+      "conversations": "Conversations"
+    },
+    "track": {
+      "guestTitle": "Track your order"
+    }
   }
 }

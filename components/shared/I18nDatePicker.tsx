@@ -88,8 +88,8 @@ export function I18nDatePicker({
   };
 
   const selectClass = cn(
-    "h-11 w-full rounded-md border border-input bg-background px-3 py-2",
-    "text-sm ring-offset-background",
+    "h-12 w-full rounded-2xl border border-[#dbe6e0] bg-card px-3 py-2 dark:border-border",
+    "text-[16px] ring-offset-background",
     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
     "disabled:cursor-not-allowed disabled:opacity-50",
     "appearance-none cursor-pointer",

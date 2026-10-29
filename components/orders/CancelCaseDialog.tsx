@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { casesApi } from "@/lib/api/cases";
 import { getOrderErrorMessage } from "@/lib/order-errors";
 
-export function CancelCaseDialog({ caseId }: { caseId: string }) {
+export function CancelCaseDialog({ caseId, triggerClassName }: { caseId: string; triggerClassName?: string }) {
   const t = useTranslations("orderDetail");
   const tOrders = useTranslations("orders");
   const queryClient = useQueryClient();
@@ -45,17 +45,22 @@ export function CancelCaseDialog({ caseId }: { caseId: string }) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button type="button" variant="outline" className="min-h-11 rounded-full border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800">
+        <Button
+          type="button"
+          variant="outline"
+          className={triggerClassName || "min-h-11 rounded-full border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"}
+        >
           <XCircle className="h-4 w-4" />
           {t("cancel.button")}
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="w-[calc(100vw-2rem)] max-w-md rounded-[24px] p-6">
         <AlertDialogHeader className="text-start">
           <AlertDialogTitle>{t("cancel.title")}</AlertDialogTitle>
           <AlertDialogDescription>{t("cancel.description")}</AlertDialogDescription>
         </AlertDialogHeader>
         <Textarea
+          className="rounded-2xl text-[16px]"
           rows={3}
           maxLength={500}
           value={reason}
@@ -63,10 +68,11 @@ export function CancelCaseDialog({ caseId }: { caseId: string }) {
           placeholder={t("cancel.reasonPlaceholder")}
         />
         <AlertDialogFooter className="gap-2 sm:space-x-0">
-          <AlertDialogCancel disabled={cancelMutation.isPending}>{t("cancel.keep")}</AlertDialogCancel>
+          <AlertDialogCancel className="min-h-12 rounded-2xl" disabled={cancelMutation.isPending}>{t("cancel.keep")}</AlertDialogCancel>
           <Button
             type="button"
             variant="destructive"
+            className="min-h-12 rounded-2xl"
             disabled={cancelMutation.isPending}
             onClick={() => cancelMutation.mutate()}
           >

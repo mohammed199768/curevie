@@ -22,101 +22,11 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { AppTabBar } from "./AppTabBar";
 
 type MobileBottomNavProps = {
   variant?: "public" | "dashboard";
 };
-
-const dashboardNavItems = [
-  { href: "/", labelKey: "home", iconType: "logo" as const },
-  { href: "/requests", labelKey: "requests", icon: ClipboardList },
-  { href: "/profile", labelKey: "profile", icon: User },
-] as const;
-
-function getPathWithoutLocale(pathname: string, locale: string) {
-  const normalizedPathname = pathname.split("?")[0] || "/";
-  const segments = normalizedPathname.split("/").filter(Boolean);
-
-  if (!segments.length) {
-    return "/";
-  }
-
-  if (segments[0] !== locale) {
-    return normalizedPathname === "" ? "/" : normalizedPathname;
-  }
-
-  const nextPath = `/${segments.slice(1).join("/")}`.replace(/\/+$/, "");
-  return nextPath === "" ? "/" : nextPath;
-}
-
-function isDashboardItemActive(pathname: string, href: string) {
-  if (href === "/") {
-    return pathname === "/";
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function resolveDashboardHref(locale: string, href: string) {
-  if (href === "/") {
-    return `/${locale}`;
-  }
-
-  return `/${locale}${href}`;
-}
-
-function DashboardMobileBottomNav() {
-  const locale = useLocale();
-  const pathname = usePathname();
-  const t = useTranslations("nav");
-  const pathWithoutLocale = getPathWithoutLocale(pathname, locale);
-
-  if (pathWithoutLocale === "/chat" || pathWithoutLocale.startsWith("/chat/")) {
-    return null;
-  }
-
-  return (
-    <nav
-      dir={locale === "ar" ? "rtl" : "ltr"}
-      className="fixed bottom-0 left-0 right-0 z-[100] border-t border-primary/10 bg-background/95 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] backdrop-blur-2xl shadow-[0_-8px_30px_rgb(0,0,0,0.06)] md:hidden"
-      aria-label="Dashboard navigation"
-    >
-      <div className="mx-auto flex max-w-md items-center gap-1">
-        {dashboardNavItems.map((item) => {
-          const active = isDashboardItemActive(pathWithoutLocale, item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={resolveDashboardHref(locale, item.href)}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex min-h-11 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition-colors",
-                active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-primary",
-              )}
-            >
-              {"iconType" in item ? (
-                <Image
-                  src="/icon.png"
-                  alt=""
-                  width={20}
-                  height={20}
-                  className="mb-0.5 h-5 w-5 object-contain"
-                  aria-hidden="true"
-                />
-              ) : (
-                <item.icon className="h-6 w-6" />
-              )}
-              <span className="truncate">{t(item.labelKey)}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
 
 function PublicMobileBottomNav() {
   const locale = useLocale();
@@ -391,7 +301,7 @@ function PublicMobileBottomNav() {
 
 export function MobileBottomNav({ variant = "public" }: MobileBottomNavProps) {
   if (variant === "dashboard") {
-    return <DashboardMobileBottomNav />;
+    return <AppTabBar />;
   }
 
   return <PublicMobileBottomNav />;

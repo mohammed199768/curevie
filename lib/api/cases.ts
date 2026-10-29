@@ -196,6 +196,7 @@ export interface TrackingView {
     id: string;
     item_type: CaseItemType;
     item_name: string;
+    service_kind?: CaseServiceKind | null;
     status: CaseServiceStatus;
     provider_name: string | null;
     bundle_price: MoneyValue;

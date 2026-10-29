@@ -86,6 +86,13 @@
     --brand-border: #dbe6e0;
     --brand-ink: #12312d;
 
+    /* Patient app surfaces */
+    --app-bg: #f5f7f6;
+    --app-bg-glass: rgba(245, 247, 246, 0.84);
+    --app-card-border: rgba(16, 49, 45, 0.06);
+    --app-shadow: 0 1px 2px rgba(16, 49, 45, 0.04), 0 12px 32px -20px rgba(16, 77, 73, 0.28);
+    --app-shadow-lg: 0 2px 6px rgba(16, 49, 45, 0.05), 0 24px 56px -28px rgba(16, 77, 73, 0.38);
+
     /* Curevie type system: Lama Sans for Latin, IBM Plex Sans Arabic for Arabic. */
     --font-brand: "Lama Sans";
     --font-arabic: "IBM Plex Sans Arabic";
@@ -120,6 +127,11 @@
     --chart-3: 90.4 30.3% 52.7%;
     --chart-4: 105.7 20.8% 39.6%;
     --chart-5: 210 3.1% 62.4%;
+    --app-bg: hsl(168 22% 7%);
+    --app-bg-glass: rgba(14, 22, 21, 0.84);
+    --app-card-border: hsl(166 12% 20%);
+    --app-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --app-shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.35);
   }
 
   * {
@@ -238,6 +250,69 @@ html[lang="ar"] {
     font-weight: 500;
     letter-spacing: normal;
     text-transform: none;
+  }
+}
+
+@layer components {
+  /* Patient app design system */
+  .app-card {
+    border-radius: 22px;
+    border: 1px solid var(--app-card-border);
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    box-shadow: var(--app-shadow);
+  }
+
+  .app-press {
+    transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .app-press:active {
+    transform: scale(0.98);
+  }
+
+  .app-shimmer {
+    position: relative;
+    overflow: hidden;
+    background-color: rgba(16, 77, 73, 0.07);
+  }
+
+  .dark .app-shimmer {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .app-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    animation: app-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .dark .app-shimmer::after {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  }
+
+  .app-hero {
+    background-image:
+      radial-gradient(120% 90% at 100% 0%, rgba(134, 171, 98, 0.38) 0%, rgba(134, 171, 98, 0) 55%),
+      linear-gradient(150deg, #155a55 0%, #104d49 45%, #0b3f3b 100%);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes app-shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 
@@ -424,7 +499,8 @@ html[lang="ar"] {
   .perf-marquee,
   .perf-marquee-rtl,
   .perf-sheen,
-  .perf-pulse-ring {
+  .perf-pulse-ring,
+  .app-shimmer::after {
     animation: none !important;
     transform: none !important;
   }

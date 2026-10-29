@@ -11,11 +11,12 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { RealtimeProvider } from "@/components/providers/RealtimeProvider";
 import { AppPreloader } from "@/components/shared/AppPreloader";
-import { ChatFloatingButton } from "@/components/shared/ChatFloatingButton";
 import { casesApi } from "@/lib/api/cases";
 import { notificationsApi } from "@/lib/api/notifications";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useUiStore } from "@/lib/stores/ui.store";
+import { isTabBarHidden } from "@/components/layout/AppTabBar";
+import { stripLocale } from "@/lib/app-routes";
 import { cn } from "@/lib/utils";
 
 // Socket events keep the counters live; this slow refetch is only a fallback.
@@ -86,42 +87,37 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     }
   }, [hydrated, locale, pathname, router, sessionReady]);
 
+  const tabBarHidden = isTabBarHidden(stripLocale(pathname, locale));
+
   if (!sessionReady) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-4 py-6 sm:px-6">
-        <AppPreloader
-          variant="page"
-          title={tCommon("loading")}
-          blockCount={4}
-          className="w-full"
-        />
+      <div className="min-h-screen bg-[var(--app-bg)]">
+        <div className="mx-auto w-full max-w-3xl px-4 pt-6">
+          <AppPreloader variant="page" title={tCommon("loading")} blockCount={3} className="w-full" />
+        </div>
       </div>
     );
   }
 
   return (
     <RealtimeProvider enabled={sessionReady}>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950/30">
-        <div
-          className={cn(
-            "fixed inset-y-0 z-40 hidden md:block",
-            locale === "ar" ? "right-0" : "left-0"
-          )}
-        >
+      <div className="min-h-screen bg-[var(--app-bg)] text-[15px]">
+        <div className={cn("fixed inset-y-0 z-40 hidden md:block", locale === "ar" ? "right-0" : "left-0")}>
           <DashboardSidebar locale={locale} />
         </div>
 
-        <div
-          className={cn(
-            "min-h-screen pb-16 md:pb-0",
-            locale === "ar" ? "md:pr-[240px]" : "md:pl-[240px]"
-          )}
-        >
+        <div className={cn("min-h-screen", locale === "ar" ? "md:pr-[260px]" : "md:pl-[260px]")}>
           <DashboardHeader />
-          <main className="p-4 md:p-6">{children}</main>
+          <main
+            className={cn(
+              "mx-auto w-full max-w-5xl px-4 pt-2 md:px-8 md:pb-12",
+              tabBarHidden ? "pb-6" : "pb-[calc(env(safe-area-inset-bottom)+7.5rem)]",
+            )}
+          >
+            {children}
+          </main>
         </div>
         <MobileBottomNav variant="dashboard" />
-        <ChatFloatingButton />
       </div>
     </RealtimeProvider>
   );

@@ -53,12 +53,12 @@ export function RateServiceDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" size="sm" variant="outline" className="rounded-full">
-          <Star className="h-4 w-4" />
+        <Button type="button" variant="outline" className="min-h-11 rounded-full border-[#f3e2b5] bg-[#fffaf0] px-4 text-[14px] font-semibold text-[#7a5300] hover:bg-[#fff4e0] dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+          <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
           {t("rating.rate")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-2rem)] rounded-[24px] p-6 sm:max-w-md">
         <DialogHeader className="text-start">
           <DialogTitle>{t("rating.title")}</DialogTitle>
           <DialogDescription>
@@ -75,14 +75,15 @@ export function RateServiceDialog({
               aria-checked={rating === value}
               aria-label={t("rating.stars", { count: value })}
               onClick={() => setRating(value)}
-              className="rounded-full p-1 transition hover:scale-110"
+              className="rounded-full p-1.5 transition hover:scale-110 active:scale-95"
             >
-              <Star className={cn("h-8 w-8", value <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground")} />
+              <Star className={cn("h-9 w-9", value <= rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground")} />
             </button>
           ))}
         </div>
 
         <Textarea
+          className="rounded-2xl text-[16px]"
           rows={3}
           maxLength={1000}
           value={comment}
@@ -91,10 +92,10 @@ export function RateServiceDialog({
         />
 
         <DialogFooter className="gap-2 sm:space-x-0">
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <Button type="button" variant="outline" className="min-h-12 rounded-2xl" onClick={() => setOpen(false)}>
             {t("rating.cancel")}
           </Button>
-          <Button type="button" onClick={() => rateMutation.mutate()} disabled={!rating || rateMutation.isPending}>
+          <Button type="button" className="min-h-12 rounded-2xl" onClick={() => rateMutation.mutate()} disabled={!rating || rateMutation.isPending}>
             {rateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {t("rating.submit")}
           </Button>

@@ -32,6 +32,8 @@ export function Navbar() {
   const patient = useAuthStore((state) => state.patient);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { logout } = useAuth();
+  // Sign-in / sign-up screens are focused, app-style screens without the marketing tab bar.
+  const isAuthScreen = Boolean(pathname?.endsWith("/login") || pathname?.endsWith("/register"));
 
   return (
     <>
@@ -115,7 +117,7 @@ export function Navbar() {
       </header>
 
       {/* Render the specialized Mobile Bottom Navbar */}
-      <MobileBottomNav variant="public" />
+      {isAuthScreen ? null : <MobileBottomNav variant="public" />}
     </>
   );
 }

@@ -1322,5 +1322,166 @@
       "confirm": "إلغاء الطلب",
       "success": "تم إلغاء طلبك."
     }
+  },
+  "app": {
+    "back": "رجوع",
+    "greeting": "مرحبًا بك",
+    "greetingFallback": "في كيورفي",
+    "tabBarLabel": "التنقل الرئيسي",
+    "tabs": {
+      "home": "الرئيسية",
+      "orders": "طلباتي",
+      "new": "طلب جديد",
+      "invoices": "فواتيري",
+      "profile": "حسابي"
+    },
+    "stepOf": "المرحلة {current} من {total}",
+    "allDone": "اكتمل",
+    "stages": {
+      "RECEIVED": "تم استلام طلبك",
+      "ASSIGNED": "تم تعيين مقدم الخدمة",
+      "ACCEPTED": "تم القبول · في الطريق إليك",
+      "IN_PROGRESS": "الزيارة قيد التنفيذ",
+      "COMPLETED": "اكتملت الخدمة",
+      "CLOSED": "تم إغلاق الطلب"
+    },
+    "stageHints": {
+      "RECEIVED": "نرتّب الآن مقدم الخدمة المناسب لطلبك.",
+      "ASSIGNED": "اخترنا لك مقدم الخدمة، وننتظر تأكيده للزيارة.",
+      "ACCEPTED": "أكّد مقدم الخدمة الزيارة، وسيصل إليك في الموعد المتفق عليه.",
+      "IN_PROGRESS": "بدأ فريق الرعاية العمل على طلبك.",
+      "COMPLETED": "انتهت جميع الخدمات ونراجع النتائج الآن.",
+      "CLOSED": "تمت المراجعة. فاتورتك وتقريرك متاحان."
+    },
+    "cliq": {
+      "title": "ادفع عبر CliQ",
+      "subtitle": "حوّل المبلغ فورًا من تطبيق بنكك.",
+      "amountToPay": "المبلغ المطلوب",
+      "payRemaining": "ادفع المبلغ المتبقي من طلبك عبر CliQ، وسيؤكد فريقنا المبلغ معك.",
+      "alias": "الاسم المستعار (CliQ Alias)",
+      "beneficiary": "اسم المستفيد",
+      "bank": "البنك",
+      "reference": "رقم الطلب لملاحظة التحويل",
+      "referenceHint": "اكتب رقم الطلب في ملاحظة التحويل حتى نطابق دفعتك بسرعة.",
+      "copy": "نسخ",
+      "copiedShort": "تم",
+      "copied": "تم النسخ",
+      "copyFailed": "تعذّر النسخ. انسخه يدويًا.",
+      "confirmation": "تؤكّد كيورفي الدفعة بعد استلامها، ثم تظهر في فاتورتك."
+    },
+    "home": {
+      "heroTitle": "ماذا تحتاج اليوم؟",
+      "heroSubtitle": "طبيب، ممرض، فحوصات وأشعة… تصلك إلى باب بيتك.",
+      "heroCta": "اطلب الآن",
+      "servicesTitle": "خدماتنا",
+      "quick": {
+        "MEDICAL": "زيارة طبيب",
+        "NURSING": "تمريض منزلي",
+        "LAB": "فحوصات مخبرية",
+        "RADIOLOGY": "أشعة منزلية",
+        "PACKAGE": "باقات الرعاية"
+      },
+      "activeTitle": "طلبك الحالي",
+      "trackOrder": "تتبّع الطلب",
+      "statActive": "نشطة",
+      "statTotal": "كل الطلبات",
+      "statDone": "منجزة",
+      "emptyTitle": "لا توجد طلبات بعد",
+      "emptyDescription": "اطلب زيارة طبيب أو ممرض أو فحصًا مخبريًا وسنأتي إليك.",
+      "vip": "عضو VIP",
+      "vipDiscount": "خصم {percent}% يُطبَّق تلقائيًا على طلباتك",
+      "itemsCount": "{count, plural, =0 {بدون عناصر} one {عنصر واحد} two {عنصران} few {# عناصر} many {# عنصرًا} other {# عنصر}}"
+    },
+    "orders": {
+      "unpaidAmount": "المستحق {amount}",
+      "viewOrder": "عرض الطلب"
+    },
+    "newOrder": {
+      "steps": {
+        "what": "الخدمات",
+        "where": "الموعد والمكان",
+        "review": "المراجعة"
+      },
+      "stepTitles": {
+        "what": "ماذا تحتاج؟",
+        "where": "أين ومتى نأتي إليك؟",
+        "review": "راجع طلبك وأكّده"
+      },
+      "stepOf": "الخطوة {current} من {total}",
+      "itemsCount": "{count, plural, =0 {لا عناصر} one {عنصر واحد} two {عنصران} few {# عناصر} many {# عنصرًا} other {# عنصر}}",
+      "continue": "متابعة",
+      "back": "رجوع",
+      "emptyCart": "اختر خدمة واحدة على الأقل للمتابعة.",
+      "areaChoose": "اختر منطقتك",
+      "areaSearch": "ابحث عن منطقتك",
+      "areaNoResults": "لا توجد منطقة بهذا الاسم.",
+      "areaSheetTitle": "في أي منطقة أنت؟",
+      "change": "تغيير",
+      "whenTitle": "متى تفضّل الزيارة؟",
+      "asap": "في أقرب وقت",
+      "asapHint": "سنتصل بك لتأكيد الموعد",
+      "pickTime": "اختر موعدًا",
+      "pickTimeHint": "حدّد اليوم والساعة",
+      "today": "اليوم",
+      "tomorrow": "غدًا",
+      "timeTitle": "الوقت المفضل",
+      "noSlots": "لا توجد أوقات متاحة في هذا اليوم. اختر يومًا آخر.",
+      "timeRequired": "اختر وقت الزيارة أو اختر «في أقرب وقت».",
+      "whereTitle": "عنوان الزيارة",
+      "notesTitle": "ملاحظات لفريق الرعاية",
+      "reviewItems": "الخدمات المختارة",
+      "reviewVisit": "تفاصيل الزيارة",
+      "edit": "تعديل",
+      "subtotal": "المجموع الفرعي",
+      "vipDiscount": "خصم VIP ({percent}%)",
+      "savedAddress": "العنوان المحفوظ في ملفك",
+      "successTitle": "تم تأكيد طلبك!",
+      "successDescription": "سنتواصل معك قريبًا لتأكيد الموعد، ويمكنك متابعة حالة طلبك لحظة بلحظة.",
+      "trackOrder": "تتبّع طلبي",
+      "backHome": "العودة للرئيسية",
+      "selectedCount": "تم اختيار {count}",
+      "viewSelected": "عرض المختارة"
+    },
+    "detail": {
+      "progressTitle": "مراحل الطلب",
+      "careTeam": "فريق الرعاية",
+      "awaitingTeam": "سيظهر مقدم الخدمة هنا فور تعيينه.",
+      "call": "اتصال",
+      "visitTitle": "تفاصيل الزيارة",
+      "paymentTitle": "ملخص الدفع",
+      "appointments": "المواعيد",
+      "moreActions": "إجراءات أخرى",
+      "reviews": "{count, plural, one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}"
+    },
+    "invoices": {
+      "amountDue": "المتبقي",
+      "issuedOn": "صدرت في {date}",
+      "total": "إجمالي الفاتورة"
+    },
+    "notifications": {
+      "emptyDescription": "سنخبرك هنا بكل جديد يخص طلباتك."
+    },
+    "profile": {
+      "accountSection": "حسابي",
+      "moreSection": "المزيد",
+      "changePhoto": "تغيير الصورة",
+      "savePhoto": "حفظ الصورة",
+      "selectedPhoto": "الصورة المختارة: {name}",
+      "themeTitle": "المظهر"
+    },
+    "auth": {
+      "headline": "رعاية صحية تصل إلى بيتك",
+      "subline": "اطلب طبيبًا أو ممرضًا أو فحوصات مخبرية وتابع كل شيء من مكان واحد.",
+      "accountSection": "بيانات الدخول",
+      "contactSection": "التواصل والعنوان",
+      "personalSection": "عنك",
+      "secure": "بياناتك محمية ومشفّرة"
+    },
+    "chat": {
+      "conversations": "المحادثات"
+    },
+    "track": {
+      "guestTitle": "تتبّع طلبك"
+    }
   }
 }

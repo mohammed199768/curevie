@@ -4,29 +4,41 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, Check, Crown, Loader2, Plus, Search, ShoppingBag, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  CalendarClock,
+  Check,
+  Crown,
+  Loader2,
+  MapPin,
+  NotebookPen,
+  Plus,
+  Search,
+  X,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { AreaSelect, useAreas } from "@/components/orders/AreaSelect";
-import { AppPreloader } from "@/components/shared/AppPreloader";
+import { AppCard, Illustration, Shimmer, appButton } from "@/components/app/ui";
+import { AreaPicker } from "@/components/orders/AreaPicker";
+import { useAreas } from "@/components/orders/AreaSelect";
+import { SchedulePicker, type ScheduleMode } from "@/components/orders/SchedulePicker";
 import { PrelaunchRequestPage } from "@/components/shared/PrelaunchNotice";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import {
   casesApi,
   getCaseServiceItemRef,
   MAX_CASE_ITEMS,
   type CaseItemRef,
   type CaseItemType,
+  type CaseView,
 } from "@/lib/api/cases";
+import { getAreaLabel } from "@/lib/api/areas";
 import type { ServiceKind } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/formatting";
 import { BOOKINGS_ENABLED } from "@/lib/launch";
@@ -34,23 +46,26 @@ import { fetchOrderCatalog, type OrderCatalogItem } from "@/lib/order-catalog";
 import { getOrderErrorMessage } from "@/lib/order-errors";
 import {
   dedupeOrderItems,
-  getMinScheduleInputValue,
   getOrderItemTypeLabel,
   isFutureScheduleInput,
+  isServiceKind,
   ORDER_ITEM_TYPES,
   orderItemKey,
   parseOrderItemsParam,
   scheduleInputToIso,
   SERVICE_KINDS,
 } from "@/lib/order-items";
+import { getCaseReference, isolateLtr } from "@/lib/order-stage";
 import { useAuthStore } from "@/lib/stores/auth.store";
-import { cn } from "@/lib/utils";
+import { cn, formatDateWithWeekday, formatTimeOnly } from "@/lib/utils";
 
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 type KindFilter = "ALL" | ServiceKind;
+type Step = 1 | 2 | 3;
 
 const SERVICE_KIND_FILTERS: KindFilter[] = ["ALL", ...SERVICE_KINDS];
 const INCLUDED_SERVICES_PREVIEW = 4;
+const STEP_KEYS = ["what", "where", "review"] as const;
 
 function createVisitSchema(t: Translate, addressRequired: boolean) {
   return z.object({
@@ -77,26 +92,41 @@ export default function NewRequestPage() {
   );
 }
 
+function toMoney(value: number) {
+  return Math.round(value * 1000) / 1000;
+}
+
 function NewOrderPage() {
   const locale = useLocale();
+  const isRtl = locale === "ar";
   const t = useTranslations("orderForm");
+  const tFlow = useTranslations("app.newOrder");
   const tOrders = useTranslations("orders");
   const tCommon = useTranslations("common");
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
   const patient = useAuthStore((state) => state.patient);
   const isVip = Boolean(patient?.is_vip);
+  const vipPercent = isVip ? Math.min(Math.max(Number(patient?.vip_discount) || 0, 0), 100) : 0;
 
-  const [activeType, setActiveType] = useState<CaseItemType>("SERVICE");
-  const [kindFilter, setKindFilter] = useState<KindFilter>("ALL");
+  const initialType = searchParams.get("type") === "PACKAGE" ? "PACKAGE" : "SERVICE";
+  const initialKind = searchParams.get("kind");
+  const [activeType, setActiveType] = useState<CaseItemType>(initialType);
+  const [kindFilter, setKindFilter] = useState<KindFilter>(isServiceKind(initialKind) ? initialKind : "ALL");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<CaseItemRef[]>([]);
   const [fallbackNames, setFallbackNames] = useState<Record<string, string>>({});
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("asap");
+  const [createdView, setCreatedView] = useState<CaseView | null>(null);
   const prefillAppliedRef = useRef(false);
 
   const reorderCaseId = searchParams.get("reorder");
   const itemsParam = searchParams.get("items");
+  const stepParam = Number(searchParams.get("step") || 1);
+  const step: Step = stepParam === 2 || stepParam === 3 ? stepParam : 1;
 
   const catalogQueries = useQueries({
     queries: ORDER_ITEM_TYPES.map((type) => ({
@@ -134,6 +164,17 @@ function NewOrderPage() {
       notes: "",
     },
   });
+
+  // A reload in the middle of the flow starts again from the first step (selections live in memory).
+  useEffect(() => {
+    if (step !== 1) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("step");
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pre-fill items from ?items=TYPE:id,... (catalog pages) or ?reorder=<caseId> ("order again").
   useEffect(() => {
@@ -188,6 +229,8 @@ function NewOrderPage() {
   const estimatedTotal = orderableRows.reduce((sum, row) => sum + Number(row.item?.price || 0), 0);
   const hasUnpriced = orderableRows.some((row) => row.item?.price === null);
   const limitReached = selected.length >= MAX_CASE_ITEMS;
+  const vipDiscount = vipPercent > 0 ? toMoney((estimatedTotal * vipPercent) / 100) : 0;
+  const payableEstimate = toMoney(estimatedTotal - vipDiscount);
 
   const visibleItems = useMemo(() => {
     const items = activeQuery?.data || [];
@@ -232,9 +275,9 @@ function NewOrderPage() {
       });
     },
     onSuccess: async (view) => {
-      toast.success(t("success"));
+      setCreatedView(view);
+      window.scrollTo({ top: 0 });
       await queryClient.invalidateQueries({ queryKey: ["cases"] });
-      router.push(`/${locale}/requests/${view.case.id}`);
     },
     onError: (error) => {
       const message = getOrderErrorMessage(error, tOrders);
@@ -250,246 +293,192 @@ function NewOrderPage() {
     createMutation.mutate(values);
   };
 
+  const goToStep = (next: Step) => {
+    if (next === step) return;
+    if (next < step) {
+      // The forward steps were pushed onto the history, so going back keeps the browser/OS back button in sync.
+      window.history.go(next - step);
+      return;
+    }
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("step", String(next));
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  };
+
+  const continueFromItems = () => {
+    if (!orderableRows.length) {
+      toast.error(tFlow("emptyCart"));
+      return;
+    }
+    goToStep(2);
+  };
+
+  const continueFromVisit = async () => {
+    const valid = await form.trigger(["area_id", "address", "scheduled_for", "notes"]);
+    if (scheduleMode === "pick" && !form.getValues("scheduled_for")) {
+      form.setError("scheduled_for", { message: tFlow("timeRequired") });
+      return;
+    }
+    if (valid) goToStep(3);
+  };
+
+  // Guard against landing on a later step without items (e.g. after a refresh).
+  const effectiveStep: Step = step > 1 && !orderableRows.length && catalogsReady && !reorderQuery.isLoading ? 1 : step;
+
+  if (createdView) {
+    return <OrderSuccess view={createdView} locale={locale} />;
+  }
+
+  const areaValue = form.watch("area_id");
+  const scheduledValue = form.watch("scheduled_for");
+  const addressValue = form.watch("address");
+  const notesValue = form.watch("notes");
+  const area = (areasQuery.data || []).find((item) => item.id === areaValue);
+  const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+
   return (
-    <div className="space-y-4">
-      <Card className="overflow-hidden rounded-[1.75rem] border-border/70 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm">
-        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-          </div>
-          <Button asChild variant="outline" className="min-h-11 rounded-full">
-            <Link href={`/${locale}/requests`}>
-              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-              {t("backToOrders")}
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+    <div className="mx-auto max-w-3xl pb-32">
+      <FlowProgress step={effectiveStep} />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.85fr)]">
-        <Card className="rounded-[1.5rem] border-border/70 shadow-sm">
-          <CardHeader className="space-y-4">
-            <div>
-              <CardTitle>{t("catalogTitle")}</CardTitle>
-              <CardDescription>{t("catalogDescription")}</CardDescription>
-            </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={effectiveStep}
+          initial={reduceMotion ? false : { opacity: 0, x: isRtl ? -18 : 18 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={reduceMotion ? undefined : { opacity: 0, x: isRtl ? 18 : -18 }}
+          transition={{ duration: 0.22 }}
+          className="mt-5"
+        >
+          {effectiveStep === 1 ? (
+            <section className="space-y-4">
+              <h2 className="px-1 text-[24px] font-bold text-foreground">{tFlow("stepTitles.what")}</h2>
 
-            <Tabs value={activeType} onValueChange={(value) => setActiveType(value as CaseItemType)} dir={locale === "ar" ? "rtl" : "ltr"}>
-              <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1">
-                {ORDER_ITEM_TYPES.map((type) => (
-                  <TabsTrigger key={type} value={type} className="text-xs sm:text-sm">
-                    {tOrders(`itemTypesPlural.${type}`)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-
-            {activeType === "SERVICE" ? (
-              <div className="flex flex-wrap gap-2">
-                {SERVICE_KIND_FILTERS.map((kind) => (
-                  <Button
-                    key={kind}
-                    type="button"
-                    size="sm"
-                    variant={kindFilter === kind ? "default" : "outline"}
-                    className="rounded-full"
-                    onClick={() => setKindFilter(kind)}
-                  >
-                    {t(`serviceKinds.${kind}`)}
-                  </Button>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="relative">
-              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("searchPlaceholder")}
-                className="h-11 rounded-2xl ps-10"
-              />
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            {activeQuery?.isLoading ? (
-              <AppPreloader variant="panel" title={tCommon("loading")} blockCount={3} blockVariant="line" />
-            ) : activeQuery?.isError ? (
-              <div className="space-y-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
-                <p className="text-destructive">{t("catalogLoadError")}</p>
-                <Button type="button" variant="outline" size="sm" onClick={() => void activeQuery.refetch()}>
-                  {tCommon("retry")}
-                </Button>
-              </div>
-            ) : visibleItems.length === 0 ? (
-              <p className="rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">{t("catalogEmpty")}</p>
-            ) : (
-              <div className="grid gap-2 md:grid-cols-2">
-                {visibleItems.map((item) => {
-                  const isSelected = selectedKeys.has(item.key);
-                  const blockedForVip = item.vipOnly && !isVip;
-                  const disabled = blockedForVip || (!isSelected && limitReached);
-
+              <div className="grid grid-cols-2 gap-1 rounded-2xl bg-[#e9efed] p-1 dark:bg-white/5" role="tablist">
+                {ORDER_ITEM_TYPES.map((type) => {
+                  const active = type === activeType;
                   return (
-                    <div
-                      key={item.key}
+                    <button
+                      key={type}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setActiveType(type)}
                       className={cn(
-                        "flex flex-col gap-3 rounded-2xl border p-3 transition",
-                        isSelected ? "border-primary bg-primary/5" : "border-border/70 bg-background",
+                        "relative min-h-11 rounded-xl text-[15px] font-semibold transition-colors",
+                        active ? "text-[#104d49] dark:text-teal-50" : "text-muted-foreground",
                       )}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-medium leading-6">{item.name}</p>
-                          {item.groupName ? <p className="text-xs text-muted-foreground">{item.groupName}</p> : null}
-                        </div>
-                        {item.vipOnly ? (
-                          <Badge variant="outline" className="shrink-0 gap-1 border-amber-200 bg-amber-50 text-amber-800">
-                            <Crown className="h-3 w-3" />
-                            {t("vipOnly")}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      {item.description ? (
-                        <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">{item.description}</p>
+                      {active ? (
+                        <motion.span
+                          layoutId="order-type-pill"
+                          className="absolute inset-0 rounded-xl bg-card shadow-sm"
+                          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40 }}
+                        />
                       ) : null}
-                      {item.includedServices.length ? (
-                        <div className="space-y-1">
-                          <p className="text-xs font-medium text-muted-foreground">
-                            {t("includedServices", { count: item.includedServices.length })}
-                          </p>
-                          <ul className="list-disc space-y-0.5 ps-4 text-xs leading-5 text-foreground/80">
-                            {item.includedServices.slice(0, INCLUDED_SERVICES_PREVIEW).map((name, index) => (
-                              <li key={`${item.key}-${index}`}>{name}</li>
-                            ))}
-                          </ul>
-                          {item.includedServices.length > INCLUDED_SERVICES_PREVIEW ? (
-                            <p className="text-xs text-muted-foreground">
-                              {t("moreServices", { count: item.includedServices.length - INCLUDED_SERVICES_PREVIEW })}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      <div className="mt-auto flex items-center justify-between gap-2">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-semibold">
-                            {item.price === null ? t("priceOnRequest") : formatCurrency(item.price, locale)}
-                          </span>
-                          {item.savings !== null ? (
-                            <Badge variant="outline" className="w-fit border-emerald-200 bg-emerald-50 text-emerald-800">
-                              {t("youSave", { amount: formatCurrency(item.savings, locale) })}
-                            </Badge>
-                          ) : null}
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={isSelected ? "secondary" : "default"}
-                          className="rounded-full"
-                          disabled={disabled && !isSelected}
-                          onClick={() => toggleItem(item)}
-                        >
-                          {isSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                          {isSelected ? t("added") : t("add")}
-                        </Button>
-                      </div>
-                    </div>
+                      <span className="relative">{tOrders(`itemTypesPlural.${type}`)}</span>
+                    </button>
                   );
                 })}
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <div className="space-y-4">
-          <Card className="rounded-[1.5rem] border-border/70 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-primary" />
-                {t("selectedTitle")}
-              </CardTitle>
-              <CardDescription>{t("maxItems", { max: MAX_CASE_ITEMS })}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {reorderCaseId && reorderQuery.isLoading ? (
-                <AppPreloader variant="inline" title={tCommon("loading")} className="w-full justify-start" />
+              <div className="relative">
+                <Search className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={t("searchPlaceholder")}
+                  className="h-[52px] w-full rounded-2xl border border-[var(--app-card-border)] bg-card pe-4 ps-12 text-[16px] shadow-sm outline-none ring-[#86ab62] placeholder:text-muted-foreground focus:ring-2"
+                />
+              </div>
+
+              {activeType === "SERVICE" ? (
+                <div className="-mx-4 overflow-x-auto px-4 no-scrollbar md:mx-0 md:px-0">
+                  <div className="flex w-max gap-2">
+                    {SERVICE_KIND_FILTERS.map((kind) => {
+                      const active = kindFilter === kind;
+                      return (
+                        <button
+                          key={kind}
+                          type="button"
+                          onClick={() => setKindFilter(kind)}
+                          aria-pressed={active}
+                          className={cn(
+                            "app-press min-h-10 rounded-full px-4 text-[14px] font-semibold transition-colors",
+                            active
+                              ? "bg-[#104d49] text-white"
+                              : "bg-card text-foreground ring-1 ring-[var(--app-card-border)] hover:bg-[#f3f7f5] dark:hover:bg-white/5",
+                          )}
+                        >
+                          {t(`serviceKinds.${kind}`)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ) : null}
 
-              {selectedRows.length ? (
-                <ul className="space-y-2">
-                  {selectedRows.map((row) => (
-                    <li
-                      key={row.key}
-                      className={cn(
-                        "flex items-start justify-between gap-3 rounded-xl border px-3 py-2.5 text-sm",
-                        row.unavailable ? "border-amber-200 bg-amber-50/60" : "border-border/70",
-                      )}
-                    >
-                      <div className="min-w-0">
-                        <p className="font-medium">{row.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {row.unavailable
-                            ? t("unavailable")
-                            : getOrderItemTypeLabel({ type: row.ref.type, serviceKind: row.item?.serviceKind }, tOrders)}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        {row.item ? (
-                          <span className="text-xs font-semibold">
-                            {row.item.price === null ? "-" : formatCurrency(row.item.price, locale)}
-                          </span>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => removeItem(row.key)}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-                          aria-label={t("remove")}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">{t("selectedEmpty")}</p>
-              )}
-
               {hasUnavailable ? (
-                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3.5 text-[14px] leading-6 text-amber-900 dark:bg-amber-500/10 dark:text-amber-100">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{t("unavailableNotice")}</span>
                 </div>
               ) : null}
 
-              <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5 text-sm">
-                <span className="text-muted-foreground">{t("estimatedTotal")}</span>
-                <span className="font-semibold">
-                  {formatCurrency(estimatedTotal, locale)}
-                  {hasUnpriced ? " +" : ""}
-                </span>
-              </div>
-              <p className="text-xs leading-5 text-muted-foreground">{isVip ? t("vipPriceNote") : t("priceNote")}</p>
-            </CardContent>
-          </Card>
+              {activeQuery?.isLoading || (reorderCaseId && reorderQuery.isLoading) ? (
+                <div className="space-y-3">
+                  {[0, 1, 2, 3].map((key) => (
+                    <AppCard key={key} className="flex items-center gap-3 p-4">
+                      <div className="flex-1 space-y-2">
+                        <Shimmer className="h-4 w-2/3" />
+                        <Shimmer className="h-3 w-1/2" />
+                        <Shimmer className="h-4 w-20" />
+                      </div>
+                      <Shimmer className="h-11 w-11 rounded-full" />
+                    </AppCard>
+                  ))}
+                </div>
+              ) : activeQuery?.isError ? (
+                <AppCard className="space-y-3 p-5 text-center">
+                  <p className="text-[15px] text-rose-700 dark:text-rose-300">{t("catalogLoadError")}</p>
+                  <button type="button" className={appButton.secondary} onClick={() => void activeQuery.refetch()}>
+                    {tCommon("retry")}
+                  </button>
+                </AppCard>
+              ) : visibleItems.length === 0 ? (
+                <AppCard className="p-8 text-center text-[15px] text-muted-foreground">{t("catalogEmpty")}</AppCard>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {visibleItems.map((item) => (
+                    <CatalogItemCard
+                      key={item.key}
+                      item={item}
+                      locale={locale}
+                      isSelected={selectedKeys.has(item.key)}
+                      disabled={(item.vipOnly && !isVip) || (!selectedKeys.has(item.key) && limitReached)}
+                      onToggle={() => toggleItem(item)}
+                      t={t}
+                      tOrders={tOrders}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : null}
 
-          <Card className="rounded-[1.5rem] border-border/70 shadow-sm">
-            <CardHeader>
-              <CardTitle>{t("visitTitle")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)}>
+          {effectiveStep === 2 ? (
+            <Form {...form}>
+              <form className="space-y-5" onSubmit={(event) => event.preventDefault()}>
+                <h2 className="px-1 text-[24px] font-bold text-foreground">{tFlow("stepTitles.where")}</h2>
+
+                <AppCard className="space-y-4 p-4 sm:p-5">
                   <FormField
                     control={form.control}
                     name="area_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{tOrders("area.label")}</FormLabel>
+                    render={({ field, fieldState }) => (
+                      <FormItem className="space-y-2">
                         <FormControl>
-                          <AreaSelect value={field.value} onChange={field.onChange} />
+                          <AreaPicker value={field.value} onChange={field.onChange} invalid={Boolean(fieldState.error)} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -499,58 +488,406 @@ function NewOrderPage() {
                     control={form.control}
                     name="address"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("address")}</FormLabel>
+                      <FormItem className="space-y-2">
+                        <label htmlFor="visit-address" className="block px-1 text-[14px] font-semibold text-foreground">
+                          {t("address")}
+                        </label>
                         <FormControl>
-                          <Textarea {...field} rows={2} placeholder={t("addressPlaceholder")} />
+                          <textarea
+                            id="visit-address"
+                            {...field}
+                            rows={2}
+                            placeholder={t("addressPlaceholder")}
+                            className="w-full resize-none rounded-2xl border border-[#dbe6e0] bg-card px-4 py-3 text-[16px] leading-6 outline-none ring-[#86ab62] placeholder:text-muted-foreground focus:ring-2 dark:border-border"
+                          />
                         </FormControl>
-                        {!addressRequired ? <FormDescription>{t("addressHint")}</FormDescription> : null}
+                        {!addressRequired ? <p className="px-1 text-[13px] text-muted-foreground">{t("addressHint")}</p> : null}
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </AppCard>
+
+                <AppCard className="space-y-3 p-4 sm:p-5">
+                  <p className="px-1 text-[17px] font-bold text-foreground">{tFlow("whenTitle")}</p>
                   <FormField
                     control={form.control}
                     name="scheduled_for"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("scheduledFor")}</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="datetime-local" min={getMinScheduleInputValue()} />
-                        </FormControl>
-                        <FormDescription>{t("scheduledForHint")}</FormDescription>
+                    render={({ field, fieldState }) => (
+                      <FormItem className="space-y-2">
+                        <SchedulePicker
+                          mode={scheduleMode}
+                          onModeChange={(mode) => {
+                            setScheduleMode(mode);
+                            form.clearErrors("scheduled_for");
+                          }}
+                          value={field.value}
+                          onChange={(value) => {
+                            field.onChange(value);
+                            form.clearErrors("scheduled_for");
+                          }}
+                          invalid={Boolean(fieldState.error)}
+                        />
+                        <p className="px-1 text-[13px] text-muted-foreground">{t("scheduledForHint")}</p>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </AppCard>
+
+                <AppCard className="space-y-2 p-4 sm:p-5">
                   <FormField
                     control={form.control}
                     name="notes"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("notes")}</FormLabel>
+                      <FormItem className="space-y-2">
+                        <label htmlFor="visit-notes" className="block px-1 text-[14px] font-semibold text-foreground">
+                          {t("notes")}
+                        </label>
                         <FormControl>
-                          <Textarea {...field} rows={3} placeholder={t("notesPlaceholder")} />
+                          <textarea
+                            id="visit-notes"
+                            {...field}
+                            rows={3}
+                            placeholder={t("notesPlaceholder")}
+                            className="w-full resize-none rounded-2xl border border-[#dbe6e0] bg-card px-4 py-3 text-[16px] leading-6 outline-none ring-[#86ab62] placeholder:text-muted-foreground focus:ring-2 dark:border-border"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </AppCard>
+              </form>
+            </Form>
+          ) : null}
 
-                  <Button
-                    type="submit"
-                    className="min-h-12 w-full rounded-full"
-                    disabled={createMutation.isPending || !orderableRows.length}
+          {effectiveStep === 3 ? (
+            <section className="space-y-4">
+              <h2 className="px-1 text-[24px] font-bold text-foreground">{tFlow("stepTitles.review")}</h2>
+
+              <AppCard className="overflow-hidden">
+                <div className="flex items-center justify-between px-5 pb-2 pt-4">
+                  <p className="text-[17px] font-bold text-foreground">{tFlow("reviewItems")}</p>
+                  <button type="button" onClick={() => goToStep(1)} className="min-h-11 rounded-full px-3 text-[14px] font-semibold text-[#104d49] hover:bg-[#e6f0ee] dark:text-teal-200">
+                    {tFlow("edit")}
+                  </button>
+                </div>
+                <ul className="divide-y divide-[var(--app-card-border)] px-5">
+                  {orderableRows.map((row) => (
+                    <li key={row.key} className="flex items-start justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-semibold text-foreground">{row.name}</p>
+                        <p className="text-[13px] text-muted-foreground">
+                          {getOrderItemTypeLabel({ type: row.ref.type, serviceKind: row.item?.serviceKind }, tOrders)}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[15px] font-semibold tabular-nums text-foreground">
+                        {row.item?.price === null || !row.item ? "-" : formatCurrency(row.item.price, locale)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="space-y-1 border-t border-[var(--app-card-border)] bg-[#f8fbfa] px-5 py-4 dark:bg-white/[0.03]">
+                  <div className="flex items-center justify-between text-[15px]">
+                    <span className="text-muted-foreground">{tFlow("subtotal")}</span>
+                    <span className="font-semibold tabular-nums">{formatCurrency(estimatedTotal, locale)}</span>
+                  </div>
+                  {vipDiscount > 0 ? (
+                    <div className="flex items-center justify-between text-[15px] text-[#3f7a3a] dark:text-lime-300">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Crown className="h-4 w-4" />
+                        {tFlow("vipDiscount", { percent: vipPercent })}
+                      </span>
+                      <span className="font-semibold tabular-nums">−{formatCurrency(vipDiscount, locale)}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-[16px] font-bold text-foreground">{t("estimatedTotal")}</span>
+                    <span className="text-[20px] font-bold tabular-nums text-foreground">
+                      {formatCurrency(payableEstimate, locale)}
+                      {hasUnpriced ? " +" : ""}
+                    </span>
+                  </div>
+                  <p className="pt-1 text-[13px] leading-5 text-muted-foreground">{isVip ? t("vipPriceNote") : t("priceNote")}</p>
+                </div>
+              </AppCard>
+
+              <AppCard className="overflow-hidden">
+                <div className="flex items-center justify-between px-5 pb-1 pt-4">
+                  <p className="text-[17px] font-bold text-foreground">{tFlow("reviewVisit")}</p>
+                  <button type="button" onClick={() => goToStep(2)} className="min-h-11 rounded-full px-3 text-[14px] font-semibold text-[#104d49] hover:bg-[#e6f0ee] dark:text-teal-200">
+                    {tFlow("edit")}
+                  </button>
+                </div>
+                <div className="divide-y divide-[var(--app-card-border)] px-5 pb-2">
+                  <ReviewRow icon={MapPin} label={tOrders("area.label")} value={area ? getAreaLabel(area, locale) : "-"} />
+                  <ReviewRow
+                    icon={MapPin}
+                    label={t("address")}
+                    value={addressValue?.trim() || patient?.address || "-"}
+                    hint={!addressValue?.trim() && patient?.address ? tFlow("savedAddress") : undefined}
+                  />
+                  <ReviewRow
+                    icon={CalendarClock}
+                    label={tFlow("timeTitle")}
+                    value={
+                      scheduledValue
+                        ? `${formatDateWithWeekday(scheduledValue, locale)} · ${formatTimeOnly(scheduledValue, locale)}`
+                        : tFlow("asap")
+                    }
+                  />
+                  {notesValue?.trim() ? <ReviewRow icon={NotebookPen} label={tFlow("notesTitle")} value={notesValue.trim()} /> : null}
+                </div>
+              </AppCard>
+            </section>
+          ) : null}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Sticky checkout bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 md:ps-[260px]">
+        <div className="mx-auto max-w-3xl px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:px-0">
+          <div className="rounded-[24px] border border-[var(--app-card-border)] bg-card/95 p-2.5 shadow-[0_18px_40px_-16px_rgba(16,49,45,0.45)] backdrop-blur-xl">
+            {effectiveStep === 1 && selectedRows.length ? (
+              <div className="-mt-0.5 mb-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5 pt-0.5 no-scrollbar">
+                {selectedRows.map((row) => (
+                  <span
+                    key={row.key}
+                    className={cn(
+                      "inline-flex max-w-[12rem] shrink-0 items-center gap-1 rounded-full py-1 pe-1 ps-3 text-[12.5px] font-semibold",
+                      row.unavailable ? "bg-amber-50 text-amber-800" : "bg-[#e6f0ee] text-[#104d49] dark:bg-teal-500/15 dark:text-teal-100",
+                    )}
                   >
-                    {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    {createMutation.isPending ? t("submitting") : t("submit")}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                    <span className="truncate">{row.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(row.key)}
+                      aria-label={`${t("remove")} ${row.name}`}
+                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-black/5"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            <div className="flex items-center gap-2">
+              {effectiveStep > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => goToStep((effectiveStep - 1) as Step)}
+                  aria-label={tFlow("back")}
+                  className="app-press inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-[#f1f5f4] text-foreground hover:bg-[#e6eeeb] dark:bg-white/5"
+                >
+                  <BackIcon className="h-5 w-5" />
+                </button>
+              ) : null}
+              <div className="min-w-0 flex-1 px-2">
+                <p className="truncate text-[13px] text-muted-foreground">{tFlow("itemsCount", { count: orderableRows.length })}</p>
+                <p className="truncate text-[18px] font-bold tabular-nums text-foreground">
+                  {formatCurrency(effectiveStep === 3 ? payableEstimate : estimatedTotal, locale)}
+                  {hasUnpriced ? " +" : ""}
+                </p>
+              </div>
+              {effectiveStep === 1 ? (
+                <button type="button" onClick={continueFromItems} disabled={!orderableRows.length} className={cn(appButton.primary, "min-w-[8.5rem]")}>
+                  {tFlow("continue")}
+                </button>
+              ) : effectiveStep === 2 ? (
+                <button type="button" onClick={() => void continueFromVisit()} className={cn(appButton.primary, "min-w-[8.5rem]")}>
+                  {tFlow("continue")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void form.handleSubmit(handleSubmit)()}
+                  disabled={createMutation.isPending || !orderableRows.length}
+                  className={cn(appButton.primary, "min-w-[9.5rem]")}
+                >
+                  {createMutation.isPending ? <Loader2 className="animate-spin" /> : <Check />}
+                  {createMutation.isPending ? t("submitting") : t("submit")}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function FlowProgress({ step }: { step: Step }) {
+  const tFlow = useTranslations("app.newOrder");
+
+  return (
+    <div className="px-1">
+      <div className="flex items-center justify-between gap-2">
+        {STEP_KEYS.map((key, index) => {
+          const number = index + 1;
+          const done = number < step;
+          const current = number === step;
+          return (
+            <div key={key} className={cn("flex min-w-0 items-center gap-2", index < STEP_KEYS.length - 1 && "sm:flex-1")}>
+              <span
+                className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-colors",
+                  done && "bg-[#104d49] text-white dark:bg-teal-300 dark:text-[#0b3f3b]",
+                  current && "bg-[#86ab62] text-white",
+                  !done && !current && "bg-[#e3ebe8] text-muted-foreground dark:bg-white/10",
+                )}
+              >
+                {done ? <Check className="h-4 w-4" /> : number}
+              </span>
+              <span className={cn("whitespace-nowrap text-[13px]", current ? "font-bold text-foreground" : "text-muted-foreground")}>
+                {tFlow(`steps.${key}`)}
+              </span>
+              {index < STEP_KEYS.length - 1 ? (
+                <span className={cn("hidden h-0.5 flex-1 rounded-full sm:block", done ? "bg-[#104d49] dark:bg-teal-300" : "bg-[#e3ebe8] dark:bg-white/10")} />
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CatalogItemCard({
+  item,
+  locale,
+  isSelected,
+  disabled,
+  onToggle,
+  t,
+  tOrders,
+}: {
+  item: OrderCatalogItem;
+  locale: string;
+  isSelected: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+  t: Translate;
+  tOrders: Translate;
+}) {
+  const blocked = disabled && !isSelected;
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={blocked}
+      aria-pressed={isSelected}
+      className={cn(
+        "app-press app-card flex w-full items-start gap-3 p-4 text-start transition-[box-shadow,border-color] disabled:opacity-55",
+        isSelected && "border-[#104d49] ring-1 ring-[#104d49] dark:border-teal-300 dark:ring-teal-300",
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {item.vipOnly ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#fff4e0] px-2 py-0.5 text-[11.5px] font-bold text-[#8a5200] dark:bg-amber-500/15 dark:text-amber-200">
+              <Crown className="h-3 w-3" />
+              {t("vipOnly")}
+            </span>
+          ) : null}
+          <span className="text-[12.5px] font-medium text-muted-foreground">
+            {item.groupName || getOrderItemTypeLabel({ type: item.type, serviceKind: item.serviceKind }, tOrders)}
+          </span>
+        </div>
+        <p className="mt-1 text-[16px] font-bold leading-6 text-foreground">{item.name}</p>
+        {item.description ? <p className="mt-0.5 line-clamp-2 text-[13.5px] leading-5 text-muted-foreground">{item.description}</p> : null}
+        {item.includedServices.length ? (
+          <p className="mt-1.5 line-clamp-2 text-[13px] leading-5 text-muted-foreground">
+            <span className="font-semibold text-foreground/80">{t("includedServices", { count: item.includedServices.length })}: </span>
+            {item.includedServices.slice(0, INCLUDED_SERVICES_PREVIEW).join(locale === "ar" ? "، " : ", ")}
+            {item.includedServices.length > INCLUDED_SERVICES_PREVIEW
+              ? ` ${t("moreServices", { count: item.includedServices.length - INCLUDED_SERVICES_PREVIEW })}`
+              : ""}
+          </p>
+        ) : null}
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <span className="text-[16px] font-bold tabular-nums text-[#104d49] dark:text-teal-100">
+            {item.price === null ? t("priceOnRequest") : formatCurrency(item.price, locale)}
+          </span>
+          {item.savings !== null ? (
+            <span className="rounded-full bg-[#e5f5ea] px-2 py-0.5 text-[12px] font-bold text-[#1c6e3d] dark:bg-emerald-500/15 dark:text-emerald-200">
+              {t("youSave", { amount: formatCurrency(item.savings, locale) })}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <span
+        aria-hidden="true"
+        className={cn(
+          "mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors",
+          isSelected ? "bg-[#104d49] text-white dark:bg-teal-300 dark:text-[#0b3f3b]" : "bg-[#e6f0ee] text-[#104d49] dark:bg-teal-500/15 dark:text-teal-100",
+        )}
+      >
+        {isSelected ? <Check className="h-5 w-5" strokeWidth={2.6} /> : <Plus className="h-5 w-5" strokeWidth={2.4} />}
+      </span>
+      <span className="sr-only">{isSelected ? t("added") : t("add")}</span>
+    </button>
+  );
+}
+
+function ReviewRow({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: typeof MapPin;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-3">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f1f5f4] text-[#104d49] dark:bg-white/5 dark:text-teal-200">
+        <Icon className="h-[18px] w-[18px]" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] text-muted-foreground">{label}</p>
+        <p className="mt-0.5 whitespace-pre-wrap break-words text-[15px] font-semibold text-foreground">{value}</p>
+        {hint ? <p className="mt-0.5 text-[12.5px] text-muted-foreground">{hint}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function OrderSuccess({ view, locale }: { view: CaseView; locale: string }) {
+  const tFlow = useTranslations("app.newOrder");
+  const tOrders = useTranslations("orders");
+  const reduceMotion = useReducedMotion();
+  const reference = getCaseReference(view.case.id);
+
+  return (
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.35 }}
+      className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-2 py-6 text-center"
+    >
+      <Illustration name="order-placed" priority className="h-52 w-auto" sizes="240px" />
+      <h1 className="mt-6 text-[26px] font-bold text-foreground">{tFlow("successTitle")}</h1>
+      <p className="mt-2 text-[15px] leading-7 text-muted-foreground">{tFlow("successDescription")}</p>
+      <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#e6f0ee] px-4 py-2 text-[15px] font-bold text-[#104d49] dark:bg-teal-500/15 dark:text-teal-100">
+        {tOrders("reference", { reference: isolateLtr(reference) })}
+      </div>
+      {view.invoice ? (
+        <p className="mt-3 text-[15px] text-muted-foreground">
+          <span className="font-bold tabular-nums text-foreground">{formatCurrency(view.invoice.final_amount, locale)}</span>
+        </p>
+      ) : null}
+      <div className="mt-8 flex w-full flex-col gap-2.5">
+        <Link href={`/${locale}/requests/${view.case.id}`} className={appButton.primary}>
+          {tFlow("trackOrder")}
+        </Link>
+        <Link href={`/${locale}/dashboard`} className={appButton.secondary}>
+          {tFlow("backHome")}
+        </Link>
+      </div>
+    </motion.div>
   );
 }
