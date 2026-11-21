@@ -52,6 +52,7 @@ export function PublicHomeExperience() {
   const rtlBidiStyle = isArabic ? ({ unicodeBidi: "plaintext" } as const) : undefined;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const workflowRef = useRef<HTMLElement | null>(null);
+  const servicesRef = useRef<HTMLDivElement | null>(null);
   const [guestRequestOpen, setGuestRequestOpen] = useState(false);
 
   const countsQuery = useQuery({
@@ -369,7 +370,14 @@ export function PublicHomeExperience() {
   const openHomeRequestDialog = () => {
     // Once ordering is live, patients order from their dashboard and guests pick items from the catalog.
     if (BOOKINGS_ENABLED) {
-      router.push(isAuthenticated ? `/${locale}/requests/new` : `/${locale}/services`);
+      if (isAuthenticated) {
+        router.push(`/${locale}/requests/new`);
+        return;
+      }
+      // Guests order from a category page: bring the category list next to the hero into view.
+      const board = servicesRef.current;
+      board?.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
+      board?.querySelector<HTMLElement>("a[href]")?.focus({ preventScroll: true });
       return;
     }
 
@@ -516,7 +524,11 @@ export function PublicHomeExperience() {
 
             </div>
 
-            <div className="relative mx-auto min-h-0 w-full max-w-xl lg:max-w-none lg:min-h-[30rem]">
+            <div
+              id="services"
+              ref={servicesRef}
+              className="relative mx-auto min-h-0 w-full max-w-xl scroll-mt-24 lg:max-w-none lg:min-h-[30rem]"
+            >
               <div
                 data-hero-panel
                 className="perf-float-panel group/board relative overflow-hidden rounded-[1.7rem] border border-white/70 p-4 shadow-[0_34px_120px_-50px_rgba(15,79,72,0.48)] sm:rounded-[2rem] sm:p-6"

@@ -14,7 +14,7 @@ export const BRAND_COLORS = {
   stone: "#9c9fa2",
 } as const;
 
-export type AnalyticsServiceKind = "MEDICAL" | "RADIOLOGY" | "LAB" | "PACKAGE";
+export type AnalyticsServiceKind = "MEDICAL" | "NURSING" | "RADIOLOGY" | "LAB" | "PACKAGE";
 
 export type PublicServiceCategorySlug =
   | "medical-visits"
@@ -340,7 +340,7 @@ export const PUBLIC_SERVICE_CATEGORIES: readonly PublicServiceCategoryDefinition
     translationKey: "nursingCare",
     source: "services",
     serviceKind: "NURSING",
-    defaultRequestPreset: { serviceType: "MEDICAL" },
+    defaultRequestPreset: { serviceType: "NURSING" },
     theme: {
       base: "#104d49",
       secondary: "#304a43",
@@ -621,7 +621,9 @@ export function buildAuthRedirectHref(
 
 export function getPublicCatalogEntryAnalyticsKind(entry: PublicCatalogEntry): AnalyticsServiceKind {
   if (entry.type === "package") return "PACKAGE";
-  if (entry.serviceKind === "RADIOLOGY" || entry.serviceKind === "LAB") return entry.serviceKind;
+  if (entry.serviceKind === "NURSING" || entry.serviceKind === "RADIOLOGY" || entry.serviceKind === "LAB") {
+    return entry.serviceKind;
+  }
   return "MEDICAL";
 }
 
