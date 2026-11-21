@@ -74,14 +74,19 @@ export function getStageIllustration(stageIndex: number, hasLab: boolean): Order
   }
 }
 
-/** Short case reference shown everywhere in the app, e.g. #1A2B3C4D. */
-export function getCaseReference(caseId: string) {
-  return `#${caseId.slice(0, 8).toUpperCase()}`;
+/**
+ * Order number shown everywhere in the app, e.g. #482913 (the case's six-digit `reference_number`).
+ * Falls back to the first 8 characters of the id only when the server did not send a number.
+ */
+export function getCaseReference(caseLike: { id: string; reference_number?: string | null }) {
+  const number = caseLike.reference_number?.trim();
+  if (number) return `#${number}`;
+  return `#${caseLike.id.slice(0, 8).toUpperCase()}`;
 }
 
 export const ACTIVE_CASE_STATUSES: CaseStatus[] = ["PENDING", "ACCEPTED", "IN_PROGRESS", "COMPLETED"];
 
-/** Wraps a left-to-right token (e.g. "#1A2B3C4D") so it keeps its shape inside Arabic sentences. */
+/** Wraps a left-to-right token (e.g. "#482913") so it keeps its shape inside Arabic sentences. */
 export function isolateLtr(value: string) {
   return `⁦${value}⁩`;
 }

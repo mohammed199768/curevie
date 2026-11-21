@@ -2,15 +2,22 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { CalendarClock, CheckCircle2, Home, Loader2, Phone, Shield, User2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarClock, CheckCircle2, Home, Loader2, Phone, Shield, User2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type DefaultValues } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Illustration } from "@/components/app/ui";
 import { AreaSelect } from "@/components/orders/AreaSelect";
+import { RecipientLine, RecipientPicker } from "@/components/orders/RecipientPicker";
 import { TrackingLinkCard } from "@/components/orders/TrackingLinkCard";
+import {
+  EMPTY_GUEST_VERIFICATION,
+  GuestVerificationStep,
+  isGuestVerificationComplete,
+  type GuestVerificationValue,
+} from "@/components/verification/VerificationStep";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,9 +31,18 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { casesApi, MAX_CASE_ITEMS, type GuestCaseCreated } from "@/lib/api/cases";
+import {
+  casesApi,
+  MAX_CASE_ITEMS,
+  RECIPIENT_AGE_GROUPS,
+  RECIPIENT_GENDERS,
+  type GuestCaseCreated,
+} from "@/lib/api/cases";
+import { useLabHomeVisitFee, usePublicSettings, type VerificationRules } from "@/lib/api/settings";
+import { getVerificationErrorMessage, getVerificationRequired } from "@/lib/api/verification";
 import { formatCurrency } from "@/lib/formatting";
 import { onRequestCreated } from "@/lib/analytics";
+import { isLabEntry } from "@/lib/lab-catalog";
 import { getOrderErrorMessage } from "@/lib/order-errors";
 import { getMinScheduleInputValue, isFutureScheduleInput, scheduleInputToIso } from "@/lib/order-items";
 import {
@@ -51,10 +67,12 @@ type CategoryTheme = {
   shadow: string;
 };
 
-function createGuestRequestSchema(tBooking: TranslateFn, tForm: TranslateFn) {
+function createGuestRequestSchema(tBooking: TranslateFn, tForm: TranslateFn, tRecipient: TranslateFn) {
   return z.object({
     full_name: z.string().trim().min(2, tBooking("fullNameMin")).max(100),
     phone: z.string().trim().regex(phonePattern, tBooking("invalidPhone")),
+    recipient_gender: z.enum(RECIPIENT_GENDERS, { error: tRecipient("genderRequired") }),
+    recipient_age_group: z.enum(RECIPIENT_AGE_GROUPS, { error: tRecipient("ageRequired") }),
     area_id: z.string().min(1, tForm("areaRequired")),
     address: z.string().trim().min(3, tForm("addressRequired")).max(500),
     scheduled_for: z
@@ -67,9 +85,12 @@ function createGuestRequestSchema(tBooking: TranslateFn, tForm: TranslateFn) {
 
 type GuestRequestValues = z.infer<ReturnType<typeof createGuestRequestSchema>>;
 
-const EMPTY_VALUES: GuestRequestValues = {
+// Guests always choose who the care is for, so the recipient starts empty.
+const EMPTY_VALUES: DefaultValues<GuestRequestValues> = {
   full_name: "",
   phone: "",
+  recipient_gender: undefined,
+  recipient_age_group: undefined,
   area_id: "",
   address: "",
   scheduled_for: "",
@@ -105,6 +126,17 @@ export function GuestServiceRequestDialog({
   const tBooking = useTranslations("booking");
   const tForm = useTranslations("orderForm");
   const tOrders = useTranslations("orders");
+  const tRecipient = useTranslations("app.recipient");
+  const tLab = useTranslations("labCatalog");
+  const tVerify = useTranslations("verification");
+  const labFee = useLabHomeVisitFee();
+  const settingsQuery = usePublicSettings();
+  // "details" is the form; "verify" is the identity step shown before the order is sent (when required).
+  const [stage, setStage] = useState<"details" | "verify">("details");
+  const [verification, setVerification] = useState<GuestVerificationValue>(EMPTY_GUEST_VERIFICATION);
+  const [pendingValues, setPendingValues] = useState<GuestRequestValues | null>(null);
+  // Set when the server asked for a verification the settings did not announce (settings not loaded yet).
+  const [requiredByServer, setRequiredByServer] = useState<VerificationRules | null>(null);
   const pendingTrackingRef = useRef<Parameters<typeof onRequestCreated>[0] | null>(null);
   const [createdOrder, setCreatedOrder] = useState<GuestCaseCreated | null>(null);
   const orderableEntries = useMemo(() => entries.filter(isOrderableCatalogEntry), [entries]);
@@ -129,7 +161,7 @@ export function GuestServiceRequestDialog({
   }, [defaultEntryId, open, orderableEntries, preSelectedEntryIds]);
 
   const form = useForm<GuestRequestValues>({
-    resolver: zodResolver(createGuestRequestSchema(tBooking, tForm)),
+    resolver: zodResolver(createGuestRequestSchema(tBooking, tForm, tRecipient)),
     defaultValues: EMPTY_VALUES,
   });
 
@@ -150,8 +182,16 @@ export function GuestServiceRequestDialog({
     () => orderableEntries.filter((entry) => selectedEntryIds.includes(entry.id)),
     [orderableEntries, selectedEntryIds],
   );
-  const estimatedTotal = selectedEntries.reduce((sum, entry) => sum + Number(entry.price || 0), 0);
+  // Orders with lab tests get one home sample-collection visit fee, added by the server.
+  const hasLabSelection = selectedEntries.some(isLabEntry);
+  const visitFee = hasLabSelection ? labFee : 0;
+  const estimatedTotal = selectedEntries.reduce((sum, entry) => sum + Number(entry.price || 0), 0) + visitFee;
   const hasUnpricedSelection = selectedEntries.some((entry) => entry.price === null);
+  const rules: VerificationRules = {
+    require_id: Boolean(settingsQuery.data?.verification?.require_id || requiredByServer?.require_id),
+    require_phone: Boolean(settingsQuery.data?.verification?.require_phone || requiredByServer?.require_phone),
+  };
+  const verificationRequired = rules.require_id || rules.require_phone;
 
   const handleEntryCheckedChange = (entryId: string, checked: boolean) => {
     setSelectedEntryIds((current) => {
@@ -183,12 +223,22 @@ export function GuestServiceRequestDialog({
         ...(scheduledFor ? { scheduled_for: scheduledFor } : {}),
         ...(values.notes?.trim() ? { notes: values.notes.trim() } : {}),
         items: selectedEntries.map(toCatalogItemRef),
+        recipient_gender: values.recipient_gender,
+        recipient_age_group: values.recipient_age_group,
+        ...(verification.idDocumentToken ? { id_document_token: verification.idDocumentToken } : {}),
+        ...(verification.phoneToken && verification.phoneTokenFor === values.phone.trim()
+          ? { phone_verification_token: verification.phoneToken }
+          : {}),
       });
     },
     onSuccess: (result) => {
       setCreatedOrder(result);
       form.reset(EMPTY_VALUES);
       setSelectedEntryIds([]);
+      // A guest ID upload and a phone code each serve one order.
+      setVerification(EMPTY_GUEST_VERIFICATION);
+      setPendingValues(null);
+      setStage("details");
       onOrderCreated?.();
 
       if (pendingTrackingRef.current) {
@@ -199,6 +249,24 @@ export function GuestServiceRequestDialog({
     onError: (error) => {
       if (error instanceof Error && error.message === "ENTRY_NOT_FOUND") {
         toast.error(t("minSelectionError"));
+        return;
+      }
+
+      // The server still misses the ID or the phone code (or the uploaded ID expired): back to that step.
+      const missing = getVerificationRequired(error);
+      if (missing) {
+        setRequiredByServer((current) => ({
+          require_id: Boolean(current?.require_id) || missing.includes("id_document"),
+          require_phone: Boolean(current?.require_phone) || missing.includes("phone"),
+        }));
+        setVerification((current) => ({
+          ...current,
+          ...(missing.includes("id_document") ? { idDocumentToken: null, idDocumentName: null } : {}),
+          ...(missing.includes("phone") ? { phoneToken: null, phoneTokenFor: null } : {}),
+        }));
+        setPendingValues(form.getValues());
+        setStage("verify");
+        toast.error(getVerificationErrorMessage(error, tVerify));
         return;
       }
 
@@ -222,13 +290,32 @@ export function GuestServiceRequestDialog({
         }
       : null;
 
+    // Identity step first (ID photo and/or phone code) when the admin requires it.
+    if (verificationRequired && !isGuestVerificationComplete(rules, verification, values.phone.trim())) {
+      setPendingValues(values);
+      setStage("verify");
+      return;
+    }
+
     createMutation.mutate(values);
   };
+
+  const confirmAfterVerification = () => {
+    if (!pendingValues) {
+      setStage("details");
+      return;
+    }
+    handleSubmit(pendingValues);
+  };
+
+  const recipientGender = form.watch("recipient_gender");
+  const recipientAgeGroup = form.watch("recipient_age_group");
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       // The tracking token is shown only once; drop it when the dialog closes.
       setCreatedOrder(null);
+      setStage("details");
     }
     onOpenChange(nextOpen);
   };
@@ -258,12 +345,18 @@ export function GuestServiceRequestDialog({
                 Curevie
               </div>
               <DialogTitle className="text-xl font-semibold text-white sm:text-2xl">
-                {createdOrder ? tForm("guest.successTitle") : t("guestRequest.title")}
+                {createdOrder
+                  ? tForm("guest.successTitle")
+                  : stage === "verify"
+                    ? tVerify("stepTitle")
+                    : t("guestRequest.title")}
               </DialogTitle>
               <DialogDescription className="max-w-2xl text-sm leading-6 text-white/86 sm:leading-7">
                 {createdOrder
                   ? tForm("guest.successDescription")
-                  : t("guestRequest.description", { category: categoryTitle })}
+                  : stage === "verify"
+                    ? tVerify("stepDescriptionGuest")
+                    : t("guestRequest.description", { category: categoryTitle })}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -275,6 +368,11 @@ export function GuestServiceRequestDialog({
                   <Illustration name="order-placed" className="h-36 w-auto" sizes="160px" />
                 </div>
                 <TrackingLinkCard token={createdOrder.tracking_token} reference={createdOrder.case.reference} />
+                <RecipientLine
+                  gender={createdOrder.case.recipient_gender}
+                  ageGroup={createdOrder.case.recipient_age_group}
+                  className="rounded-2xl border border-[#dbe7e2] bg-white px-4 py-3 text-sm text-[#12312d]"
+                />
                 {createdOrder.case.invoice ? (
                   <div className="flex items-center justify-between rounded-2xl border border-[#dbe7e2] bg-white px-4 py-3 text-sm">
                     <span className="text-[#617672]">{tForm("orderTotal")}</span>
@@ -291,6 +389,74 @@ export function GuestServiceRequestDialog({
                     onClick={() => handleOpenChange(false)}
                   >
                     {tBooking("close")}
+                  </Button>
+                </DialogFooter>
+              </div>
+            ) : stage === "verify" ? (
+              <div className="min-w-0 space-y-4">
+                <GuestVerificationStep
+                  rules={rules}
+                  phone={(pendingValues?.phone || "").trim()}
+                  value={verification}
+                  onChange={setVerification}
+                />
+
+                <div className="space-y-1.5 rounded-2xl border border-[#dbe7e2] bg-white px-4 py-3 text-sm">
+                  <p className="font-semibold text-[#12312d]">{tVerify("orderSummary")}</p>
+                  <ul className="space-y-1 text-[#46625b]">
+                    {selectedEntries.map((entry) => (
+                      <li key={entry.id} className="flex items-start justify-between gap-3">
+                        <span className="min-w-0">{entry.name}</span>
+                        <span className="shrink-0 tabular-nums">
+                          {entry.price === null ? t("labels.priceOnRequest") : formatCurrency(entry.price, locale)}
+                        </span>
+                      </li>
+                    ))}
+                    {visitFee > 0 ? (
+                      <li className="flex items-start justify-between gap-3 text-[#4a6b32]">
+                        <span className="min-w-0">{tLab("feeLine")}</span>
+                        <span className="shrink-0 tabular-nums">{formatCurrency(visitFee, locale)}</span>
+                      </li>
+                    ) : null}
+                  </ul>
+                  <div className="flex items-center justify-between border-t border-[#e2ece7] pt-2 text-[#617672]">
+                    <span>{tForm("estimatedTotal")}</span>
+                    <span className="font-semibold tabular-nums text-[#12312d]">
+                      {formatCurrency(estimatedTotal, locale)}
+                      {hasUnpricedSelection ? " +" : ""}
+                    </span>
+                  </div>
+                </div>
+
+                <DialogFooter className="sticky bottom-0 flex-col-reverse gap-3 border-t border-[#e2ece7] bg-[#f7faf8]/95 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3 backdrop-blur sm:flex-row sm:justify-between sm:pb-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-12 w-full rounded-full border-[#d9e6df] bg-white px-5 text-[#12312d] hover:bg-white sm:w-auto"
+                    onClick={() => setStage("details")}
+                    disabled={createMutation.isPending}
+                  >
+                    {locale === "ar" ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+                    {tVerify("back")}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="min-h-12 w-full rounded-full px-5 text-sm font-semibold text-white hover:opacity-90 sm:w-auto"
+                    style={{ backgroundColor: categoryTheme.base }}
+                    onClick={confirmAfterVerification}
+                    disabled={
+                      createMutation.isPending
+                      || !isGuestVerificationComplete(rules, verification, (pendingValues?.phone || "").trim())
+                    }
+                  >
+                    {createMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {tBooking("submitting")}
+                      </>
+                    ) : (
+                      t("guestRequest.confirm")
+                    )}
                   </Button>
                 </DialogFooter>
               </div>
@@ -335,6 +501,18 @@ export function GuestServiceRequestDialog({
                         </FormItem>
                       )}
                     />
+
+                    <div className="rounded-2xl border border-[#dbe7e2] bg-white p-3 sm:p-4">
+                      <RecipientPicker
+                        idPrefix="guest"
+                        gender={recipientGender}
+                        ageGroup={recipientAgeGroup}
+                        onGenderChange={(value) => form.setValue("recipient_gender", value, { shouldValidate: true })}
+                        onAgeGroupChange={(value) => form.setValue("recipient_age_group", value, { shouldValidate: true })}
+                        genderError={form.formState.errors.recipient_gender?.message}
+                        ageGroupError={form.formState.errors.recipient_age_group?.message}
+                      />
+                    </div>
 
                     <FormField
                       control={form.control}
@@ -475,6 +653,12 @@ export function GuestServiceRequestDialog({
                       {selectionLimitReached ? (
                         <p className="text-xs font-medium text-[#a15b18]">{t("maxSelectionHint", { max: MAX_CASE_ITEMS })}</p>
                       ) : null}
+                      {visitFee > 0 ? (
+                        <div className="flex items-center justify-between gap-3 rounded-xl bg-[#eef5e6] px-3 py-2 text-xs leading-5 text-[#3d5a2c]">
+                          <span>{tLab("feeNoteShort")}</span>
+                          <span className="shrink-0 font-semibold tabular-nums">+ {formatCurrency(visitFee, locale)}</span>
+                        </div>
+                      ) : null}
                       {selectedEntries.length ? (
                         <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-xs text-[#617672]">
                           <span>{tForm("estimatedTotal")}</span>
@@ -508,6 +692,9 @@ export function GuestServiceRequestDialog({
                           <Loader2 className="h-4 w-4 animate-spin" />
                           {tBooking("submitting")}
                         </>
+                      ) : verificationRequired
+                        && !isGuestVerificationComplete(rules, verification, (form.watch("phone") || "").trim()) ? (
+                        tVerify("continue")
                       ) : (
                         t("guestRequest.confirm")
                       )}

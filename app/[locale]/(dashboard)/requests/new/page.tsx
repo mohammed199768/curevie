@@ -12,37 +12,57 @@ import {
   CalendarClock,
   Check,
   Crown,
+  FlaskConical,
   Loader2,
   MapPin,
   NotebookPen,
   Plus,
   Search,
+  ShieldCheck,
+  UserRound,
   X,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { AppCard, Illustration, Shimmer, appButton } from "@/components/app/ui";
+import { AppCard, ForwardChevron, Illustration, Shimmer, appButton } from "@/components/app/ui";
+import { LabFeeNote, LabTestBrowser } from "@/components/lab/LabTestBrowser";
 import { AreaPicker } from "@/components/orders/AreaPicker";
+import { formatRecipient, RecipientPicker } from "@/components/orders/RecipientPicker";
 import { useAreas } from "@/components/orders/AreaSelect";
 import { SchedulePicker, type ScheduleMode } from "@/components/orders/SchedulePicker";
 import { PrelaunchRequestPage } from "@/components/shared/PrelaunchNotice";
+import { needsVerification, PatientVerificationStep, useVerificationStatus } from "@/components/verification/VerificationStep";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import {
   casesApi,
   getCaseServiceItemRef,
   MAX_CASE_ITEMS,
+  RECIPIENT_AGE_GROUPS,
+  RECIPIENT_GENDERS,
   type CaseItemRef,
   type CaseItemType,
   type CaseView,
 } from "@/lib/api/cases";
 import { getAreaLabel } from "@/lib/api/areas";
+import { useLabHomeVisitFee } from "@/lib/api/settings";
 import type { ServiceKind } from "@/lib/api/types";
+import {
+  getVerificationErrorMessage,
+  getVerificationRequired,
+  VERIFICATION_STATUS_QUERY_KEY,
+} from "@/lib/api/verification";
 import { formatCurrency } from "@/lib/formatting";
 import { BOOKINGS_ENABLED } from "@/lib/launch";
-import { fetchOrderCatalog, type OrderCatalogItem } from "@/lib/order-catalog";
+import type { LabTestEntry } from "@/lib/lab-catalog";
+import {
+  fetchOrderCatalog,
+  fetchOrderCatalogService,
+  labEntryToCatalogItem,
+  type OrderCatalogItem,
+} from "@/lib/order-catalog";
 import { getOrderErrorMessage } from "@/lib/order-errors";
 import {
   dedupeOrderItems,
@@ -55,20 +75,27 @@ import {
   scheduleInputToIso,
   SERVICE_KINDS,
 } from "@/lib/order-items";
+import { recipientAgeGroupFromBirthDate, recipientGenderFromProfile } from "@/lib/order-recipient";
 import { getCaseReference, isolateLtr } from "@/lib/order-stage";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { cn, formatDateWithWeekday, formatTimeOnly } from "@/lib/utils";
 
 type Translate = (key: string, values?: Record<string, string | number>) => string;
 type KindFilter = "ALL" | ServiceKind;
-type Step = 1 | 2 | 3;
+/** 1-based position in the step list of this visit to the page. */
+type Step = number;
+/** "verify" (ID / phone) only appears while the account still has something to verify. */
+type StepKey = "what" | "where" | "verify" | "review";
 
 const SERVICE_KIND_FILTERS: KindFilter[] = ["ALL", ...SERVICE_KINDS];
 const INCLUDED_SERVICES_PREVIEW = 4;
-const STEP_KEYS = ["what", "where", "review"] as const;
+const BASE_STEP_KEYS: readonly StepKey[] = ["what", "where", "review"];
+const VERIFIED_STEP_KEYS: readonly StepKey[] = ["what", "where", "verify", "review"];
 
-function createVisitSchema(t: Translate, addressRequired: boolean) {
+function createVisitSchema(t: Translate, tRecipient: Translate, addressRequired: boolean) {
   return z.object({
+    recipient_gender: z.enum(RECIPIENT_GENDERS, { error: tRecipient("genderRequired") }),
+    recipient_age_group: z.enum(RECIPIENT_AGE_GROUPS, { error: tRecipient("ageRequired") }),
     area_id: z.string().min(1, t("areaRequired")),
     address: addressRequired
       ? z.string().trim().min(3, t("addressRequired")).max(500)
@@ -101,8 +128,12 @@ function NewOrderPage() {
   const isRtl = locale === "ar";
   const t = useTranslations("orderForm");
   const tFlow = useTranslations("app.newOrder");
+  const tRecipient = useTranslations("app.recipient");
   const tOrders = useTranslations("orders");
   const tCommon = useTranslations("common");
+  const tLab = useTranslations("labCatalog");
+  const tInsurance = useTranslations("insurance");
+  const tVerify = useTranslations("verification");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -121,12 +152,25 @@ function NewOrderPage() {
   const [fallbackNames, setFallbackNames] = useState<Record<string, string>>({});
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("asap");
   const [createdView, setCreatedView] = useState<CaseView | null>(null);
+  // Lab tests picked in the lab browser (they are not part of the preloaded catalog).
+  const [labItems, setLabItems] = useState<Record<string, OrderCatalogItem>>({});
+  // Once the identity step was needed in this visit it stays in the flow (and shows "done" afterwards).
+  const [verifyStepShown, setVerifyStepShown] = useState(false);
+  const labFee = useLabHomeVisitFee();
+  const verificationQuery = useVerificationStatus();
+  const verificationMissing = needsVerification(verificationQuery.data);
   const prefillAppliedRef = useRef(false);
+  const recipientCardRef = useRef<HTMLDivElement>(null);
 
   const reorderCaseId = searchParams.get("reorder");
   const itemsParam = searchParams.get("items");
+  const stepKeys = verifyStepShown ? VERIFIED_STEP_KEYS : BASE_STEP_KEYS;
   const stepParam = Number(searchParams.get("step") || 1);
-  const step: Step = stepParam === 2 || stepParam === 3 ? stepParam : 1;
+  const step: Step = Number.isInteger(stepParam) && stepParam >= 1 && stepParam <= stepKeys.length ? stepParam : 1;
+
+  useEffect(() => {
+    if (verificationMissing) setVerifyStepShown(true);
+  }, [verificationMissing]);
 
   const catalogQueries = useQueries({
     queries: ORDER_ITEM_TYPES.map((type) => ({
@@ -144,20 +188,49 @@ function NewOrderPage() {
 
   const areasQuery = useAreas();
 
-  const catalogByKey = useMemo(() => {
+  const catalogsReady = catalogQueries.every((query) => query.isSuccess);
+
+  const preloadedByKey = useMemo(() => {
     const map = new Map<string, OrderCatalogItem>();
     catalogQueries.forEach((query) => query.data?.forEach((item) => map.set(item.key, item)));
     return map;
   }, [catalogQueries]);
 
-  const catalogsReady = catalogQueries.every((query) => query.isSuccess);
+  // Picked services that are not in the preloaded lists (lab tests that came through ?items= or "order again")
+  // are looked up one by one: at most MAX_CASE_ITEMS small requests instead of the whole lab catalog.
+  const lookupIds = catalogsReady
+    ? selected
+        .filter((ref) => ref.type === "SERVICE" && !preloadedByKey.has(orderItemKey(ref)) && !labItems[orderItemKey(ref)])
+        .map((ref) => ref.id)
+    : [];
+  const lookupQueries = useQueries({
+    queries: lookupIds.map((id) => ({
+      queryKey: ["order-catalog", "service", id, locale],
+      queryFn: () => fetchOrderCatalogService(id, locale),
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+  const lookupPendingKeys = new Set<string>();
+  const catalogByKey = new Map<string, OrderCatalogItem>(preloadedByKey);
+  Object.values(labItems).forEach((item) => catalogByKey.set(item.key, item));
+  lookupQueries.forEach((query, index) => {
+    const key = orderItemKey({ type: "SERVICE", id: lookupIds[index] });
+    if (query.data) catalogByKey.set(key, query.data);
+    else if (query.isLoading) lookupPendingKeys.add(key);
+  });
+
   const activeQueryIndex = ORDER_ITEM_TYPES.indexOf(activeType);
   const activeQuery = catalogQueries[activeQueryIndex];
 
   const addressRequired = !patient?.address?.trim();
+  // "Who is this care for?" starts from the patient's own profile; they can change it (a child, a parent...).
+  const profileRecipientGender = recipientGenderFromProfile(patient?.gender);
+  const profileRecipientAgeGroup = recipientAgeGroupFromBirthDate(patient?.date_of_birth);
   const form = useForm<VisitValues>({
-    resolver: zodResolver(createVisitSchema(t, addressRequired)),
+    resolver: zodResolver(createVisitSchema(t, tRecipient, addressRequired)),
     defaultValues: {
+      recipient_gender: profileRecipientGender ?? undefined,
+      recipient_age_group: profileRecipientAgeGroup ?? undefined,
       area_id: "",
       address: patient?.address || "",
       scheduled_for: "",
@@ -198,11 +271,23 @@ function NewOrderPage() {
 
       if (previous.case.area_id) form.setValue("area_id", previous.case.area_id);
       if (previous.case.address) form.setValue("address", previous.case.address);
+      if (previous.case.recipient_gender) form.setValue("recipient_gender", previous.case.recipient_gender);
+      if (previous.case.recipient_age_group) form.setValue("recipient_age_group", previous.case.recipient_age_group);
     }
 
     setSelected(dedupeOrderItems(refs));
     setFallbackNames(names);
   }, [form, itemsParam, reorderCaseId, reorderQuery.data, reorderQuery.isError, reorderQuery.isSuccess]);
+
+  // The profile may arrive after the form was created: fill in only what the patient has not chosen yet.
+  useEffect(() => {
+    if (profileRecipientGender && !form.getValues("recipient_gender")) {
+      form.setValue("recipient_gender", profileRecipientGender);
+    }
+    if (profileRecipientAgeGroup && !form.getValues("recipient_age_group")) {
+      form.setValue("recipient_age_group", profileRecipientAgeGroup);
+    }
+  }, [form, profileRecipientAgeGroup, profileRecipientGender]);
 
   // Default the area to the one saved on the patient profile.
   useEffect(() => {
@@ -221,7 +306,7 @@ function NewOrderPage() {
       key,
       item,
       name: item?.name || fallbackNames[key] || tOrders(`itemTypes.${ref.type}`),
-      unavailable: catalogsReady && !item,
+      unavailable: catalogsReady && !item && !lookupPendingKeys.has(key),
     };
   });
   const orderableRows = selectedRows.filter((row) => !row.unavailable);
@@ -230,7 +315,11 @@ function NewOrderPage() {
   const hasUnpriced = orderableRows.some((row) => row.item?.price === null);
   const limitReached = selected.length >= MAX_CASE_ITEMS;
   const vipDiscount = vipPercent > 0 ? toMoney((estimatedTotal * vipPercent) / 100) : 0;
-  const payableEstimate = toMoney(estimatedTotal - vipDiscount);
+  // Orders with lab tests get one home sample-collection visit fee (added by the server, never discounted).
+  const hasLabTests = orderableRows.some((row) => row.item?.serviceKind === "LAB");
+  const visitFee = hasLabTests ? labFee : 0;
+  const payableEstimate = toMoney(estimatedTotal - vipDiscount + visitFee);
+  const showLabBrowser = activeType === "SERVICE" && kindFilter === "LAB";
 
   const visibleItems = useMemo(() => {
     const items = activeQuery?.data || [];
@@ -256,6 +345,12 @@ function NewOrderPage() {
     });
   };
 
+  const toggleLabTest = (entry: LabTestEntry) => {
+    const item = labEntryToCatalogItem(entry);
+    setLabItems((current) => (current[item.key] ? current : { ...current, [item.key]: item }));
+    toggleItem(item);
+  };
+
   const removeItem = (key: string) => {
     setSelected((current) => current.filter((ref) => orderItemKey(ref) !== key));
   };
@@ -272,6 +367,8 @@ function NewOrderPage() {
         ...(scheduledFor ? { scheduled_for: scheduledFor } : {}),
         ...(notes ? { notes } : {}),
         items: orderableRows.map((row) => row.ref),
+        recipient_gender: values.recipient_gender,
+        recipient_age_group: values.recipient_age_group,
       });
     },
     onSuccess: async (view) => {
@@ -280,6 +377,18 @@ function NewOrderPage() {
       await queryClient.invalidateQueries({ queryKey: ["cases"] });
     },
     onError: (error) => {
+      // The account still has to prove identity (ID / phone): show that step instead of a generic error.
+      if (getVerificationRequired(error)) {
+        toast.error(getVerificationErrorMessage(error, tVerify));
+        void queryClient.invalidateQueries({ queryKey: VERIFICATION_STATUS_QUERY_KEY });
+        if (verifyStepShown) {
+          goToStep(VERIFIED_STEP_KEYS.indexOf("verify") + 1);
+        } else {
+          // The review step was third; with the identity step added, the third step is now "verify".
+          setVerifyStepShown(true);
+        }
+        return;
+      }
       const message = getOrderErrorMessage(error, tOrders);
       toast.error(message);
     },
@@ -291,6 +400,13 @@ function NewOrderPage() {
       return;
     }
     createMutation.mutate(values);
+  };
+
+  // Submitting from the review step with a missing answer (e.g. who the care is for): show why and go back to fix it.
+  const handleInvalid = (errors: FieldErrors<VisitValues>) => {
+    const firstMessage = Object.values(errors).find((error) => error?.message)?.message;
+    if (firstMessage) toast.error(String(firstMessage));
+    goToStep(2);
   };
 
   const goToStep = (next: Step) => {
@@ -315,7 +431,11 @@ function NewOrderPage() {
   };
 
   const continueFromVisit = async () => {
-    const valid = await form.trigger(["area_id", "address", "scheduled_for", "notes"]);
+    const valid = await form.trigger(["recipient_gender", "recipient_age_group", "area_id", "address", "scheduled_for", "notes"]);
+    const { errors } = form.formState;
+    if (errors.recipient_gender || errors.recipient_age_group) {
+      recipientCardRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+    }
     if (scheduleMode === "pick" && !form.getValues("scheduled_for")) {
       form.setError("scheduled_for", { message: tFlow("timeRequired") });
       return;
@@ -323,8 +443,17 @@ function NewOrderPage() {
     if (valid) goToStep(3);
   };
 
+  const continueFromVerification = () => {
+    if (verificationMissing || !verificationQuery.data) {
+      toast.error(tVerify("completeFirst"));
+      return;
+    }
+    goToStep(step + 1);
+  };
+
   // Guard against landing on a later step without items (e.g. after a refresh).
   const effectiveStep: Step = step > 1 && !orderableRows.length && catalogsReady && !reorderQuery.isLoading ? 1 : step;
+  const currentKey: StepKey = stepKeys[effectiveStep - 1] || "what";
 
   if (createdView) {
     return <OrderSuccess view={createdView} locale={locale} />;
@@ -334,23 +463,26 @@ function NewOrderPage() {
   const scheduledValue = form.watch("scheduled_for");
   const addressValue = form.watch("address");
   const notesValue = form.watch("notes");
+  const recipientGender = form.watch("recipient_gender");
+  const recipientAgeGroup = form.watch("recipient_age_group");
+  const recipientErrors = form.formState.errors;
   const area = (areasQuery.data || []).find((item) => item.id === areaValue);
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
 
   return (
     <div className="mx-auto max-w-3xl pb-32">
-      <FlowProgress step={effectiveStep} />
+      <FlowProgress step={effectiveStep} keys={stepKeys} />
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          key={effectiveStep}
+          key={currentKey}
           initial={reduceMotion ? false : { opacity: 0, x: isRtl ? -18 : 18 }}
           animate={{ opacity: 1, x: 0 }}
           exit={reduceMotion ? undefined : { opacity: 0, x: isRtl ? 18 : -18 }}
           transition={{ duration: 0.22 }}
           className="mt-5"
         >
-          {effectiveStep === 1 ? (
+          {currentKey === "what" ? (
             <section className="space-y-4">
               <h2 className="px-1 text-[24px] font-bold text-foreground">{tFlow("stepTitles.what")}</h2>
 
@@ -382,15 +514,17 @@ function NewOrderPage() {
                 })}
               </div>
 
-              <div className="relative">
-                <Search className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder={t("searchPlaceholder")}
-                  className="h-[52px] w-full rounded-2xl border border-[var(--app-card-border)] bg-card pe-4 ps-12 text-[16px] shadow-sm outline-none ring-[#86ab62] placeholder:text-muted-foreground focus:ring-2"
-                />
-              </div>
+              {showLabBrowser ? null : (
+                <div className="relative">
+                  <Search className="pointer-events-none absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder={t("searchPlaceholder")}
+                    className="h-[52px] w-full rounded-2xl border border-[var(--app-card-border)] bg-card pe-4 ps-12 text-[16px] shadow-sm outline-none ring-[#86ab62] placeholder:text-muted-foreground focus:ring-2"
+                  />
+                </div>
+              )}
 
               {activeType === "SERVICE" ? (
                 <div className="-mx-4 overflow-x-auto px-4 no-scrollbar md:mx-0 md:px-0">
@@ -425,7 +559,30 @@ function NewOrderPage() {
                 </div>
               ) : null}
 
-              {activeQuery?.isLoading || (reorderCaseId && reorderQuery.isLoading) ? (
+              {showLabBrowser ? (
+                <div className="space-y-4">
+                  <Link
+                    href={`/${locale}/requests/insurance`}
+                    className="app-press app-card flex min-h-[68px] items-center gap-3 px-4 py-3 hover:shadow-[var(--app-shadow-lg)]"
+                  >
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e6f0ee] text-[#104d49] dark:bg-teal-500/15 dark:text-teal-100">
+                      <ShieldCheck className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[15px] font-bold text-foreground">{tInsurance("cta")}</span>
+                      <span className="block text-[13px] leading-5 text-muted-foreground">{tInsurance("ctaHint")}</span>
+                    </span>
+                    <ForwardChevron className="text-muted-foreground/70" />
+                  </Link>
+                  <LabFeeNote fee={labFee} />
+                  <LabTestBrowser
+                    tone="app"
+                    isSelected={(id) => selectedKeys.has(orderItemKey({ type: "SERVICE", id }))}
+                    onToggle={toggleLabTest}
+                    limitReached={limitReached}
+                  />
+                </div>
+              ) : activeQuery?.isLoading || (reorderCaseId && reorderQuery.isLoading) ? (
                 <div className="space-y-3">
                   {[0, 1, 2, 3].map((key) => (
                     <AppCard key={key} className="flex items-center gap-3 p-4">
@@ -445,31 +602,70 @@ function NewOrderPage() {
                     {tCommon("retry")}
                   </button>
                 </AppCard>
-              ) : visibleItems.length === 0 ? (
-                <AppCard className="p-8 text-center text-[15px] text-muted-foreground">{t("catalogEmpty")}</AppCard>
               ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {visibleItems.map((item) => (
-                    <CatalogItemCard
-                      key={item.key}
-                      item={item}
-                      locale={locale}
-                      isSelected={selectedKeys.has(item.key)}
-                      disabled={(item.vipOnly && !isVip) || (!selectedKeys.has(item.key) && limitReached)}
-                      onToggle={() => toggleItem(item)}
-                      t={t}
-                      tOrders={tOrders}
-                    />
-                  ))}
-                </div>
+                <>
+                  {visibleItems.length === 0 ? (
+                    <AppCard className="p-8 text-center text-[15px] text-muted-foreground">{t("catalogEmpty")}</AppCard>
+                  ) : (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {visibleItems.map((item) => (
+                        <CatalogItemCard
+                          key={item.key}
+                          item={item}
+                          locale={locale}
+                          isSelected={selectedKeys.has(item.key)}
+                          disabled={(item.vipOnly && !isVip) || (!selectedKeys.has(item.key) && limitReached)}
+                          onToggle={() => toggleItem(item)}
+                          t={t}
+                          tOrders={tOrders}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {/* Lab tests are too many to list here: they open in their own browser (groups + search). */}
+                  {activeType === "SERVICE" && kindFilter === "ALL" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setKindFilter("LAB");
+                        window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+                      }}
+                      className="app-press app-card flex min-h-[68px] w-full items-center gap-3 px-4 py-3 text-start hover:shadow-[var(--app-shadow-lg)]"
+                    >
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eef5e6] text-[#4a6b32] dark:bg-white/10 dark:text-lime-200">
+                        <FlaskConical className="h-5 w-5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[15px] font-bold text-foreground">{tLab("browseEntry")}</span>
+                        <span className="block text-[13px] leading-5 text-muted-foreground">{tLab("browseEntryHint")}</span>
+                      </span>
+                      <ForwardChevron className="text-muted-foreground/70" />
+                    </button>
+                  ) : null}
+                </>
               )}
             </section>
           ) : null}
 
-          {effectiveStep === 2 ? (
+          {currentKey === "where" ? (
             <Form {...form}>
               <form className="space-y-5" onSubmit={(event) => event.preventDefault()}>
                 <h2 className="px-1 text-[24px] font-bold text-foreground">{tFlow("stepTitles.where")}</h2>
+
+                <div ref={recipientCardRef} className="scroll-mt-24">
+                  <AppCard className="p-4 sm:p-5">
+                    <RecipientPicker
+                      idPrefix="order"
+                      gender={recipientGender}
+                      ageGroup={recipientAgeGroup}
+                      onGenderChange={(value) => form.setValue("recipient_gender", value, { shouldValidate: true })}
+                      onAgeGroupChange={(value) => form.setValue("recipient_age_group", value, { shouldValidate: true })}
+                      genderError={recipientErrors.recipient_gender?.message}
+                      ageGroupError={recipientErrors.recipient_age_group?.message}
+                      prefilled={Boolean(profileRecipientGender || profileRecipientAgeGroup)}
+                    />
+                  </AppCard>
+                </div>
 
                 <AppCard className="space-y-4 p-4 sm:p-5">
                   <FormField
@@ -562,7 +758,17 @@ function NewOrderPage() {
             </Form>
           ) : null}
 
-          {effectiveStep === 3 ? (
+          {currentKey === "verify" ? (
+            <section className="space-y-4">
+              <div className="px-1">
+                <h2 className="text-[24px] font-bold text-foreground">{tFlow("stepTitles.verify")}</h2>
+                <p className="mt-1.5 text-[15px] leading-6 text-muted-foreground">{tVerify("stepDescription")}</p>
+              </div>
+              <PatientVerificationStep />
+            </section>
+          ) : null}
+
+          {currentKey === "review" ? (
             <section className="space-y-4">
               <h2 className="px-1 text-[24px] font-bold text-foreground">{tFlow("stepTitles.review")}</h2>
 
@@ -580,6 +786,7 @@ function NewOrderPage() {
                         <p className="text-[15px] font-semibold text-foreground">{row.name}</p>
                         <p className="text-[13px] text-muted-foreground">
                           {getOrderItemTypeLabel({ type: row.ref.type, serviceKind: row.item?.serviceKind }, tOrders)}
+                          {row.item?.requiresFasting ? ` · ${tLab("fasting")}` : ""}
                         </p>
                       </div>
                       <span className="shrink-0 text-[15px] font-semibold tabular-nums text-foreground">
@@ -587,11 +794,22 @@ function NewOrderPage() {
                       </span>
                     </li>
                   ))}
+                  {visitFee > 0 ? (
+                    <li className="flex items-start justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-semibold text-foreground">{tLab("feeLine")}</p>
+                        <p className="text-[13px] text-muted-foreground">{tLab("feeLineHint")}</p>
+                      </div>
+                      <span className="shrink-0 text-[15px] font-semibold tabular-nums text-foreground">
+                        {formatCurrency(visitFee, locale)}
+                      </span>
+                    </li>
+                  ) : null}
                 </ul>
                 <div className="space-y-1 border-t border-[var(--app-card-border)] bg-[#f8fbfa] px-5 py-4 dark:bg-white/[0.03]">
                   <div className="flex items-center justify-between text-[15px]">
                     <span className="text-muted-foreground">{tFlow("subtotal")}</span>
-                    <span className="font-semibold tabular-nums">{formatCurrency(estimatedTotal, locale)}</span>
+                    <span className="font-semibold tabular-nums">{formatCurrency(estimatedTotal + visitFee, locale)}</span>
                   </div>
                   {vipDiscount > 0 ? (
                     <div className="flex items-center justify-between text-[15px] text-[#3f7a3a] dark:text-lime-300">
@@ -621,6 +839,11 @@ function NewOrderPage() {
                   </button>
                 </div>
                 <div className="divide-y divide-[var(--app-card-border)] px-5 pb-2">
+                  <ReviewRow
+                    icon={UserRound}
+                    label={tRecipient("summaryLabel")}
+                    value={formatRecipient(tRecipient, recipientGender, recipientAgeGroup) || "-"}
+                  />
                   <ReviewRow icon={MapPin} label={tOrders("area.label")} value={area ? getAreaLabel(area, locale) : "-"} />
                   <ReviewRow
                     icon={MapPin}
@@ -649,7 +872,7 @@ function NewOrderPage() {
       <div className="fixed inset-x-0 bottom-0 z-40 md:ps-[260px]">
         <div className="mx-auto max-w-3xl px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:px-0">
           <div className="rounded-[24px] border border-[var(--app-card-border)] bg-card/95 p-2.5 shadow-[0_18px_40px_-16px_rgba(16,49,45,0.45)] backdrop-blur-xl">
-            {effectiveStep === 1 && selectedRows.length ? (
+            {currentKey === "what" && selectedRows.length ? (
               <div className="-mt-0.5 mb-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5 pt-0.5 no-scrollbar">
                 {selectedRows.map((row) => (
                   <span
@@ -672,11 +895,17 @@ function NewOrderPage() {
                 ))}
               </div>
             ) : null}
+            {visitFee > 0 ? (
+              <p className="mb-2 flex items-center gap-1.5 rounded-xl bg-[#eef5e6] px-3 py-1.5 text-[12.5px] font-medium leading-5 text-[#3d5a2c] dark:bg-lime-500/10 dark:text-lime-100">
+                <FlaskConical className="h-3.5 w-3.5 shrink-0" />
+                {tLab("feeIncluded", { amount: formatCurrency(visitFee, locale) })}
+              </p>
+            ) : null}
             <div className="flex items-center gap-2">
               {effectiveStep > 1 ? (
                 <button
                   type="button"
-                  onClick={() => goToStep((effectiveStep - 1) as Step)}
+                  onClick={() => goToStep(effectiveStep - 1)}
                   aria-label={tFlow("back")}
                   className="app-press inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-[#f1f5f4] text-foreground hover:bg-[#e6eeeb] dark:bg-white/5"
                 >
@@ -686,22 +915,31 @@ function NewOrderPage() {
               <div className="min-w-0 flex-1 px-2">
                 <p className="truncate text-[13px] text-muted-foreground">{tFlow("itemsCount", { count: orderableRows.length })}</p>
                 <p className="truncate text-[18px] font-bold tabular-nums text-foreground">
-                  {formatCurrency(effectiveStep === 3 ? payableEstimate : estimatedTotal, locale)}
+                  {formatCurrency(currentKey === "review" ? payableEstimate : estimatedTotal + visitFee, locale)}
                   {hasUnpriced ? " +" : ""}
                 </p>
               </div>
-              {effectiveStep === 1 ? (
+              {currentKey === "what" ? (
                 <button type="button" onClick={continueFromItems} disabled={!orderableRows.length} className={cn(appButton.primary, "min-w-[8.5rem]")}>
                   {tFlow("continue")}
                 </button>
-              ) : effectiveStep === 2 ? (
+              ) : currentKey === "where" ? (
                 <button type="button" onClick={() => void continueFromVisit()} className={cn(appButton.primary, "min-w-[8.5rem]")}>
+                  {tFlow("continue")}
+                </button>
+              ) : currentKey === "verify" ? (
+                <button
+                  type="button"
+                  onClick={continueFromVerification}
+                  disabled={verificationMissing || !verificationQuery.data}
+                  className={cn(appButton.primary, "min-w-[8.5rem]")}
+                >
                   {tFlow("continue")}
                 </button>
               ) : (
                 <button
                   type="button"
-                  onClick={() => void form.handleSubmit(handleSubmit)()}
+                  onClick={() => void form.handleSubmit(handleSubmit, handleInvalid)()}
                   disabled={createMutation.isPending || !orderableRows.length}
                   className={cn(appButton.primary, "min-w-[9.5rem]")}
                 >
@@ -717,18 +955,18 @@ function NewOrderPage() {
   );
 }
 
-function FlowProgress({ step }: { step: Step }) {
+function FlowProgress({ step, keys }: { step: Step; keys: readonly StepKey[] }) {
   const tFlow = useTranslations("app.newOrder");
 
   return (
     <div className="px-1">
       <div className="flex items-center justify-between gap-2">
-        {STEP_KEYS.map((key, index) => {
+        {keys.map((key, index) => {
           const number = index + 1;
           const done = number < step;
           const current = number === step;
           return (
-            <div key={key} className={cn("flex min-w-0 items-center gap-2", index < STEP_KEYS.length - 1 && "sm:flex-1")}>
+            <div key={key} className={cn("flex min-w-0 items-center gap-2", index < keys.length - 1 && "sm:flex-1")}>
               <span
                 className={cn(
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-colors",
@@ -739,10 +977,17 @@ function FlowProgress({ step }: { step: Step }) {
               >
                 {done ? <Check className="h-4 w-4" /> : number}
               </span>
-              <span className={cn("whitespace-nowrap text-[13px]", current ? "font-bold text-foreground" : "text-muted-foreground")}>
+              <span
+                className={cn(
+                  "whitespace-nowrap text-[13px]",
+                  current ? "font-bold text-foreground" : "text-muted-foreground",
+                  // Four steps do not fit on a phone: only the current step keeps its label there.
+                  keys.length > 3 && !current && "hidden sm:inline",
+                )}
+              >
                 {tFlow(`steps.${key}`)}
               </span>
-              {index < STEP_KEYS.length - 1 ? (
+              {index < keys.length - 1 ? (
                 <span className={cn("hidden h-0.5 flex-1 rounded-full sm:block", done ? "bg-[#104d49] dark:bg-teal-300" : "bg-[#e3ebe8] dark:bg-white/10")} />
               ) : null}
             </div>
@@ -860,7 +1105,7 @@ function OrderSuccess({ view, locale }: { view: CaseView; locale: string }) {
   const tFlow = useTranslations("app.newOrder");
   const tOrders = useTranslations("orders");
   const reduceMotion = useReducedMotion();
-  const reference = getCaseReference(view.case.id);
+  const reference = getCaseReference(view.case);
 
   return (
     <motion.div

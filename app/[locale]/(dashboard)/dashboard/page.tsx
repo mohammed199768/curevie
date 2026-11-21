@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
-import { ClipboardList, Crown, FlaskConical, HeartPulse, Package, Plus, ScanLine, Stethoscope } from "lucide-react";
+import { ClipboardList, Crown, FlaskConical, HeartPulse, Package, Plus, ScanLine, ShieldCheck, Stethoscope } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AppCard,
@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const tDash = useTranslations("dashboard");
   const tPage = useTranslations("dashboardPage");
   const tOrders = useTranslations("orders");
+  const tInsurance = useTranslations("insurance");
   const locale = useLocale();
   const reduceMotion = useReducedMotion();
   const patient = useAuthStore((state) => state.patient);
@@ -130,6 +131,19 @@ export default function DashboardPage() {
           <span className="flex-1 text-[15px] font-semibold text-foreground">{t("quick.PACKAGE")}</span>
           <ForwardChevron className="text-muted-foreground/70" />
         </Link>
+        <Link
+          href={`/${locale}/requests/insurance`}
+          className="app-press app-card flex min-h-[64px] items-center gap-3 px-4 py-3 hover:shadow-[var(--app-shadow-lg)]"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e6f0ee] text-[#104d49] dark:bg-white/10 dark:text-teal-100">
+            <ShieldCheck className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold text-foreground">{tInsurance("cta")}</span>
+            <span className="block text-[13px] leading-5 text-muted-foreground">{tInsurance("ctaHint")}</span>
+          </span>
+          <ForwardChevron className="text-muted-foreground/70" />
+        </Link>
       </motion.section>
 
       {/* Current order */}
@@ -206,7 +220,7 @@ export default function DashboardPage() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-semibold text-foreground">
-                      {names[0] || tOrders("reference", { reference: isolateLtr(getCaseReference(item.id)) })}
+                      {names[0] || tOrders("reference", { reference: isolateLtr(getCaseReference(item)) })}
                     </p>
                     <p className="truncate text-[13px] text-muted-foreground">
                       {formatDateTime(item.created_at, "dd/MM/yyyy, HH:mm", locale)}
@@ -257,10 +271,10 @@ function ActiveOrderCard({ row, locale, trackLabel }: { row: CaseListRow; locale
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <CaseStatusBadge status={row.status} size="sm" />
-            <span className="text-[13px] text-muted-foreground">{getCaseReference(row.id)}</span>
+            <span className="text-[13px] text-muted-foreground">{getCaseReference(row)}</span>
           </div>
           <p className="mt-2.5 truncate text-[17px] font-bold text-foreground">
-            {names[0] || tOrders("reference", { reference: isolateLtr(getCaseReference(row.id)) })}
+            {names[0] || tOrders("reference", { reference: isolateLtr(getCaseReference(row)) })}
             {extra ? <span className="ms-1.5 text-[14px] font-medium text-muted-foreground">{isolateLtr(`+${extra}`)}</span> : null}
           </p>
           <p className="mt-1 text-[14px] text-muted-foreground">{t(`stageHints.${stage}`)}</p>

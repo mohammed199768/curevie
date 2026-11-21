@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface I18nDatePickerProps {
@@ -27,7 +27,22 @@ function getDaysInMonth(month: number, year: number): number {
   return new Date(year, month, 0).getDate();
 }
 
-function parseIsoDate(value?: string) {
+/**
+ * "YYYY-MM-DD" for a date value from the API. The API sends dates as timestamps at local midnight
+ * (e.g. "1990-06-14T21:00:00.000Z" for 15 June in Amman), so those are read in the browser's time zone;
+ * cutting the string would show the previous day.
+ */
+export function toDateOnlyValue(value?: string | null): string {
+  if (!value) return "";
+  if (!value.includes("T")) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function parseIsoDate(rawValue?: string) {
+  const value = toDateOnlyValue(rawValue);
   if (!value) return { day: "", month: "", year: "" };
   const parts = value.split("-");
   return {
@@ -54,7 +69,21 @@ export function I18nDatePicker({
   const isRtl = locale === "ar";
   const months = isRtl ? ARABIC_MONTHS : ENGLISH_MONTHS;
 
-  const { day, month, year } = parseIsoDate(value);
+  // Partial picks (e.g. only the day) live here until all three parts are chosen; the parent only
+  // receives a complete YYYY-MM-DD value (or "" when a complete value is cleared).
+  const [parts, setParts] = useState(() => parseIsoDate(value));
+  const lastReportedRef = useRef(value || "");
+
+  // Follow the parent when it sets a different value (form reset, profile loaded), but ignore the echo
+  // of what this picker reported itself.
+  useEffect(() => {
+    const next = value || "";
+    if (next === lastReportedRef.current) return;
+    lastReportedRef.current = next;
+    setParts(parseIsoDate(next));
+  }, [value]);
+
+  const { day, month, year } = parts;
 
   const currentYear = new Date().getFullYear();
   const years = useMemo(() => {
@@ -84,7 +113,13 @@ export function I18nDatePicker({
       }
     }
 
-    onChange(toIsoDate(clampedDay, newMonth, newYear));
+    setParts({ day: clampedDay, month: newMonth, year: newYear });
+
+    const iso = toIsoDate(clampedDay, newMonth, newYear);
+    if (iso !== lastReportedRef.current) {
+      lastReportedRef.current = iso;
+      onChange(iso);
+    }
   };
 
   const selectClass = cn(
@@ -93,7 +128,7 @@ export function I18nDatePicker({
     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
     "disabled:cursor-not-allowed disabled:opacity-50",
     "appearance-none cursor-pointer",
-    !value && "text-muted-foreground"
+    !(day || month || year) && "text-muted-foreground"
   );
 
   const dayPlaceholder = isRtl ? "اليوم" : "Day";

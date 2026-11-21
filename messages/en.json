@@ -15,7 +15,8 @@
     "invoices": "My Invoices",
     "reports": "My Reports",
     "chat": "Chat",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "insuranceRequest": "Insurance lab test"
   },
   "hero": {
     "title": "A doctor at your door. No hospital trip needed.",
@@ -156,7 +157,7 @@
     "archivedRequestRooms": "Archived care cases",
     "openRoom": "Open case room",
     "providerFallback": "Assigned provider",
-    "requestNumber": "Case #{id}",
+    "requestNumber": "Order {id}",
     "noRequestRooms": "No care case conversations available yet",
     "noInboxThreads": "No conversations available yet",
     "selectAdmin": "Select an admin first",
@@ -1168,7 +1169,8 @@
       "CHAT_CLOSED": "This conversation is closed.",
       "EMPTY_MESSAGE": "Write a message or attach a file.",
       "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
-      "GENERIC": "Something went wrong. Please try again."
+      "GENERIC": "Something went wrong. Please try again.",
+      "INSURANCE_NOT_EDITABLE": "This insurance request can no longer be changed. Refresh the page to see its latest status."
     }
   },
   "orderForm": {
@@ -1321,6 +1323,10 @@
       "keep": "Keep order",
       "confirm": "Cancel order",
       "success": "Your order was cancelled."
+    },
+    "labResults": {
+      "title": "Your lab results",
+      "description": "The lab uploaded your results. Tap the download button to open them."
     }
   },
   "app": {
@@ -1361,8 +1367,8 @@
       "alias": "CliQ alias",
       "beneficiary": "Beneficiary",
       "bank": "Bank",
-      "reference": "Order reference for the transfer note",
-      "referenceHint": "Write the order reference in the transfer note so we can match your payment quickly.",
+      "reference": "Your order number (write it in the transfer note)",
+      "referenceHint": "Important: write your order number {reference} in the note of your transfer, so we know the payment is for your order.",
       "copy": "Copy",
       "copiedShort": "Copied",
       "copied": "Copied to clipboard",
@@ -1400,12 +1406,14 @@
       "steps": {
         "what": "Services",
         "where": "Where & when",
-        "review": "Review"
+        "review": "Review",
+        "verify": "Identity"
       },
       "stepTitles": {
         "what": "What do you need?",
         "where": "Where and when should we come?",
-        "review": "Review and confirm"
+        "review": "Review and confirm",
+        "verify": "Confirm your identity"
       },
       "stepOf": "Step {current} of {total}",
       "itemsCount": "{count, plural, =0 {No items} one {# item} other {# items}}",
@@ -1482,6 +1490,192 @@
     },
     "track": {
       "guestTitle": "Track your order"
+    },
+    "recipient": {
+      "title": "Who is this care for?",
+      "hint": "Tell us who will receive the care, so we can send the right person.",
+      "prefilled": "We filled this in from your profile. Change it if the order is for someone else, like your child or a parent.",
+      "genderLabel": "Gender",
+      "ageLabel": "Age",
+      "gender": {
+        "MALE": "Male",
+        "FEMALE": "Female"
+      },
+      "age": {
+        "CHILD": "Child (under 18)",
+        "ADULT": "Adult"
+      },
+      "ageShort": {
+        "CHILD": "Child",
+        "ADULT": "Adult"
+      },
+      "genderRequired": "Please choose male or female.",
+      "ageRequired": "Please choose child or adult.",
+      "summaryLabel": "Care is for",
+      "line": "Care is for: {value}"
+    }
+  },
+  "labCatalog": {
+    "searchPlaceholder": "Search for a lab test (e.g. vitamin D)",
+    "clearSearch": "Clear search",
+    "searchResults": "Results for “{term}”",
+    "searchEmpty": "We couldn't find a test with this name. Try another word, or browse the groups.",
+    "searchHint": "Type at least {min} letters to search.",
+    "popularTitle": "Most requested",
+    "popularEmpty": "No tests here yet. Browse the groups below.",
+    "groupsTitle": "Browse by group",
+    "groupsHint": "Choose a group to see its tests.",
+    "groupEmpty": "No tests are available in this group right now.",
+    "testsCount": "{count, plural, one {# test} other {# tests}}",
+    "specializedEntry": "More specialised tests",
+    "specializedEntryHint": "Genetic tests, drug levels and other tests a doctor usually asks for.",
+    "specializedTitle": "Specialised tests",
+    "specializedDescription": "These tests are usually requested by a specialist doctor.",
+    "backToGroups": "All groups",
+    "backToSpecialized": "Specialised tests",
+    "showMore": "Show more",
+    "shownOf": "Showing {shown} of {total}",
+    "readMore": "Read more",
+    "readLess": "Show less",
+    "fasting": "Fasting required",
+    "add": "Add",
+    "added": "Added",
+    "remove": "Remove",
+    "priceOnRequest": "Price on request",
+    "loadError": "We couldn't load the tests. Check your connection and try again.",
+    "retry": "Try again",
+    "feeNote": "A home sample-collection visit fee of {amount} is added once to any order with lab tests, however many tests you choose.",
+    "feeNoteShort": "Home sample-collection visit (once per order)",
+    "feeIncluded": "Includes {amount} home visit fee",
+    "feeLine": "Home sample-collection visit",
+    "feeLineHint": "Added once per order",
+    "pickFirst": "Choose the tests you need first.",
+    "browseEntry": "Lab tests",
+    "browseEntryHint": "Browse by group or search by name"
+  },
+  "insurance": {
+    "cta": "Lab test with insurance",
+    "ctaHint": "Send a photo of your insurance card and the lab tells you what you pay.",
+    "ctaHintGuest": "Sign in, send a photo of your insurance card, and the lab tells you what you pay.",
+    "how": {
+      "title": "How it works",
+      "upload": "Send a photo of your insurance card and tell us where and when to visit.",
+      "quote": "The lab checks your insurance and tells you which tests are covered and how much you pay.",
+      "approve": "You approve the amount, pay by CliQ, and we come to take the sample at home."
+    },
+    "form": {
+      "title": "Lab test with insurance",
+      "intro": "You don't need to choose tests. Send your insurance card and the lab takes care of the rest.",
+      "cardTitle": "Insurance card",
+      "cardHint": "Take a clear photo of the front of the card, or upload a photo or PDF you already have.",
+      "cardReady": "Card photo is ready",
+      "cardPrivacy": "Only the lab and the Curevie team can see your insurance card.",
+      "cardRequired": "Please add a photo of your insurance card.",
+      "notesPlaceholder": "Anything the lab should know? For example the tests your doctor asked for.",
+      "submit": "Send request",
+      "submitting": "Sending…",
+      "submitHint": "You pay nothing now. You will see the amount first and decide.",
+      "success": "Your request was sent. The lab will review your insurance."
+    },
+    "card": {
+      "title": "Insurance request",
+      "testsTitle": "Tests covered by your insurance",
+      "labNote": "Note from the lab: {note}",
+      "patientAmount": "Your share of the tests",
+      "homeVisitFee": "Home sample-collection visit",
+      "amountToPay": "Total to pay",
+      "decideHint": "If you approve, we arrange the home visit. If you decline, the order is cancelled and you pay nothing.",
+      "approve": "Approve",
+      "decline": "Decline",
+      "approveSuccess": "Approved. You can pay now.",
+      "declineSuccess": "Declined. The order was cancelled.",
+      "payHint": "Pay the total by CliQ and write your order number {reference} in the transfer note so we can match your payment.",
+      "declineTitle": "Decline this amount?",
+      "declineDescription": "The order will be cancelled and you won't pay anything. You can send a new request any time.",
+      "declineReasonPlaceholder": "Reason (optional)",
+      "declineKeep": "Go back",
+      "declineConfirm": "Yes, decline"
+    },
+    "status": {
+      "SUBMITTED": {
+        "title": "The lab is reviewing your insurance",
+        "description": "We will notify you as soon as the lab tells us which tests are covered and how much you pay. You pay nothing now."
+      },
+      "QUOTED": {
+        "title": "The amount is ready",
+        "description": "The lab reviewed your insurance. Check the amount below and tell us if you agree."
+      },
+      "APPROVED": {
+        "title": "You approved the amount",
+        "description": "Pay by CliQ and the lab will arrange the home visit."
+      },
+      "DECLINED": {
+        "title": "You declined the amount",
+        "description": "The order was cancelled and nothing is due. You can send a new request any time."
+      },
+      "CANCELLED": {
+        "title": "The insurance request was cancelled",
+        "description": "This order was cancelled and nothing is due."
+      }
+    }
+  },
+  "verification": {
+    "stepTitle": "Confirm your identity",
+    "stepDescription": "For your safety we ask for this once only. It is saved on your account, so you won't be asked again.",
+    "stepDescriptionGuest": "One last step before we send your order.",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "back": "Back",
+    "continue": "Continue",
+    "completeFirst": "Please finish this step first.",
+    "orderSummary": "Your order",
+    "upload": {
+      "takePhoto": "Take a photo",
+      "chooseFile": "Choose a file",
+      "replaceFile": "Change file",
+      "uploading": "Uploading…",
+      "ready": "File is ready",
+      "formats": "Photo (JPG, PNG) or PDF, up to 20 MB."
+    },
+    "id": {
+      "title": "Proof of identity",
+      "description": "Upload a photo of your ID card, or a screenshot or PDF of your ID from the Sanad app.",
+      "done": "We received your ID",
+      "doneDescription": "Thank you. Your ID is saved on your account and we won't ask for it again.",
+      "doneDescriptionGuest": "Thank you. Your ID was received for this order.",
+      "privacy": "Your ID is private. Only the Curevie team can see it."
+    },
+    "phone": {
+      "title": "Confirm your phone number",
+      "description": "We send a 6-digit code to the phone number on your account.",
+      "descriptionGuest": "We send a 6-digit code to the phone number you entered.",
+      "doneDescription": "Your phone number is confirmed.",
+      "numberLabel": "Phone number",
+      "sendCode": "Send me the code",
+      "codeSent": "We sent you a code. Type the 6 digits here.",
+      "codeLabel": "6-digit code",
+      "confirm": "Confirm",
+      "resend": "Send the code again",
+      "resendIn": "Send again in {seconds} s",
+      "verified": "Phone number confirmed",
+      "wrongNumber": "Not your number?",
+      "editProfile": "Change it in your profile"
+    },
+    "errors": {
+      "VERIFICATION_REQUIRED": "Please confirm your identity before sending the order.",
+      "INVALID_PHONE": "Please use a Jordanian mobile number, like 07XXXXXXXX.",
+      "INVALID_CODE": "This code is not correct. Check it and try again.",
+      "CODE_EXPIRED": "This code has expired. Ask for a new one.",
+      "TOO_MANY_CODES": "You asked for too many codes. Please wait a few minutes, then try again.",
+      "TOO_MANY_ATTEMPTS": "Too many wrong tries. Ask for a new code.",
+      "CODE_NOT_SENT": "We couldn't send the code. Please try again in a moment.",
+      "ID_DOCUMENT_EXPIRED": "Please upload your ID again, then confirm the order.",
+      "INVALID_FILE_TYPE": "This file type is not supported. Use a photo (JPG, PNG) or a PDF.",
+      "INVALID_FILE_CONTENTS": "We couldn't read this file. Try another photo or PDF.",
+      "NO_FILE": "Please choose a photo or a PDF first.",
+      "FILE_TOO_LARGE": "This file is too large. The limit is 20 MB.",
+      "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
+      "GENERIC": "Something went wrong. Please try again."
     }
   }
 }

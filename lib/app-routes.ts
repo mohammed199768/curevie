@@ -5,6 +5,7 @@ type HeaderRoute = { titleKey: string; parent: string | null };
 /** Title and "back" target for each patient screen (path without the locale prefix). */
 export function resolveHeaderRoute(path: string): HeaderRoute {
   if (path.startsWith("/requests/new")) return { titleKey: "newRequest", parent: "/requests" };
+  if (path.startsWith("/requests/insurance")) return { titleKey: "insuranceRequest", parent: "/dashboard" };
   if (path.startsWith("/requests/")) return { titleKey: "requestDetails", parent: "/requests" };
   if (path.startsWith("/requests")) return { titleKey: "requests", parent: null };
   if (path.startsWith("/invoices/")) return { titleKey: "invoices", parent: "/invoices" };

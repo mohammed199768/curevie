@@ -51,7 +51,7 @@ export default function InvoicesPage() {
       ) : rows.length ? (
         <div className={cn("grid grid-cols-1 gap-3 transition-opacity md:grid-cols-2", query.isFetching && query.isPlaceholderData && "opacity-60")}>
           {rows.map((item, index) => {
-            const reference = getCaseReference(item.id);
+            const reference = getCaseReference(item);
             const itemNames = (item.item_names || []).filter(Boolean);
             const remaining = item.remaining_amount !== null ? Number(item.remaining_amount) : 0;
             const due = remaining > 0 && item.payment_status !== "PAID" && item.payment_status !== "CANCELLED";

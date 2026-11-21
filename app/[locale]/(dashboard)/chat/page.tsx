@@ -20,6 +20,7 @@ import {
   ShareLocationError,
 } from "@/lib/chat-location";
 import { getOrderErrorMessage } from "@/lib/order-errors";
+import { getCaseReference, isolateLtr } from "@/lib/order-stage";
 import { cn, formatRelativeTime } from "@/lib/utils";
 
 // new_message / chat_unread_updated arrive over the socket; these intervals are only a fallback.
@@ -294,7 +295,9 @@ function ChatInbox() {
                   <span className="shrink-0 text-[12px] text-muted-foreground">{formatRelativeTime(entry.lastActivityAt, locale)}</span>
                 </div>
                 <p className="truncate text-[12.5px] text-muted-foreground">
-                  {tChatPage("requestNumber", { id: entry.caseId.slice(0, 8).toUpperCase() })}
+                  {tChatPage("requestNumber", {
+                    id: isolateLtr(getCaseReference({ id: entry.caseId, reference_number: room.case_reference_number })),
+                  })}
                   {room.service_name ? ` · ${room.service_name}` : ""}
                 </p>
                 <div className="mt-0.5 flex items-center gap-2">
@@ -345,7 +348,9 @@ function ChatInbox() {
           <p className="truncate text-[16px] font-bold text-foreground">{activeRoom?.provider_name || tChatPage("providerFallback")}</p>
           {activeRoom ? (
             <p className="truncate text-[12.5px] text-muted-foreground">
-              {activeRoom.service_name || tChatPage("requestRoomLabel")} · {tChatPage("requestNumber", { id: activeRoom.case_id.slice(0, 8).toUpperCase() })}
+              {activeRoom.service_name || tChatPage("requestRoomLabel")} · {tChatPage("requestNumber", {
+                id: isolateLtr(getCaseReference({ id: activeRoom.case_id, reference_number: activeRoom.case_reference_number })),
+              })}
             </p>
           ) : null}
         </div>

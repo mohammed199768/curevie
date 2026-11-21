@@ -11,6 +11,7 @@ import { AmountRow, AppCard, DetailRow, DetailSkeleton, EmptyState, appButton } 
 import { CaseProgress, OrderStatusHero } from "@/components/orders/CaseProgress";
 import { PaymentStatusBadge, ServiceStatusBadge } from "@/components/orders/CaseStatusBadge";
 import { CliqPaymentCard } from "@/components/orders/CliqPaymentCard";
+import { RecipientLine } from "@/components/orders/RecipientPicker";
 import { casesApi } from "@/lib/api/cases";
 import { formatCurrency } from "@/lib/formatting";
 import { getOrderErrorMessage } from "@/lib/order-errors";
@@ -124,7 +125,12 @@ export function TrackOrderView({ token }: { token: string }) {
           hasLab={hasLab}
           reference={order.reference}
           cancelReason={order.cancel_reason}
-          meta={<p className="text-[13px] text-muted-foreground">{t("createdAt", { date: formatDateTime(order.created_at, "dd/MM/yyyy, HH:mm", locale) })}</p>}
+          meta={
+            <div className="space-y-1">
+              <p className="text-[13px] text-muted-foreground">{t("createdAt", { date: formatDateTime(order.created_at, "dd/MM/yyyy, HH:mm", locale) })}</p>
+              <RecipientLine gender={order.recipient_gender} ageGroup={order.recipient_age_group} className="text-[13px]" />
+            </div>
+          }
         />
 
         {order.status !== "CANCELLED" ? (

@@ -31,7 +31,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { AppCard, ForwardChevron, IconBubble, Shimmer, appButton } from "@/components/app/ui";
 import { AreaSelect } from "@/components/orders/AreaSelect";
-import { I18nDatePicker } from "@/components/shared/I18nDatePicker";
+import { I18nDatePicker, toDateOnlyValue } from "@/components/shared/I18nDatePicker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -402,7 +402,7 @@ function ProfileScreen() {
       area_id: patient?.area_id || "",
       address: patient?.address || "",
       gender: normalizeGender(patient?.gender),
-      date_of_birth: patient?.date_of_birth || "",
+      date_of_birth: toDateOnlyValue(patient?.date_of_birth),
     },
   });
 
@@ -434,7 +434,7 @@ function ProfileScreen() {
       area_id: data.area_id || "",
       address: data.address || "",
       gender: normalizeGender(data.gender),
-      date_of_birth: data.date_of_birth || "",
+      date_of_birth: toDateOnlyValue(data.date_of_birth),
     });
 
     medicalForm.reset({

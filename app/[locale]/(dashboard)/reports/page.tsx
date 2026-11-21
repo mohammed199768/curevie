@@ -69,6 +69,7 @@ function buildProvidersLabel(services: CaseServiceLine[]) {
 function buildSearchableText(view: CaseView) {
   return [
     view.case.id,
+    getCaseReference(view.case),
     view.case.lead_provider_name,
     view.case.notes,
     ...view.services.flatMap((service) => [service.item_name, service.provider_name, service.provider_type, service.status]),
@@ -262,7 +263,7 @@ export default function ReportsPage() {
           {filteredItems.map((item) => {
             const isExpanded = expandedCaseId === item.caseId;
             const files = item.view.provider_files;
-            const reference = getCaseReference(item.caseId);
+            const reference = getCaseReference(item.view.case);
 
             return (
               <AppCard key={item.caseId} className="overflow-hidden">

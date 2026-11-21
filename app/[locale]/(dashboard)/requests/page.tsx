@@ -55,7 +55,7 @@ function OrderCard({
   tPage: Translator;
   tOrders: Translator;
 }) {
-  const reference = getCaseReference(item.id);
+  const reference = getCaseReference(item);
   const itemNames = (item.item_names || []).filter(Boolean);
   const title = itemNames[0] || tOrders("reference", { reference: isolateLtr(reference) });
   const extraCount = Math.max(0, itemNames.length - 1);

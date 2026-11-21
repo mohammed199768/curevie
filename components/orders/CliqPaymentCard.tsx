@@ -8,6 +8,7 @@ import { AppCard, Illustration } from "@/components/app/ui";
 import type { CaseStatus, PaymentStatus } from "@/lib/api/cases";
 import { getCliqDue, usePublicSettings, type CliqInvoiceInput } from "@/lib/api/settings";
 import { formatCurrency } from "@/lib/formatting";
+import { isolateLtr } from "@/lib/order-stage";
 import { cn } from "@/lib/utils";
 
 async function copyText(value: string) {
@@ -158,7 +159,7 @@ export function CliqPaymentCard({
         </dl>
 
         <CopyField label={t("reference")} value={reference} copyLabel={t("copy")} />
-        <p className="px-1 text-[13px] leading-5 text-muted-foreground">{t("referenceHint")}</p>
+        <p className="px-1 text-[13px] leading-5 text-muted-foreground">{t("referenceHint", { reference: isolateLtr(reference) })}</p>
 
         {cliq.note ? (
           <div className="rounded-2xl bg-[#fff8ea] px-4 py-3 text-[14px] leading-6 text-[#6b4a00] dark:bg-amber-500/10 dark:text-amber-100">

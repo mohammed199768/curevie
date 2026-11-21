@@ -1,7 +1,8 @@
 import type { CaseItemType } from "@/lib/api/cases";
 import { packagesApi } from "@/lib/api/packages";
 import { servicesApi } from "@/lib/api/services";
-import type { ApiListResponse, MoneyValue, ServiceKind } from "@/lib/api/types";
+import type { ApiListResponse, MoneyValue, ServiceItem, ServiceKind } from "@/lib/api/types";
+import type { LabTestEntry } from "@/lib/lab-catalog";
 import { orderItemKey } from "@/lib/order-items";
 import { normalizeListResponse } from "@/lib/utils";
 
@@ -21,10 +22,18 @@ export interface OrderCatalogItem {
   includedServices: string[];
   /** Packages only: what the bundle saves compared to ordering its services one by one. */
   savings: number | null;
+  /** Lab tests only: the patient must fast before the sample is taken. */
+  requiresFasting?: boolean;
 }
 
 const PAGE_LIMIT = 100;
 const MAX_PAGES = 10;
+
+/**
+ * Service kinds whose whole list is small enough to load for the order page. Lab tests are not here on
+ * purpose: there are hundreds, so they are browsed a page at a time (components/lab/LabTestBrowser).
+ */
+export const PRELOADED_SERVICE_KINDS: readonly ServiceKind[] = ["MEDICAL", "NURSING", "RADIOLOGY"];
 
 function toPrice(value: MoneyValue | null | undefined) {
   if (value === null || value === undefined || value === "") return null;
@@ -56,21 +65,62 @@ function build(type: CaseItemType, item: Omit<OrderCatalogItem, "key" | "type">)
   return { ...item, type, key: orderItemKey({ type, id: item.id }) };
 }
 
+function serviceToCatalogItem(row: ServiceItem, locale: string): OrderCatalogItem {
+  const isLab = row.service_kind === "LAB";
+  return build("SERVICE", {
+    id: row.id,
+    name: localized(locale, row.name_ar, row.name_en, row.name),
+    description: localized(locale, row.description_ar, row.description_en, row.description) || null,
+    price: toPrice(row.price),
+    serviceKind: row.service_kind || "MEDICAL",
+    // Lab groups carry a slug in category_name; their readable names are the localised ones.
+    groupName: (isLab ? localized(locale, row.category_name_ar, row.category_name_en) : row.category_name) || null,
+    vipOnly: Boolean(row.is_vip_exclusive),
+    includedServices: [],
+    savings: null,
+    requiresFasting: Boolean(row.requires_fasting),
+  });
+}
+
+/** A lab test picked in the lab browser, in the shape the order page works with. */
+export function labEntryToCatalogItem(entry: LabTestEntry): OrderCatalogItem {
+  return build("SERVICE", {
+    id: entry.id,
+    name: entry.name,
+    description: entry.description,
+    price: entry.price,
+    serviceKind: "LAB",
+    groupName: entry.categoryName,
+    vipOnly: false,
+    includedServices: [],
+    savings: null,
+    requiresFasting: entry.requiresFasting,
+  });
+}
+
+/**
+ * One service by id (e.g. a lab test that arrived through ?items= or "order again").
+ * null when it no longer exists or is not orderable (404).
+ */
+export async function fetchOrderCatalogService(id: string, locale: string): Promise<OrderCatalogItem | null> {
+  try {
+    const { data } = await servicesApi.getPublic(id);
+    return data?.id ? serviceToCatalogItem(data, locale) : null;
+  } catch (error) {
+    if ((error as { response?: { status?: number } })?.response?.status === 404) return null;
+    throw error;
+  }
+}
+
 export async function fetchOrderCatalog(type: CaseItemType, locale: string): Promise<OrderCatalogItem[]> {
   switch (type) {
     case "SERVICE": {
-      const rows = await fetchAllPages((page) => servicesApi.list({ page, limit: PAGE_LIMIT }));
-      return rows.map((row) => build("SERVICE", {
-        id: row.id,
-        name: localized(locale, row.name_ar, row.name_en, row.name),
-        description: localized(locale, row.description_ar, row.description_en, row.description) || null,
-        price: toPrice(row.price),
-        serviceKind: row.service_kind || "MEDICAL",
-        groupName: row.category_name || null,
-        vipOnly: Boolean(row.is_vip_exclusive),
-        includedServices: [],
-        savings: null,
-      }));
+      const lists = await Promise.all(
+        PRELOADED_SERVICE_KINDS.map((kind) =>
+          fetchAllPages((page) => servicesApi.list({ page, limit: PAGE_LIMIT, service_kind: kind })),
+        ),
+      );
+      return lists.flat().map((row) => serviceToCatalogItem(row, locale));
     }
     case "PACKAGE": {
       const rows = await fetchAllPages((page) => packagesApi.list({ page, limit: PAGE_LIMIT }));

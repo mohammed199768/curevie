@@ -16,6 +16,12 @@ export type PaymentStatus = "PENDING" | "PARTIAL" | "PAID" | "CANCELLED";
 export type PaymentMethod = "CASH" | "CARD" | "INSURANCE" | "CLICK" | "OTHER";
 export type AppointmentType = "INITIAL" | "FOLLOW_UP";
 
+/** Who the care is for (chosen per order). CHILD = under 18. Null on orders placed before 2026-11-21. */
+export const RECIPIENT_GENDERS = ["MALE", "FEMALE"] as const;
+export type RecipientGender = (typeof RECIPIENT_GENDERS)[number];
+export const RECIPIENT_AGE_GROUPS = ["CHILD", "ADULT"] as const;
+export type RecipientAgeGroup = (typeof RECIPIENT_AGE_GROUPS)[number];
+
 /** Backend limit for items in one order. */
 export const MAX_CASE_ITEMS = 10;
 
@@ -23,6 +29,10 @@ export const MAX_CASE_ITEMS = 10;
 
 export interface CaseListRow {
   id: string;
+  /** Six-digit order number, e.g. "482913". */
+  reference_number?: string | null;
+  recipient_gender?: RecipientGender | null;
+  recipient_age_group?: RecipientAgeGroup | null;
   status: CaseStatus;
   patient_id: string | null;
   area_id: string | null;
@@ -55,6 +65,10 @@ export interface CaseListResult {
 
 export interface CaseRecord {
   id: string;
+  /** Six-digit order number, e.g. "482913". */
+  reference_number?: string | null;
+  recipient_gender?: RecipientGender | null;
+  recipient_age_group?: RecipientAgeGroup | null;
   patient_id: string | null;
   is_guest: boolean;
   guest_name: string | null;
@@ -78,6 +92,31 @@ export interface CaseRecord {
   updated_at: string | null;
   patient_name: string | null;
   patient_phone: string | null;
+  /** Insurance lab order: no tests chosen, the lab prices it after reading the insurance card. */
+  is_insurance?: boolean | null;
+}
+
+/** Internal catalog items that appear as order lines: the lab home-visit fee and the insurance placeholder. */
+export type CaseServiceSystemKey = "lab_home_visit" | "lab_insurance_tests";
+
+export const INSURANCE_STATUSES = ["SUBMITTED", "QUOTED", "APPROVED", "DECLINED", "CANCELLED"] as const;
+export type InsuranceStatus = (typeof INSURANCE_STATUSES)[number];
+
+/** What the patient sees of an insurance lab request (CaseView.insurance). */
+export interface CaseInsurance {
+  status: InsuranceStatus;
+  /** Tests the insurance covers, written by the lab. */
+  tests_description: string | null;
+  /** The patient's share for the tests. */
+  patient_amount: MoneyValue | null;
+  home_visit_fee: MoneyValue | null;
+  /** patient_amount + home_visit_fee; null until the lab sends the amount. */
+  amount_to_pay: MoneyValue | null;
+  quote_notes: string | null;
+  quoted_at: string | null;
+  decided_at: string | null;
+  card_file_name: string | null;
+  created_at: string;
 }
 
 export interface CaseServiceActions {
@@ -99,6 +138,8 @@ export interface CaseServiceLine {
   service_kind: CaseServiceKind;
   service_id: string | null;
   package_id: string | null;
+  /** Set on internal lines (home-visit fee, insurance placeholder); these cannot be ordered again. */
+  service_system_key?: CaseServiceSystemKey | string | null;
   status: CaseServiceStatus;
   original_price: MoneyValue;
   bundle_price: MoneyValue;
@@ -176,16 +217,24 @@ export interface CaseView {
   appointments: CaseAppointment[];
   provider_files: CaseProviderFile[];
   invoice: CaseInvoice | CaseInvoiceSummary | null;
+  /** Only on insurance lab orders (case.is_insurance). */
+  insurance?: CaseInsurance | null;
   case_actions: {
     can_cancel: boolean;
     can_close: boolean;
     can_add_appointment: boolean;
+    /** Patient may approve or decline the lab's amount (insurance status QUOTED). */
+    can_decide_insurance?: boolean;
   };
 }
 
 export interface TrackingView {
   id: string;
+  /** "#482913" */
   reference: string;
+  reference_number?: string | null;
+  recipient_gender?: RecipientGender | null;
+  recipient_age_group?: RecipientAgeGroup | null;
   status: CaseStatus;
   created_at: string;
   scheduled_for: string | null;
@@ -253,12 +302,29 @@ export interface CreateCasePayload {
   scheduled_for?: string;
   notes?: string;
   items: CaseItemRef[];
+  recipient_gender: RecipientGender;
+  recipient_age_group: RecipientAgeGroup;
 }
 
 export interface CreateGuestCasePayload extends CreateCasePayload {
   address: string;
   guest_name: string;
   guest_phone: string;
+  /** From POST /verification/id-document (guest upload); needed when the ID is required. */
+  id_document_token?: string;
+  /** From POST /verification/phone/confirm; needed when phone verification is required. */
+  phone_verification_token?: string;
+}
+
+/** POST /cases/insurance (multipart): the insurance card plus the visit details; no items. */
+export interface CreateInsuranceCasePayload {
+  file: File;
+  area_id: string;
+  address?: string;
+  scheduled_for?: string;
+  notes?: string;
+  recipient_gender: RecipientGender;
+  recipient_age_group: RecipientAgeGroup;
 }
 
 export interface GuestCaseCreated {
@@ -271,6 +337,7 @@ export interface GuestCaseCreated {
 export interface ChatRoom {
   id: string;
   case_id: string;
+  case_reference_number?: string | null;
   case_service_id: string;
   service_name: string | null;
   service_status: CaseServiceStatus;
@@ -304,8 +371,12 @@ export interface ChatMessage {
 
 // ---------------------------------------------------------------------------- helpers
 
-/** Catalog id of a line item, read from the column that matches its item type (null for unknown types). */
+/**
+ * Catalog id of a line item, read from the column that matches its item type (null for unknown types and
+ * for internal lines such as the lab home-visit fee, which the server adds by itself).
+ */
 export function getCaseServiceItemRef(service: CaseServiceLine): CaseItemRef | null {
+  if (service.service_system_key) return null;
   switch (service.item_type) {
     case "SERVICE":
       return service.service_id ? { type: "SERVICE", id: service.service_id } : null;
@@ -349,6 +420,30 @@ export const casesApi = {
 
   createPublic: async (payload: CreateGuestCasePayload) =>
     (await publicApiClient.post<{ data: GuestCaseCreated }>("/cases/public", payload, { timeout: 20_000 })).data.data,
+
+  createInsurance: async (payload: CreateInsuranceCasePayload) => {
+    const formData = new FormData();
+    formData.append("file", payload.file);
+    formData.append("area_id", payload.area_id);
+    if (payload.address?.trim()) formData.append("address", payload.address.trim());
+    if (payload.scheduled_for) formData.append("scheduled_for", payload.scheduled_for);
+    if (payload.notes?.trim()) formData.append("notes", payload.notes.trim());
+    formData.append("recipient_gender", payload.recipient_gender);
+    formData.append("recipient_age_group", payload.recipient_age_group);
+    return (
+      await apiClient.post<{ data: CaseView }>("/cases/insurance", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60_000,
+      })
+    ).data.data;
+  },
+
+  approveInsurance: async (id: string) =>
+    (await apiClient.post<{ data: CaseView }>(`/cases/${id}/insurance/approve`, {})).data.data,
+
+  declineInsurance: async (id: string, reason?: string) =>
+    (await apiClient.post<{ data: CaseView }>(`/cases/${id}/insurance/decline`, { reason: reason?.trim() || null })).data
+      .data,
 
   track: async (token: string) =>
     (await publicApiClient.get<{ data: TrackingView }>(`/cases/track/${encodeURIComponent(token)}`, { timeout: 15_000 }))

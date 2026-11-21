@@ -18,12 +18,25 @@ import {
   Heart,
   Package2,
   Plus,
+  ShieldCheck,
   Stethoscope,
 } from "lucide-react";
+import { toast } from "sonner";
+import { ForwardChevron } from "@/components/app/ui";
+import { LabFeeNote, LabTestBrowser } from "@/components/lab/LabTestBrowser";
 import { Button } from "@/components/ui/button";
 import { GuestServiceRequestDialog } from "@/components/services/GuestServiceRequestDialog";
 import { PrelaunchInlineNotice, PrelaunchNoticeDialog } from "@/components/shared/PrelaunchNotice";
 import { MAX_CASE_ITEMS } from "@/lib/api/cases";
+import { useLabHomeVisitFee } from "@/lib/api/settings";
+import {
+  clearSelectionStorage,
+  readSelectedEntries,
+  readSelectedIds,
+  writeSelection,
+  type SelectedEntryMap,
+} from "@/lib/catalog-selection";
+import { isLabEntry } from "@/lib/lab-catalog";
 import { BOOKINGS_ENABLED } from "@/lib/launch";
 import { formatCurrency } from "@/lib/formatting";
 import { useAuthStore } from "@/lib/stores/auth.store";
@@ -39,6 +52,7 @@ import {
   isOrderableCatalogEntry,
   PUBLIC_SERVICE_CATEGORIES,
   toCatalogItemRef,
+  type PublicCatalogEntry,
   type PublicServiceCategoryTranslationKey,
   type PublicServiceCategorySlug,
 } from "@/lib/public-service-categories";
@@ -66,13 +80,14 @@ const categoryTitleFallbacks: Record<PublicServiceCategoryTranslationKey, string
   labDiagnostics: "Lab Diagnostics",
   carePrograms: "Care Programs",
 };
-const STORAGE_KEY = "curevie_selected_services";
 const INCLUDED_SERVICES_PREVIEW = 3;
 export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCategorySlug }) {
   const locale = useLocale();
   const t = useTranslations("serviceExplorer");
   const tExplorer = useTranslations("serviceExplorer");
   const tOrders = useTranslations("orders");
+  const tLab = useTranslations("labCatalog");
+  const tInsurance = useTranslations("insurance");
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isArabic = locale === "ar";
@@ -88,21 +103,26 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
 
   const category = getPublicServiceCategory(slug);
   const analyticsServiceKind = getPublicServiceCategoryAnalyticsKind(slug);
+  // Lab tests are browsed as a tree, a few at a time; the full-category download is never used for them.
+  const isLabCatalog = BOOKINGS_ENABLED && category?.serviceKind === "LAB";
+  const labFee = useLabHomeVisitFee();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const labSectionRef = useRef<HTMLElement | null>(null);
   const [guestRequestOpen, setGuestRequestOpen] = useState(false);
-  const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (!saved) return new Set();
-      return new Set(JSON.parse(saved) as string[]);
-    } catch {
-      return new Set();
-    }
-  });
+  const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(() => new Set());
+  // Copies of the picked entries, so picks made in another category or on another lab page still reach the order.
+  const [selectedCache, setSelectedCache] = useState<SelectedEntryMap>({});
+
+  // The saved selection is read after mount: the server-rendered page has no selection, so reading it during
+  // the first render would not match the HTML (hydration error) for a visitor who already picked something.
+  useEffect(() => {
+    setSelectedEntryIds(new Set(readSelectedIds()));
+    setSelectedCache(readSelectedEntries());
+  }, []);
   const dataQuery = useQuery({
     queryKey: ["public-category-explorer", slug, locale],
     queryFn: () => fetchPublicServiceCategoryCatalog(slug, locale),
+    enabled: !isLabCatalog,
     // Before launch the local seed is shown instantly; once ordering is live only real items are listed.
     initialData: BOOKINGS_ENABLED ? undefined : () => getLocalPublicServiceCategoryCatalog(slug, locale),
     initialDataUpdatedAt: 0,
@@ -125,32 +145,47 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   }, [dataQuery.data?.entries]);
 
   const filteredEntries = entries;
+  // What the order dialog can list: this page's entries plus the picked ones that are not on this page.
+  const requestEntries = useMemo(() => {
+    const byId = new Map<string, PublicCatalogEntry>(entries.map((entry) => [entry.id, entry]));
+    Object.values(selectedCache).forEach((entry) => {
+      if (selectedEntryIds.has(entry.id) && !byId.has(entry.id)) byId.set(entry.id, entry);
+    });
+    return [...byId.values()];
+  }, [entries, selectedCache, selectedEntryIds]);
   const selectedEntries = useMemo(
-    () => entries.filter((entry) => selectedEntryIds.has(entry.id) && isOrderableCatalogEntry(entry)),
-    [entries, selectedEntryIds],
+    () => requestEntries.filter((entry) => selectedEntryIds.has(entry.id) && isOrderableCatalogEntry(entry)),
+    [requestEntries, selectedEntryIds],
   );
   const preSelectedEntryIds = useMemo(() => selectedEntries.map((entry) => entry.id), [selectedEntries]);
-  const toggleEntry = (entryId: string) => {
-    setSelectedEntryIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(entryId)) {
-        next.delete(entryId);
-      } else {
-        if (next.size >= MAX_CASE_ITEMS) return prev;
-        next.add(entryId);
+  const selectionLimitReached = selectedEntryIds.size >= MAX_CASE_ITEMS;
+  const hasLabSelected = selectedEntries.some(isLabEntry);
+  const selectedTotal =
+    selectedEntries.reduce((sum, entry) => sum + Number(entry.price || 0), 0) + (hasLabSelected ? labFee : 0);
+
+  const toggleEntry = (entry: PublicCatalogEntry) => {
+    const nextIds = new Set(selectedEntryIds);
+    const nextCache = { ...selectedCache };
+    if (nextIds.has(entry.id)) {
+      nextIds.delete(entry.id);
+      delete nextCache[entry.id];
+    } else {
+      if (nextIds.size >= MAX_CASE_ITEMS) {
+        toast.error(t("maxSelectionHint", { max: MAX_CASE_ITEMS }));
+        return;
       }
-      if (typeof window !== "undefined") {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
-      }
-      return next;
-    });
+      nextIds.add(entry.id);
+      nextCache[entry.id] = entry;
+    }
+    setSelectedEntryIds(nextIds);
+    setSelectedCache(nextCache);
+    writeSelection([...nextIds], nextCache);
   };
 
   const clearSelection = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    clearSelectionStorage();
     setSelectedEntryIds(new Set());
+    setSelectedCache({});
   };
 
   const handleGuestRequestOpenChange = (open: boolean) => {
@@ -228,11 +263,21 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
   const categoryTitle = resolveCategoryTitle(category.translationKey);
   const categorySubtitle = t(`categories.${category.translationKey}.subtitle`);
   const categoryStory = t(`categories.${category.translationKey}.story`);
-  const canOpenGuestRequest = filteredEntries.length > 0 && !dataQuery.isLoading;
+  const canOpenGuestRequest = isLabCatalog || (filteredEntries.length > 0 && !dataQuery.isLoading);
+  const insuranceHref = isAuthenticated
+    ? `/${locale}/requests/insurance`
+    : `/${locale}/login?redirect=${encodeURIComponent(`/${locale}/requests/insurance`)}`;
   const startRequestLabel = BOOKINGS_ENABLED ? t("actions.orderNow") : t("actions.startRequest");
 
   const openGuestRequestDialog = () => {
     if (!canOpenGuestRequest) return;
+
+    // Lab tests are picked from the tree first; with nothing picked the button leads to the tests.
+    if (isLabCatalog && !selectedEntries.length) {
+      toast.info(tLab("pickFirst"));
+      labSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
 
     // Logged-in patients order from their dashboard so the order lands on their account.
     if (BOOKINGS_ENABLED && isAuthenticated) {
@@ -379,7 +424,32 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
           </div>
         </div>
 
-        {dataQuery.isLoading ? (
+        {isLabCatalog ? (
+          <section ref={labSectionRef} className="mt-8 scroll-mt-24 space-y-4">
+            <Link
+              href={insuranceHref}
+              className="app-press flex min-h-[76px] items-center gap-3 rounded-2xl border border-[#cfe0d3] bg-white p-4 shadow-[0_18px_44px_-36px_rgba(15,79,72,0.35)]"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e6f0ee] text-[#104d49]">
+                <ShieldCheck className="h-6 w-6" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[16px] font-bold leading-6 text-[#12312d]">{tInsurance("cta")}</span>
+                <span className="mt-0.5 block text-[13.5px] leading-5 text-[#617672]">
+                  {isAuthenticated ? tInsurance("ctaHint") : tInsurance("ctaHintGuest")}
+                </span>
+              </span>
+              <ForwardChevron className="h-5 w-5 shrink-0 text-[#617672]" />
+            </Link>
+            <LabFeeNote fee={labFee} />
+            <LabTestBrowser
+              tone="public"
+              isSelected={(id) => selectedEntryIds.has(id)}
+              onToggle={toggleEntry}
+              limitReached={selectionLimitReached}
+            />
+          </section>
+        ) : dataQuery.isLoading ? (
           <section data-catalog-grid className="mt-8">
             <AppPreloader
               variant="page"
@@ -424,7 +494,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                   key={entry.id}
                   data-catalog-card
                   onClick={() => {
-                    if (isSelectable) toggleEntry(entry.id);
+                    if (isSelectable) toggleEntry(entry);
                   }}
                   whileHover={{ y: -7, scale: 1.008 }}
                   transition={{ type: "spring", stiffness: 220, damping: 20 }}
@@ -498,7 +568,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
                         disabled={!isSelectable}
                         onClick={(event) => {
                           event.stopPropagation();
-                          toggleEntry(entry.id);
+                          toggleEntry(entry);
                         }}
                         className="flex w-full items-center justify-center gap-1.5 rounded-full py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                         style={{
@@ -572,9 +642,19 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
-          <span className="shrink-0 text-sm font-medium text-gray-700">
-            {selectedEntryIds.size} {tExplorer("selectedCount")}
-          </span>
+          <div className="min-w-0 text-gray-700">
+            <p className="text-sm font-medium">
+              {selectedEntryIds.size} {tExplorer("selectedCount")}
+              {BOOKINGS_ENABLED && selectedEntries.length ? (
+                <span className="ms-2 font-bold tabular-nums text-[#12312d]">· {formatCurrency(selectedTotal, locale)}</span>
+              ) : null}
+            </p>
+            {BOOKINGS_ENABLED && hasLabSelected && labFee > 0 ? (
+              <p className="mt-0.5 text-xs leading-4 text-[#4a6b32]">
+                {tLab("feeIncluded", { amount: formatCurrency(labFee, locale) })}
+              </p>
+            ) : null}
+          </div>
           <Button
             onClick={openGuestRequestDialog}
             className="shrink-0 rounded-full px-6 py-2.5 text-sm font-semibold text-white"
@@ -589,7 +669,7 @@ export function PublicServiceCategoryExplorer({ slug }: { slug: PublicServiceCat
         <GuestServiceRequestDialog
           open={guestRequestOpen}
           onOpenChange={handleGuestRequestOpenChange}
-          entries={filteredEntries}
+          entries={isLabCatalog ? selectedEntries : requestEntries}
           preSelectedEntryIds={preSelectedEntryIds}
           serviceSlug={slug}
           categoryTitle={categoryTitle}

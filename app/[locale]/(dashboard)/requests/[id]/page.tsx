@@ -8,6 +8,7 @@ import {
   CalendarClock,
   Download,
   FileText,
+  FlaskConical,
   Loader2,
   MapPin,
   MessageCircleMore,
@@ -16,6 +17,7 @@ import {
   Receipt,
   RotateCcw,
   Star,
+  UserRound,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
@@ -25,8 +27,10 @@ import { CancelCaseDialog } from "@/components/orders/CancelCaseDialog";
 import { CaseProgress, OrderStatusHero } from "@/components/orders/CaseProgress";
 import { PaymentStatusBadge, ServiceStatusBadge } from "@/components/orders/CaseStatusBadge";
 import { CliqPaymentCard } from "@/components/orders/CliqPaymentCard";
+import { InsuranceCard } from "@/components/orders/InsuranceCard";
 import { ProviderAvatar } from "@/components/orders/ProviderAvatar";
 import { RateServiceDialog } from "@/components/orders/RateServiceDialog";
+import { formatRecipient } from "@/components/orders/RecipientPicker";
 import {
   casesApi,
   isInvoiceReleased,
@@ -103,6 +107,7 @@ export default function OrderDetailPage() {
   const tApp = useTranslations("app.detail");
   const tOrders = useTranslations("orders");
   const tCommon = useTranslations("common");
+  const tRecipient = useTranslations("app.recipient");
   const download = useDownload();
 
   const caseQuery = useQuery({
@@ -172,11 +177,21 @@ export default function OrderDetailPage() {
   }
 
   const record = view.case;
-  const reference = getCaseReference(record.id);
+  const reference = getCaseReference(record);
+  const recipient = formatRecipient(tRecipient, record.recipient_gender, record.recipient_age_group);
   const areaName = locale.startsWith("ar") ? record.area_name_ar || record.area_name_en : record.area_name_en || record.area_name_ar;
   const appointmentsByService = groupAppointments(view.appointments);
-  const filesByService = groupFiles(view.provider_files);
+  // Lab results are released as soon as the lab uploads them (before the order is closed), so they get
+  // their own card at the top; every other file stays under its item.
+  const labServiceIds = new Set(view.services.filter((service) => service.service_kind === "LAB").map((service) => service.id));
+  const labResultFiles = view.provider_files.filter((file) => labServiceIds.has(file.case_service_id));
+  const filesByService = groupFiles(view.provider_files.filter((file) => !labServiceIds.has(file.case_service_id)));
   const activeServices = view.services.filter((service) => service.status !== "CANCELLED");
+  // Insurance lab order: nothing is payable until the patient approved the lab's amount.
+  const insurance = record.is_insurance ? view.insurance ?? null : null;
+  const insuranceAwaitingAmount = insurance?.status === "SUBMITTED" || insurance?.status === "QUOTED";
+  const downloadFile = (file: CaseProviderFile) =>
+    void download.run(`file-${file.id}`, () => casesApi.downloadProviderFile(file), file.original_name || `file-${file.id.slice(0, 8)}`);
   const hasLab = activeServices.some((service) => service.service_kind === "LAB");
   const invoiceDetail = invoiceQuery.data;
   const report = reportQuery.data;
@@ -212,9 +227,38 @@ export default function OrderDetailPage() {
                   {areaName}
                 </span>
               ) : null}
+              {recipient ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f5f4] px-3 py-1.5 text-foreground dark:bg-white/5">
+                  <UserRound className="h-4 w-4 text-[#5a7a50]" />
+                  {tRecipient("line", { value: recipient })}
+                </span>
+              ) : null}
             </div>
           }
         />
+
+        {insurance ? (
+          <>
+            <InsuranceCard
+              caseId={record.id}
+              insurance={insurance}
+              canDecide={Boolean(view.case_actions.can_decide_insurance)}
+              reference={reference}
+            />
+            {/* Right under the approved amount, so the patient does not have to look for how to pay. */}
+            {insurance.status === "APPROVED" ? (
+              <CliqPaymentCard caseStatus={record.status} invoice={cliqInvoice} reference={reference} />
+            ) : null}
+          </>
+        ) : null}
+
+        {labResultFiles.length ? (
+          <AppCard className="border-[#cfe0d3] p-5">
+            <CardTitle icon={FlaskConical}>{t("labResults.title")}</CardTitle>
+            <p className="mb-3 mt-1.5 text-[14px] leading-6 text-muted-foreground">{t("labResults.description")}</p>
+            <FileList files={labResultFiles} pendingKey={download.pendingKey} onDownload={downloadFile} locale={locale} showTitle={false} />
+          </AppCard>
+        ) : null}
 
         {/* Care team */}
         {record.status !== "CANCELLED" ? (
@@ -276,6 +320,8 @@ export default function OrderDetailPage() {
               const appointments = appointmentsByService.get(service.id) || [];
               const files = filesByService.get(service.id) || [];
               const discounted = Number(service.original_price) > Number(service.bundle_price);
+              // The insurance tests line has no price until the lab sends its amount: "0.000" would mislead.
+              const unpriced = service.service_system_key === "lab_insurance_tests" && Number(service.bundle_price) === 0;
 
               return (
                 <li key={service.id} className="space-y-3 py-4 first:pt-3 last:pb-1">
@@ -293,7 +339,7 @@ export default function OrderDetailPage() {
                       {discounted ? (
                         <p className="text-[12px] text-muted-foreground line-through">{formatCurrency(service.original_price, locale)}</p>
                       ) : null}
-                      <p className="text-[15px] font-bold tabular-nums">{formatCurrency(service.bundle_price, locale)}</p>
+                      <p className="text-[15px] font-bold tabular-nums">{unpriced ? "-" : formatCurrency(service.bundle_price, locale)}</p>
                     </div>
                   </div>
 
@@ -333,14 +379,7 @@ export default function OrderDetailPage() {
                   ) : null}
 
                   {files.length ? (
-                    <FileList
-                      files={files}
-                      pendingKey={download.pendingKey}
-                      onDownload={(file) =>
-                        void download.run(`file-${file.id}`, () => casesApi.downloadProviderFile(file), file.original_name || `file-${file.id.slice(0, 8)}`)
-                      }
-                      locale={locale}
-                    />
+                    <FileList files={files} pendingKey={download.pendingKey} onDownload={downloadFile} locale={locale} />
                   ) : null}
                 </li>
               );
@@ -377,16 +416,20 @@ export default function OrderDetailPage() {
       </div>
 
       <div className="mt-4 space-y-4 lg:sticky lg:top-24 lg:mt-0">
-        <InvoiceCard
-          view={view}
-          invoiceDetail={invoiceDetail}
-          invoiceLoading={invoiceQuery.isLoading && invoiceReleased}
-          locale={locale}
-          pendingKey={download.pendingKey}
-          onDownload={() => void download.run("invoice", () => casesApi.downloadInvoicePdf(record.id), `invoice-${record.id.slice(0, 8)}.pdf`)}
-        />
+        {/* While the lab has not sent its amount (or the patient has not answered), there is no total to show yet. */}
+        {insuranceAwaitingAmount ? null : (
+          <InvoiceCard
+            view={view}
+            invoiceDetail={invoiceDetail}
+            invoiceLoading={invoiceQuery.isLoading && invoiceReleased}
+            locale={locale}
+            pendingKey={download.pendingKey}
+            onDownload={() => void download.run("invoice", () => casesApi.downloadInvoicePdf(record.id), `invoice-${record.id.slice(0, 8)}.pdf`)}
+          />
+        )}
 
-        <CliqPaymentCard caseStatus={record.status} invoice={cliqInvoice} reference={reference} />
+        {/* Insurance orders show the CliQ card next to the approved amount (above) instead. */}
+        {insurance ? null : <CliqPaymentCard caseStatus={record.status} invoice={cliqInvoice} reference={reference} />}
 
         <AppCard className="p-5">
           <CardTitle icon={FileText}>{t("report.title")}</CardTitle>
@@ -425,10 +468,13 @@ export default function OrderDetailPage() {
         </AppCard>
 
         <div className="flex flex-col gap-2.5">
-          <Link href={`/${locale}/requests/new?reorder=${record.id}`} className={appButton.soft}>
-            <RotateCcw />
-            {t("orderAgain")}
-          </Link>
+          {/* An insurance request has no chosen tests to copy into a new order. */}
+          {insurance ? null : (
+            <Link href={`/${locale}/requests/new?reorder=${record.id}`} className={appButton.soft}>
+              <RotateCcw />
+              {t("orderAgain")}
+            </Link>
+          )}
           {view.case_actions.can_cancel ? <CancelCaseDialog caseId={record.id} triggerClassName={cn(appButton.danger, "w-full")} /> : null}
         </div>
       </div>
@@ -446,17 +492,19 @@ function FileList({
   pendingKey,
   onDownload,
   locale,
+  showTitle = true,
 }: {
   files: CaseProviderFile[];
   pendingKey: string | null;
   onDownload: (file: CaseProviderFile) => void;
   locale: string;
+  showTitle?: boolean;
 }) {
   const t = useTranslations("orderDetail");
 
   return (
     <div className="space-y-2">
-      <p className="text-[13px] font-semibold text-muted-foreground">{t("files.title")}</p>
+      {showTitle ? <p className="text-[13px] font-semibold text-muted-foreground">{t("files.title")}</p> : null}
       {files.map((file) => (
         <div key={file.id} className="flex items-center gap-3 rounded-2xl bg-[#f6f9f8] p-3 dark:bg-white/[0.04]">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-card text-[#104d49] shadow-sm dark:text-teal-200">

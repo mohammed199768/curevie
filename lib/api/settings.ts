@@ -11,9 +11,34 @@ export interface CliqSettings {
   note: string | null;
 }
 
+/** What ordering requires before an order is accepted (admin setting "verification"). */
+export interface VerificationRules {
+  require_id: boolean;
+  require_phone: boolean;
+}
+
 export interface PublicSettings {
   /** null while CliQ is switched off (or has no alias). */
   cliq: CliqSettings | null;
+  /** Home sample-collection visit fee, added once to any order with lab tests (JOD). */
+  lab_home_visit_fee?: number | string | null;
+  verification?: VerificationRules | null;
+}
+
+/** Used until the settings arrive (and if the API does not send the value). */
+export const DEFAULT_LAB_HOME_VISIT_FEE = 5;
+
+export function getLabHomeVisitFee(settings: PublicSettings | null | undefined) {
+  const value = Number(settings?.lab_home_visit_fee);
+  return settings?.lab_home_visit_fee !== null && settings?.lab_home_visit_fee !== undefined && Number.isFinite(value) && value >= 0
+    ? value
+    : DEFAULT_LAB_HOME_VISIT_FEE;
+}
+
+/** The lab home-visit fee from GET /settings/public (default 5 JOD while loading). */
+export function useLabHomeVisitFee() {
+  const settingsQuery = usePublicSettings();
+  return getLabHomeVisitFee(settingsQuery.data);
 }
 
 export const settingsApi = {

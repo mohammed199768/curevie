@@ -66,6 +66,31 @@ export interface ServiceItem {
   image_url?: string | null;
   is_active?: boolean;
   is_vip_exclusive?: boolean;
+  /** Admin order inside its group (lower first). */
+  sort_order?: number;
+  /** Shown in the lab "most requested" section. */
+  is_popular?: boolean;
+  /** Lab test that needs the patient to fast before the sample is taken. */
+  requires_fasting?: boolean;
+  category_name_ar?: string | null;
+  category_name_en?: string | null;
+}
+
+/** Catalog group (GET /services/categories), e.g. the lab groups "lab-blood", "lab-kidney". */
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  name_ar?: string | null;
+  name_en?: string | null;
+  description_ar?: string | null;
+  description_en?: string | null;
+  slug?: string | null;
+  service_kind?: ServiceKind | null;
+  sort_order?: number;
+  /** Specialised groups sit behind a separate "more specialised tests" entry. */
+  is_specialized?: boolean;
+  /** Active, orderable tests in the group. */
+  active_count?: number;
 }
 
 /** A service as listed inside a package (GET /packages). */

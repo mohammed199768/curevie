@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isolateLtr } from "@/lib/order-stage";
 
 export function buildTrackingPath(locale: string, token: string) {
   return `/${locale}/track/${encodeURIComponent(token)}`;
@@ -39,7 +40,7 @@ export function TrackingLinkCard({ token, reference }: { token: string; referenc
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-[#12312d]">{t("tracking.linkTitle")}</p>
-          {reference ? <p className="text-xs text-[#617672]">{t("reference", { reference })}</p> : null}
+          {reference ? <p className="text-xs text-[#617672]">{t("reference", { reference: isolateLtr(reference) })}</p> : null}
           <p className="mt-1 text-xs leading-5 text-[#617672]">{t("tracking.linkHint")}</p>
         </div>
       </div>

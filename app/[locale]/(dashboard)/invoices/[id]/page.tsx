@@ -67,7 +67,7 @@ export default function InvoiceDetailPage() {
   }
 
   const { invoice, payments, adjustments } = invoiceDetail;
-  const reference = getCaseReference(caseId);
+  const reference = getCaseReference(caseQuery.data?.case ?? { id: caseId });
   const services = (caseQuery.data?.services || []).filter((service) => service.status !== "CANCELLED");
   const caseStatus = caseQuery.data?.case.status ?? "CLOSED";
   const remaining = Number(invoice.remaining_amount || 0);

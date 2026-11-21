@@ -48,6 +48,8 @@ export type PublicCatalogEntry =
       categoryName: string | null;
       price: number | null;
       serviceKind: ServiceKind;
+      /** Lab tests only: the patient must fast before the sample is taken. */
+      requiresFasting?: boolean;
     }
   | {
       id: string;
@@ -632,6 +634,12 @@ export async function fetchPublicServiceCategoryCatalog(slug: PublicServiceCateg
 
   if (!category) {
     throw new Error(`Unknown category slug: ${slug}`);
+  }
+
+  // Lab tests are never downloaded as a whole list (there are hundreds): the live lab page browses them a
+  // page at a time (components/lab/LabTestBrowser), and before launch only the sample list is shown.
+  if (category.serviceKind === "LAB") {
+    return getLocalPublicServiceCategoryCatalog(slug, locale);
   }
 
   try {
